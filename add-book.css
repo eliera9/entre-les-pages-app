@@ -1,0 +1,595 @@
+@font-face {font-family:"Instrument Serif Formulaire";src:url("./fonts/instrument.woff2") format("woff2");font-weight:400 500;font-display:swap}
+@font-face {font-family:"Baskervville Formulaire";src:url("./fonts/baskervville.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face {font-family:"Source Sans 3 Formulaire";src:url("./fonts/source-sans.woff2") format("woff2");font-weight:400 500;font-display:swap}
+@font-face {font-family:"Italianno Fiche";src:url("./fonts/italianno-fiche.ttf") format("truetype");font-weight:400;font-display:swap}
+
+#bibliotheque-app #elp-add-book { box-sizing:border-box; }
+  #bibliotheque-app #elp-add-book *, #bibliotheque-app #elp-add-book *::before, #bibliotheque-app #elp-add-book *::after { box-sizing:inherit; }
+  #bibliotheque-app #elp-add-book [hidden] { display:none !important; }
+  #bibliotheque-app #elp-add-book.ep-stage {
+    --ep-panel:var(--paper); --ep-card:var(--card); --ep-pressed:var(--tint); --ep-line:var(--rule);
+    --ep-title:var(--title); --ep-muted:var(--muted); --ep-accent:light-dark(#784B5B,#C8B9CC); --ep-shadow:var(--shadow);
+    --ep-summary-text:light-dark(#6E5258,#C8B9CC);
+    --ep-action:var(--button); --ep-action-text:light-dark(#EFDBDF,#DBC9DF);
+    background:var(--ep-panel);
+    inline-size:100%; min-block-size:100vh; min-block-size:100dvh;
+    font-family:"Source Sans 3 Formulaire",Arial,sans-serif; color:var(--ep-title);
+  }
+  #bibliotheque-app #elp-add-book .ep-form {
+    --ep-page-gutter:clamp(12px,2.5vw,28px);
+    padding: max(12px,env(safe-area-inset-top))
+      max(var(--ep-page-gutter),env(safe-area-inset-right))
+      max(12px,env(safe-area-inset-bottom))
+      max(var(--ep-page-gutter),env(safe-area-inset-left));
+  }
+  #bibliotheque-app #elp-add-book .ep-header { display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:center; }
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-form {
+    --ep-page-gutter:clamp(16px,5vw,72px);
+    --ep-nav-target:clamp(48px,6.5vw,60px);
+    padding-block-start:max(clamp(16px,3.5vw,42px),env(safe-area-inset-top));
+    padding-block-end:max(clamp(28px,5vw,64px),env(safe-area-inset-bottom));
+  }
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-header {
+    grid-template-columns:var(--ep-nav-target) minmax(0,1fr) var(--ep-nav-target);
+  }
+  #bibliotheque-app #elp-add-book .ep-back svg { width:20px; height:20px; stroke-width:1.5; }
+  #bibliotheque-app #elp-add-book .ep-back i::before { content:"‹"; font-style:normal; }
+  #bibliotheque-app #elp-add-book .ep-title { display:flex; align-items:center; min-inline-size:0; gap:9px; }
+  #bibliotheque-app #elp-add-book .ep-title h2 { margin:0; color:var(--ep-title); font:500 30px/1.03 "Instrument Serif Formulaire",Georgia,serif; }
+  #bibliotheque-app #elp-add-book .ep-icon-button {
+    display:grid; place-items:center; border:0; inline-size:44px; block-size:44px; padding:0;
+    color:var(--ep-accent); background:transparent; border-radius:9px; font:400 25px/1 Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-icon-button:hover { background:var(--ep-card); }
+  #bibliotheque-app #elp-add-book .ep-edit-toolbar { display:flex; justify-content:flex-end; }
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-page-header .ep-icon-button {
+    inline-size:var(--ep-nav-target); block-size:var(--ep-nav-target);
+  }
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-title h2 {
+    font-size:clamp(30px,calc(23px + 2vw),54px);
+  }
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-art-open {
+    inline-size:clamp(38px,6.5vw,78px); block-size:clamp(38px,6vw,64px);
+  }
+  #bibliotheque-app #elp-add-book .ep-edit-toggle span { display:grid; place-items:center; }
+  #bibliotheque-app #elp-add-book .ep-edit-toggle [data-lucide="pencil"]:is(i)::before { content:"✎"; }
+  #bibliotheque-app #elp-add-book .ep-edit-toggle [data-lucide="check"]:is(i)::before { content:"✓"; }
+  #bibliotheque-app #elp-add-book .ep-question { margin:4px 0 13px; min-block-size:26px; color:var(--ep-muted); font:400 16px/1.35 "Baskervville Formulaire",Georgia,serif; }
+  #bibliotheque-app #elp-add-book .ep-choices { display:grid; gap:6px; }
+  #bibliotheque-app #elp-add-book .ep-card {
+    display:flex; align-items:center; gap:10px; text-align:left; inline-size:100%; min-block-size:58px; padding:6px 9px;
+    border:1px solid var(--ep-line); border-radius:11px; color:var(--ep-title); background:var(--ep-card); font:inherit;
+  }
+  #bibliotheque-app #elp-add-book .ep-card:hover, #bibliotheque-app #elp-add-book .ep-card[aria-expanded="true"] { border-color:var(--ep-accent); background:var(--ep-pressed); }
+  #bibliotheque-app #elp-add-book .ep-card-copy { display:grid; flex:1; min-inline-size:0; gap:2px; overflow-wrap:break-word; }
+  #bibliotheque-app #elp-add-book .ep-card-title { font:500 23px/1.02 "Instrument Serif Formulaire",Georgia,serif; }
+  #bibliotheque-app #elp-add-book .ep-card-detail { font-size:13px; line-height:1.18; color:var(--ep-muted); }
+  #bibliotheque-app #elp-add-book .ep-paper-search { display:grid; grid-template-columns:minmax(0,1fr) 44px; gap:6px; }
+  #bibliotheque-app #elp-add-book .ep-search-field {
+    position:relative; display:grid; align-items:center; min-inline-size:0; min-block-size:44px; padding-inline:31px;
+    border:1px solid var(--ep-line); border-radius:8px; color:var(--ep-accent); background:var(--ep-panel);
+  }
+  #bibliotheque-app #elp-add-book .ep-search-field :is(i,svg) {
+    position:absolute; inset-inline-start:9px; inset-block-start:50%; transform:translateY(-50%);
+    width:17px; height:17px; stroke-width:1.5; pointer-events:none;
+  }
+  #bibliotheque-app #elp-add-book .ep-search-field:focus-within { border-color:transparent; }
+  #bibliotheque-app #elp-add-book .ep-search-field:focus-within svg { stroke-width:2.3; }
+  #bibliotheque-app #elp-add-book .ep-search-input {
+    inline-size:100%; min-inline-size:0; padding:7px 0; border:0; background:transparent;
+    color:var(--ep-title); font:400 16px/1.25 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:center;
+  }
+  #bibliotheque-app #elp-add-book .ep-search-input:focus { outline:none; box-shadow:none; caret-color:var(--ep-accent); }
+  #bibliotheque-app #elp-add-book .ep-search-input::placeholder { color:var(--ep-muted); opacity:1; }
+  #bibliotheque-app #elp-add-book .ep-scan {
+    display:grid; place-items:center; min-block-size:44px; padding:0;
+    border:1px solid var(--ep-line); border-radius:8px; color:var(--ep-accent); background:var(--ep-card);
+    font:500 13px/1 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-scan svg { width:20px; height:20px; stroke-width:1.5; }
+  #bibliotheque-app #elp-add-book .ep-scan i::before { content:"QR"; }
+  #bibliotheque-app #elp-add-book .ep-scan:hover { background:var(--ep-pressed); }
+  #bibliotheque-app #elp-add-book .ep-results {
+    list-style:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px; margin:9px 0 0; padding:0;
+  }
+  #bibliotheque-app #elp-add-book .ep-results li { min-inline-size:0; display:grid; }
+  #bibliotheque-app #elp-add-book .ep-result {
+    display:grid; align-content:start; justify-items:center; min-inline-size:0; gap:8px;
+    inline-size:100%; padding:8px 5px; text-align:center; border:1px solid transparent; border-radius:10px;
+    background:transparent; color:var(--ep-title); font:inherit;
+  }
+  #bibliotheque-app #elp-add-book .ep-result:hover, #bibliotheque-app #elp-add-book .ep-result[aria-pressed="true"] {
+    border-color:var(--ep-accent); background:var(--ep-pressed);
+  }
+  #bibliotheque-app #elp-add-book .ep-result:focus-visible { outline-offset:-3px; }
+  #bibliotheque-app #elp-add-book .ep-cover {
+    position:relative; isolation:isolate; display:grid; align-content:center; justify-items:center;
+    gap:8px; inline-size:min(100%,92px); aspect-ratio:2/3; padding:8px;
+    text-align:center; color:var(--ep-title); font:400 14px/1.1 "Instrument Serif Formulaire",Georgia,serif;
+    border-radius:3px 5px 5px 3px; background:var(--ep-card); box-shadow:inset 3px 0 var(--ep-line),0 2px 5px var(--ep-shadow);
+  }
+  #bibliotheque-app #elp-add-book .ep-cover::before { content:""; position:absolute; inset:7px 6px 7px 8px; border:1px solid var(--ep-line); border-radius:2px; }
+  #bibliotheque-app #elp-add-book .ep-cover-mark { display:block; width:13px; height:13px; border:1px solid var(--ep-accent); border-radius:100%; }
+  #bibliotheque-app #elp-add-book .ep-art {
+    display:block; flex:none; background-color:var(--ep-accent);
+    -webkit-mask:var(--ep-art-image) center / contain no-repeat;
+    mask:var(--ep-art-image) center / contain no-repeat;
+  }
+  #bibliotheque-app #elp-add-book .ep-art-open { inline-size:48px; block-size:42px; --ep-art-image:url("./art/add-book/open.png"); }
+  #bibliotheque-app #elp-add-book .ep-art-reader { inline-size:30px; block-size:30px; --ep-art-image:url("./art/add-book/reader.png"); }
+  #bibliotheque-app #elp-add-book .ep-art-closed { inline-size:30px; block-size:30px; --ep-art-image:url("./art/add-book/closed.png"); }
+  #bibliotheque-app #elp-add-book .ep-add { background:var(--ep-pressed); }
+  @media(max-width:360px) {
+    #bibliotheque-app #elp-add-book .ep-art-open { inline-size:41px; }
+    #bibliotheque-app #elp-add-book .ep-title { gap:7px; }
+  }
+
+
+  #bibliotheque-app #elp-add-book.ep-stage[data-step="next"] .ep-choices,
+  #bibliotheque-app #elp-add-book.ep-stage[data-step="next"] .ep-question { display:none; }
+  #bibliotheque-app #elp-add-book .ep-step { margin-block-start:13px; padding:10px 2px 3px; border-block-start:1px solid var(--ep-line); }
+  #bibliotheque-app #elp-add-book .ep-step h3 { margin:0 0 8px; font:400 22px/1.12 "Instrument Serif Formulaire",Georgia,serif; color:var(--ep-title); }
+  #bibliotheque-app #elp-add-book .ep-book-snapshot { display:grid; grid-template-columns:65px minmax(0,1fr); align-items:start; text-align:left; gap:10px; }
+  #bibliotheque-app #elp-add-book .ep-book-copy { display:grid; gap:3px; min-inline-size:0; padding-block-start:4px; overflow-wrap:anywhere; }
+  #bibliotheque-app #elp-add-book .ep-book-name { font:400 23px/1.05 "Instrument Serif Formulaire",Georgia,serif; color:var(--ep-title); }
+  #bibliotheque-app #elp-add-book .ep-book-author { color:var(--ep-muted); font-size:14px; line-height:1.22; }
+  #bibliotheque-app #elp-add-book .ep-book-series { color:var(--ep-muted); font-size:13px; line-height:1.24; }
+  #bibliotheque-app #elp-add-book .ep-book-snapshot .ep-cover { inline-size:100%; font-size:11px; }
+  #bibliotheque-app #elp-add-book .ep-access {
+    border:1px solid transparent; background:transparent; color:var(--ep-accent); min-block-size:44px; padding:6px 8px; border-radius:8px;
+    font:500 14px/1.2 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:left;
+  }
+  #bibliotheque-app #elp-add-book .ep-access:hover { background:var(--ep-card); }
+  #bibliotheque-app #elp-add-book .ep-access-primary { display:block; inline-size:100%; text-align:center; color:var(--ep-action-text); background:var(--ep-action); margin-block-start:8px; }
+  #bibliotheque-app #elp-add-book .ep-access-primary:hover { color:var(--ep-action-text); background:var(--ep-action); border-color:var(--ep-accent); }
+  #bibliotheque-app #elp-add-book .ep-result .ep-book-snapshot { grid-template-columns:minmax(0,1fr); justify-items:center; text-align:center; gap:5px; }
+  #bibliotheque-app #elp-add-book .ep-result .ep-cover { inline-size:min(100%,82px); }
+  #bibliotheque-app #elp-add-book .ep-result .ep-book-name { font-size:19px; }
+  #bibliotheque-app #elp-add-book .ep-result .ep-book-copy { padding:0; }
+  #bibliotheque-app #elp-add-book .ep-message { margin:7px 0 0; color:var(--ep-muted); font-size:13px; }
+  #bibliotheque-app #elp-add-book .ep-message:empty { margin:0; }
+  #bibliotheque-app #elp-add-book .ep-following {
+    --ep-cover-width:clamp(100px,29vw,320px);
+    --ep-cover-gap:clamp(15px,3.8vw,58px);
+    --ep-section-gap:clamp(26px,4.8vw,62px);
+    --ep-field-gap:clamp(8px,1.5vw,20px);
+    --ep-field-height:clamp(48px,6.5vw,64px);
+    --ep-label-size:clamp(14px,calc(12px + .55vw),19px);
+    --ep-summary-size:clamp(14px,calc(12px + .5vw),17px);
+    --ep-menu-surface:var(--ep-card); --ep-menu-line:var(--ep-line); --ep-menu-selected:var(--ep-pressed);
+    --ep-menu-text:var(--text); --ep-menu-accent:var(--ep-accent);
+    container-type:inline-size; margin-block-start:0; padding:4px 0 0; border-block-start:0;
+  }
+  #bibliotheque-app #elp-add-book .ep-following :is(.ep-book-snapshot,.ep-book-editor) {
+    grid-template-columns:min(var(--ep-cover-width),37%) minmax(0,1fr); gap:var(--ep-cover-gap);
+  }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-name { font-size:clamp(30px,calc(23px + 2.6vw),65px); }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-author { font-size:clamp(16px,calc(14px + .65vw),24px); }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-series { font-size:var(--ep-label-size); }
+  #bibliotheque-app #elp-add-book .ep-following .ep-cover { font-size:15px; }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-copy {
+    align-self:stretch; align-content:center; padding:5px 0 5px clamp(14px,2.8vw,42px);
+    border-inline-start:1px solid var(--ep-line); gap:clamp(6px,1.2vw,16px);
+  }
+  #bibliotheque-app #elp-add-book .ep-tag-label { font:500 14px/1.25 "Source Sans 3 Formulaire",Arial,sans-serif; color:var(--ep-muted); }
+  #bibliotheque-app #elp-add-book .ep-tag-values { min-inline-size:0; line-height:1.34; color:var(--ep-title); overflow-wrap:anywhere; }
+  #bibliotheque-app #elp-add-book .ep-tag + .ep-tag::before { content:" · "; }
+  #bibliotheque-app #elp-add-book .ep-book-copy .ep-tag-group { display:grid; gap:4px; }
+  #bibliotheque-app #elp-add-book .ep-book-copy .ep-book-series + .ep-tag-group { margin-block-start:5px; }
+  #bibliotheque-app #elp-add-book .ep-book-copy :is(.ep-tag-label,.ep-tag-values) { font-size:var(--ep-label-size); }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-recap {
+    grid-template-columns:min(calc(1.22 * var(--ep-cover-width)),42%) minmax(0,1fr);
+    align-items:center;
+    gap:calc(var(--ep-cover-gap) - 5px);
+    margin-block-start:calc(clamp(12px,3vw,24px) - 5px);
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-book-identity {
+    display:grid;
+    gap:4px;
+    min-inline-size:0;
+    font-family:"Baskervville Formulaire",Georgia,serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-recap .ep-book-name {
+    font-family:inherit;
+    font-size:calc(clamp(30px,23px + 2.6vw,65px) - 3px);
+    line-height:1.13;
+    text-wrap:balance;
+    color:var(--ep-accent);
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-book-name::first-letter {
+    font-family:"Italianno Fiche",cursive;
+    font-size:1.75em;
+    line-height:.72;
+    padding-inline-end:.06em;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-book-author {
+    font-style:italic;
+    margin-block-end:5px;
+  }
+  #bibliotheque-app #elp-add-book .ep-following .ep-book-recap .ep-book-series {
+    font-size:calc(var(--ep-label-size) - 1px);
+    margin-block-end:-2px;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-tag-group {
+    margin-block-end:-2px;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap [data-category="genres"] {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:2px 8px;
+    margin-block-start:6px;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap [data-category="genres"] .ep-tag-label::after {
+    content:"";
+    display:block;
+    inline-size:min(24px,100%);
+    block-size:1px;
+    margin:4px auto 0;
+    background:var(--ep-line);
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap [data-category="genres"] .ep-tag-values {
+    flex:1 1 106px;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-tag-values {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:4px;
+    color:var(--ep-accent);
+    font-family:"Baskervville Formulaire",Georgia,serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-tag {
+    border:1px solid transparent;
+    border-radius:999px;
+    padding:1px 7px;
+    max-inline-size:100%;
+    background:var(--ep-pressed);
+  }
+  #bibliotheque-app #elp-add-book .ep-book-recap .ep-tag + .ep-tag::before { content:none; }
+  #bibliotheque-app #elp-add-book .ep-following .ep-summary-heading {
+    display:flex; align-items:center; justify-content:center; gap:clamp(12px,4cqi,30px);
+    margin:var(--ep-section-gap) 0 clamp(14px,2.8cqi,30px);
+    text-align:center; color:var(--ep-title);
+    font:400 clamp(23px,calc(18px + 1.6vw),42px)/1.12 "Instrument Serif Formulaire",Georgia,serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-summary-heading::before, #bibliotheque-app #elp-add-book .ep-summary-heading::after {
+    content:""; flex:0 1 clamp(26px,22cqi,220px); block-size:1px; background:var(--ep-line);
+  }
+  #bibliotheque-app #elp-add-book .ep-next-summary {
+    max-inline-size:80ch; margin:0 auto; font:400 var(--ep-summary-size)/1.7 "Baskervville Formulaire",Georgia,serif;
+    color:var(--ep-summary-text); white-space:pre-line; overflow-wrap:anywhere;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-editor { display:grid; align-items:start; }
+  #bibliotheque-app #elp-add-book :is(.ep-edit-cover,.ep-book-edit-fields,.ep-book-edit-fields label) {
+    display:grid; min-inline-size:0; gap:5px;
+  }
+  #bibliotheque-app #elp-add-book .ep-book-edit-fields { gap:var(--ep-field-gap); }
+  #bibliotheque-app #elp-add-book .ep-book-edit-fields label { color:var(--ep-muted); font-size:var(--ep-label-size); }
+  #bibliotheque-app #elp-add-book .ep-edit-series { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:var(--ep-field-gap); }
+  #bibliotheque-app #elp-add-book .ep-edit-cover .ep-cover { inline-size:100%; }
+  #bibliotheque-app #elp-add-book .ep-edit-cover-button { display:grid; place-items:center; text-align:center; }
+  #bibliotheque-app #elp-add-book .ep-edit-cover-button:focus-within { outline:2px solid var(--ep-accent); outline-offset:-2px; }
+  #bibliotheque-app #elp-add-book .ep-edit-message { grid-column:1/-1; }
+  #bibliotheque-app #elp-add-book :is(.ep-book-edit-fields input,.ep-summary-editor) {
+    inline-size:100%; min-inline-size:0; min-block-size:var(--ep-field-height); padding:9px clamp(9px,1.5vw,20px);
+    border:1px solid var(--ep-line); border-radius:8px; background:var(--ep-card); color:var(--ep-title);
+    font:400 16px/1.25 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-summary-editor {
+    display:block; resize:vertical; color:var(--ep-summary-text); font:400 max(16px,var(--ep-summary-size))/1.65 "Baskervville Formulaire",Georgia,serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-status-section { margin-block-start:var(--ep-section-gap); }
+  #bibliotheque-app #elp-add-book .ep-status-section .ep-summary-heading { margin-block-start:0; }
+  #bibliotheque-app #elp-add-book .ep-status-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--ep-field-gap); }
+  #bibliotheque-app #elp-add-book .ep-status-option { display:block; min-inline-size:0; position:relative; }
+  #bibliotheque-app #elp-add-book .ep-status-face {
+    display:grid; justify-items:center; align-content:center; gap:clamp(7px,1.3vw,16px);
+    block-size:100%; min-block-size:clamp(104px,17vw,182px); padding:clamp(8px,1.6vw,20px) 4px;
+    border:1px solid var(--ep-line); border-radius:9px; background:var(--ep-card); color:var(--ep-title);
+    text-align:center; font:400 var(--ep-label-size)/1.25 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-status-option:hover .ep-status-face { border-color:var(--ep-accent); }
+  #bibliotheque-app #elp-add-book .ep-status-option input:checked + .ep-status-face {
+    border-color:var(--ep-accent); background:var(--ep-pressed); font-weight:500;
+  }
+  #bibliotheque-app #elp-add-book .ep-status-option input:focus-visible + .ep-status-face { outline:2px solid var(--ep-accent); outline-offset:-4px; }
+  #bibliotheque-app #elp-add-book .ep-status-art {
+    display:block; inline-size:min(100%,clamp(62px,11vw,125px)); block-size:clamp(54px,9.2vw,104px); background-color:var(--ep-accent);
+    -webkit-mask:var(--ep-statut-art) center / contain no-repeat; mask:var(--ep-statut-art) center / contain no-repeat;
+  }
+  #bibliotheque-app #elp-add-book .ep-status-art-pile { --ep-statut-art:url("./art/add-book/pile.png"); }
+  #bibliotheque-app #elp-add-book .ep-status-art-cours { --ep-statut-art:url("./art/add-book/cours.png"); }
+  #bibliotheque-app #elp-add-book .ep-status-art-lu { --ep-statut-art:url("./art/add-book/lu.png"); }
+  #bibliotheque-app #elp-add-book .ep-reading-fields {
+    display:grid; gap:var(--ep-field-gap); margin-block-start:clamp(14px,2.6cqi,32px);
+  }
+  #bibliotheque-app #elp-add-book .ep-reading-field { display:grid; min-inline-size:0; gap:3px; }
+  #bibliotheque-app #elp-add-book .ep-progress-row {
+    display:grid; grid-template-columns:minmax(0,1.65fr) minmax(49px,1fr); gap:var(--ep-field-gap); min-inline-size:0; align-items:stretch;
+  }
+  #bibliotheque-app #elp-add-book .ep-reading-field {
+    grid-template-columns:minmax(72px,1fr) minmax(0,2.25fr); align-items:center; gap:var(--ep-field-gap);
+  }
+  #bibliotheque-app #elp-add-book .ep-finished-evaluation {
+    display:grid; grid-template-columns:minmax(0,1fr) max-content; align-items:start; gap:var(--ep-field-gap);
+  }
+  #bibliotheque-app #elp-add-book :is(.ep-rating-field,.ep-favorite-switch) { display:grid; gap:3px; min-inline-size:0; text-align:center; }
+  #bibliotheque-app #elp-add-book .ep-favorite-switch { position:relative; }
+  #bibliotheque-app #elp-add-book .ep-switch-target { display:grid; place-items:center; min-block-size:var(--ep-field-height); border-radius:7px; }
+  #bibliotheque-app #elp-add-book .ep-switch-track {
+    position:relative; inline-size:38px; block-size:20px; border:1px solid var(--ep-menu-line); border-radius:11px;
+    background:var(--ep-menu-surface); color:var(--ep-menu-accent);
+  }
+  #bibliotheque-app #elp-add-book .ep-switch-track::before {
+    content:""; position:absolute; inset-block-start:2px; inset-inline-start:2px;
+    inline-size:14px; block-size:14px; border-radius:50%; background:currentColor;
+  }
+  #bibliotheque-app #elp-add-book .ep-favorite-switch input:checked + .ep-switch-target .ep-switch-track {
+    border-color:var(--ep-menu-accent); background:var(--ep-menu-accent); color:var(--ep-menu-surface);
+  }
+  #bibliotheque-app #elp-add-book .ep-favorite-switch input:checked + .ep-switch-target .ep-switch-track::before { inset-inline-start:20px; }
+  #bibliotheque-app #elp-add-book .ep-favorite-switch input:focus-visible + .ep-switch-target {
+    outline:2px solid var(--ep-menu-accent); outline-offset:-3px;
+  }
+  #bibliotheque-app #elp-add-book .ep-rating-controls {
+    position:relative; display:grid; grid-template-columns:minmax(30px,1fr) minmax(0,5fr) minmax(30px,1fr); align-items:center;
+    inline-size:min(100%,340px); justify-self:center;
+  }
+  #bibliotheque-app #elp-add-book .ep-rating-step {
+    display:grid; place-items:center; min-inline-size:0; min-block-size:var(--ep-field-height); padding:0; border:0; border-radius:7px;
+    background:transparent; color:var(--ep-menu-accent); font:400 17px/1 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-rating-step span {
+    display:grid; place-items:center; inline-size:25px; block-size:25px;
+    border:1px solid var(--ep-menu-line); border-radius:7px; background:var(--ep-menu-surface);
+  }
+  #bibliotheque-app #elp-add-book .ep-rating-step:not([aria-disabled="true"]):hover span { background:var(--ep-menu-selected); }
+  #bibliotheque-app #elp-add-book .ep-rating-step[aria-disabled="true"] { color:var(--ep-muted); cursor:default; }
+  #bibliotheque-app #elp-add-book .ep-rating-step[aria-disabled="true"] span { opacity:.55; }
+  #bibliotheque-app #elp-add-book .ep-rating-stars { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); min-inline-size:0; }
+  #bibliotheque-app #elp-add-book .ep-rating-star {
+    display:grid; place-items:center; min-inline-size:0; min-block-size:var(--ep-field-height); padding:0; border:0;
+    border-radius:7px; background:transparent; color:var(--ep-menu-accent);
+  }
+  #bibliotheque-app #elp-add-book :is(.ep-rating-step,.ep-rating-star):focus-visible { outline:2px solid currentColor; outline-offset:-3px; }
+  #bibliotheque-app #elp-add-book .ep-rating-glyph {
+    display:block; inline-size:min(100%,clamp(19px,4.2cqi,32px)); aspect-ratio:1; pointer-events:none;
+    background:currentColor;
+    -webkit-mask:var(--ep-star-image) center / contain no-repeat;
+    mask:var(--ep-star-image) center / contain no-repeat;
+  }
+  #bibliotheque-app #elp-add-book .ep-rating-star[data-fill="empty"] { --ep-star-image:url("./art/add-book/star-light-empty.png"); }
+  #bibliotheque-app #elp-add-book .ep-rating-star[data-fill="half"] { --ep-star-image:url("./art/add-book/star-light-half.png"); }
+  #bibliotheque-app #elp-add-book .ep-rating-star[data-fill="full"] { --ep-star-image:url("./art/add-book/star-light-full.png"); }
+  #bibliotheque-app #elp-add-book .ep-reading-field input {
+    inline-size:100%; min-inline-size:0; min-block-size:var(--ep-field-height); padding:7px 9px; border:1px solid var(--ep-menu-line);
+    border-radius:8px; background:var(--ep-menu-surface); color:var(--ep-menu-text);
+    font:400 16px/1.2 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:center;
+  }
+  #bibliotheque-app #elp-add-book [data-theme="light"] .ep-reading-field input { color-scheme:light; }
+  #bibliotheque-app #elp-add-book [data-theme="dark"] .ep-reading-field input { color-scheme:dark; }
+  #bibliotheque-app #elp-add-book .ep-book-reading { color:var(--ep-muted); font-size:13px; }
+  #bibliotheque-app #elp-add-book .ep-folder-zone { margin-block-start:var(--ep-section-gap); }
+  #bibliotheque-app #elp-add-book .ep-folder-zone .ep-summary-heading { margin-block-start:0; }
+  #bibliotheque-app #elp-add-book .ep-field-label { color:var(--ep-muted); font-size:var(--ep-label-size); }
+  #bibliotheque-app #elp-add-book .ep-folder-disclosure {
+    display:grid; grid-template-columns:18px minmax(0,1fr) 16px; align-items:center; gap:8px;
+    inline-size:100%; min-block-size:46px; padding:6px 10px; border:0; border-radius:8px;
+    background:var(--ep-pressed); color:var(--ep-title); text-align:start;
+    font:400 16px/1.25 "Source Sans 3 Formulaire",Arial,sans-serif; overflow-wrap:anywhere;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-disclosure[aria-expanded="true"] {
+    border-end-start-radius:0; border-end-end-radius:0;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-disclosure[aria-expanded="true"] > svg:last-child {
+    transform:rotate(180deg);
+  }
+  #bibliotheque-app #elp-add-book :is(.ep-folder-disclosure,.ep-folder-add) > svg {
+    inline-size:17px; block-size:17px; color:var(--ep-accent); stroke-width:1.5;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-panel {
+    padding:8px; border:1px solid var(--ep-line); border-block-start:0;
+    border-radius:0 0 8px 8px; background:var(--ep-card);
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-parent { justify-content:flex-start; margin-block-end:6px; }
+  #bibliotheque-app #elp-add-book .ep-folder-choose { margin-block-start:8px; }
+  #bibliotheque-app #elp-add-book :is(.ep-folder-add,.ep-folder-remove) {
+    min-block-size:44px; padding:5px 2px; border:0; background:transparent; color:var(--ep-accent);
+    font:400 15px/1.2 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-add {
+    display:flex; align-items:center; justify-content:center; gap:6px; inline-size:100%;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-remove {
+    display:block; margin-inline-start:auto; text-decoration:underline; text-underline-offset:3px;
+  }
+  #bibliotheque-app .book-folder-origin {
+    color:var(--accent); font:400 12px/1.15 "Source Sans 3 Formulaire",Arial,sans-serif;
+    text-align:center; overflow-wrap:anywhere;
+  }
+  #bibliotheque-app #elp-add-book .ep-picker { position:relative; min-inline-size:0; }
+  #bibliotheque-app #elp-add-book .ep-picker-trigger {
+    position:relative; display:grid; grid-template-columns:minmax(0,1fr); place-items:center;
+    inline-size:100%; min-inline-size:0; min-block-size:var(--ep-field-height); padding:7px 18px; border:1px solid var(--ep-menu-line);
+    border-radius:8px; background:var(--ep-menu-surface); color:var(--ep-menu-text);
+    font:400 16px/1.2 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:center; overflow-wrap:anywhere;
+  }
+  #bibliotheque-app #elp-add-book .ep-picker-trigger[aria-expanded="true"] { border-color:var(--ep-menu-accent); }
+  #bibliotheque-app #elp-add-book .ep-progress-row .ep-picker-trigger {
+    block-size:100%; padding-inline:16px; border-radius:999px; border-color:var(--ep-line);
+    background:var(--ep-menu-selected); color:var(--ep-title);
+  }
+  #bibliotheque-app #elp-add-book .ep-progress-row .ep-picker-trigger[aria-expanded="true"] { border-color:var(--ep-menu-accent); }
+  #bibliotheque-app #elp-add-book .ep-progress-row .ep-picker-chevron { inset-inline-end:7px; }
+  #bibliotheque-app #elp-add-book .ep-progress-row input[data-progress] {
+    border-color:var(--ep-line); border-radius:7px; background:transparent; appearance:textfield;
+  }
+  #bibliotheque-app #elp-add-book input[data-progress]::-webkit-inner-spin-button,
+  #bibliotheque-app #elp-add-book input[data-progress]::-webkit-outer-spin-button { appearance:none; margin:0; }
+  #bibliotheque-app #elp-add-book .ep-picker-chevron {
+    position:absolute; inset-inline-end:9px; inset-block-start:50%; inline-size:7px; block-size:7px;
+    border:solid var(--ep-menu-accent); border-width:0 1px 1px 0; transform:translateY(-65%) rotate(45deg);
+  }
+  #bibliotheque-app #elp-add-book .ep-picker-trigger[aria-expanded="true"] .ep-picker-chevron { transform:translateY(-35%) rotate(225deg); }
+  #bibliotheque-app #elp-add-book .ep-picker-list {
+    position:absolute; z-index:5; inset-inline:0; inset-block-start:calc(100% + 3px);
+    display:grid; gap:2px; padding:4px; max-block-size:205px; overflow-y:auto; overscroll-behavior:contain;
+    border:1px solid var(--ep-menu-line); border-radius:8px; background:var(--ep-menu-surface);
+    box-shadow:0 3px 9px var(--ep-shadow);
+  }
+  #bibliotheque-app #elp-add-book .ep-picker-list[data-side="above"] { inset-block-start:auto; inset-block-end:calc(100% + 3px); }
+  #bibliotheque-app #elp-add-book .ep-reading-field.ep-date-field { grid-template-columns:minmax(59px,.75fr) minmax(0,2.5fr); }
+  #bibliotheque-app #elp-add-book .ep-date-parts {
+    display:grid; grid-template-columns:minmax(46px,.85fr) minmax(0,1.65fr) minmax(58px,1fr); gap:4px;
+    min-inline-size:0;
+  }
+  #bibliotheque-app #elp-add-book .ep-date-parts .ep-picker-trigger { padding-inline:9px; font-size:max(16px,var(--ep-label-size)); }
+  #bibliotheque-app #elp-add-book .ep-date-parts .ep-picker-chevron { inline-size:5px; block-size:5px; inset-inline-end:3px; }
+  #bibliotheque-app #elp-add-book .ep-date-parts .ep-picker-list { min-inline-size:max(100%,105px); }
+  #bibliotheque-app #elp-add-book .ep-date-parts .ep-picker:last-child .ep-picker-list { inset-inline-start:auto; }
+  #bibliotheque-app #elp-add-book .ep-date-feedback { grid-column:1 / -1; color:var(--ep-muted); font-size:13px; }
+  #bibliotheque-app #elp-add-book .ep-picker-option {
+    position:relative; display:grid; place-items:center; min-block-size:44px; padding:5px 15px;
+    border:0; border-radius:5px; background:transparent; color:var(--ep-menu-text);
+    font:400 14px/1.22 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:center; overflow-wrap:anywhere;
+  }
+  #bibliotheque-app #elp-add-book .ep-picker-option:hover, #bibliotheque-app #elp-add-book .ep-picker-option[aria-pressed="true"] { background:var(--ep-menu-selected); }
+  #bibliotheque-app #elp-add-book .ep-picker-option[aria-pressed="true"] { font-weight:500; }
+  #bibliotheque-app #elp-add-book .ep-picker-option[aria-pressed="true"]::after {
+    content:""; position:absolute; inset-inline-end:5px; inset-block-start:50%; inline-size:6px; block-size:11px;
+    border:solid var(--ep-menu-accent); border-width:0 1.5px 1.5px 0; transform:translateY(-60%) rotate(45deg);
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog {
+    inline-size:min(330px,calc(100% - 24px)); max-inline-size:none; max-block-size:calc(100% - 24px);
+    margin:auto; padding:0; border:1px solid var(--ep-line); border-radius:12px;
+    background:var(--ep-card); color:var(--text); box-shadow:0 2px 8px var(--ep-shadow);
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog::backdrop { background:var(--ep-shadow); }
+  #bibliotheque-app #elp-add-book .ep-folder-create { display:grid; gap:10px; padding:10px; font:400 14px/1.35 "Source Sans 3 Formulaire",Arial,sans-serif; }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog-header { display:flex; align-items:center; gap:7px; }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog-header svg { flex:none; color:var(--ep-accent); }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog-header h2 { flex:1; min-inline-size:0; margin:0; color:var(--ep-title); font:400 20px/1.05 "Instrument Serif Formulaire",Georgia,serif; }
+  #bibliotheque-app #elp-add-book .ep-folder-dialog-header .ep-icon-button { flex:0 0 44px; }
+  #bibliotheque-app #elp-add-book .ep-folder-create label { display:grid; gap:5px; color:var(--ep-title); }
+  #bibliotheque-app #elp-add-book .ep-folder-create input {
+    inline-size:100%; min-inline-size:0; min-block-size:44px; padding:7px 10px; border:1px solid var(--ep-line); border-radius:8px;
+    background:var(--ep-panel); color:var(--ep-title); font:400 16px/1.2 "Source Sans 3 Formulaire",Arial,sans-serif; text-align:center;
+  }
+  #bibliotheque-app #elp-add-book .ep-folder-create input::placeholder { color:var(--ep-muted); opacity:1; }
+  #bibliotheque-app #elp-add-book .ep-folder-create input[aria-invalid="true"] { border-color:var(--ep-accent); }
+  #bibliotheque-app #elp-add-book .ep-confirm-zone { margin-block-start:var(--ep-section-gap); }
+  #bibliotheque-app #elp-add-book .ep-confirm-zone .ep-access-primary {
+    min-block-size:var(--ep-field-height); font-size:max(16px,var(--ep-label-size));
+  }
+  @container (max-width:280px) {
+    #bibliotheque-app #elp-add-book :is(.ep-reading-field,.ep-reading-field.ep-date-field) { grid-template-columns:1fr; }
+  }
+  @container (min-width:460px) {
+    #bibliotheque-app #elp-add-book .ep-finished-evaluation { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+
+  #bibliotheque-app #elp-add-book .ep-drop:hover, #bibliotheque-app #elp-add-book .ep-drop[data-dragging="true"] { background:var(--ep-pressed); }
+  #bibliotheque-app #elp-add-book .ep-drop:focus-within { outline:2px solid var(--ep-accent); outline-offset:-3px; }
+  #bibliotheque-app #elp-add-book .ep-drop svg { width:23px; height:23px; color:var(--ep-accent); stroke-width:1.5; }
+  #bibliotheque-app #elp-add-book .ep-drop-detail, #bibliotheque-app #elp-add-book .ep-drop-drag { color:var(--ep-muted); font-size:13px; font-weight:400; }
+  #bibliotheque-app #elp-add-book .ep-drop-drag { display:none; }
+
+  #bibliotheque-app #elp-add-book .ep-drop {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    min-block-size:96px; padding:8px; border:1px dashed var(--ep-accent); border-radius:9px;
+    background:var(--ep-panel); color:var(--ep-title); text-align:center; font:500 15px/1.18 "Source Sans 3 Formulaire",Arial,sans-serif;
+  }
+  @media(any-pointer:fine) and (min-width:680px) {
+    #bibliotheque-app #elp-add-book .ep-drop-drag { display:inline; }
+    #bibliotheque-app #elp-add-book .ep-drop-detail { display:none; }
+  }
+  #app-lecture #bibliotheque-app[data-adding-book] > .library { display:none; }
+  html:has(#bibliotheque-app[data-adding-book]) { scrollbar-gutter:auto; }
+  #bibliotheque-app #elp-add-book .sr-only {
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
+    clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+  #bibliotheque-app #elp-add-book .ep-cover:has(img:not([hidden])) { display:block; padding:0; }
+  #bibliotheque-app #elp-add-book .ep-cover:has(img:not([hidden]))::before { display:none; }
+  #bibliotheque-app #elp-add-book .ep-cover img { display:block; width:100%; height:100%; object-fit:contain; border-radius:inherit; }
+  #bibliotheque-app #elp-add-book .ep-import-recovery { margin-block-start:8px; color:var(--ep-muted); font-size:14px; }
+  #bibliotheque-app #elp-add-book .ep-import-recovery label { display:grid; margin-block-start:7px; gap:3px; }
+  #bibliotheque-app #elp-add-book .ep-import-recovery input { min-width:0; max-width:100%; text-align:center; }
+  #bibliotheque-app #elp-add-book .ep-import-recovery input[type="text"],
+  #bibliotheque-app #elp-add-book .ep-import-recovery input::file-selector-button {
+    border:1px solid var(--ep-line); border-radius:8px; padding:7px; background:var(--ep-card); color:var(--ep-title); font:inherit;
+  }
+  #bibliotheque-app #elp-add-book .ep-cover-modes { display:flex; flex-wrap:wrap; gap:4px; }
+  #bibliotheque-app #elp-add-book .ep-cover-modes [aria-pressed="true"] { background:var(--ep-pressed); }
+  #bibliotheque-app #elp-add-book .ep-scan-dialog video { display:block; width:100%; max-height:55vh; border-radius:8px; }
+  #bibliotheque-app #elp-add-book .ep-scan-dialog label { display:grid; align-items:center; justify-items:center; }
+  #bibliotheque-app #elp-add-book .ep-access:disabled { opacity:.65; }
+  #bibliotheque-app #elp-add-book .ep-art-closed,
+  #bibliotheque-app #elp-add-book .ep-art-reader { pointer-events:none; }
+
+/* Dimensions des deux étapes sur téléphone et tablette. */
+#bibliotheque-app #elp-add-book .ep-form {
+  --space-x:clamp(17px,5vw,68px);
+  --title-size:clamp(33px,6.4vw,59px);
+  --touch:clamp(46px,6.8vw,64px);
+  padding:max(clamp(24px,5vw,64px),env(safe-area-inset-top)) max(var(--space-x),env(safe-area-inset-right)) max(36px,env(safe-area-inset-bottom)) max(var(--space-x),env(safe-area-inset-left));
+  width:100%; max-width:none;
+}
+#bibliotheque-app #elp-add-book[data-step="next"] .ep-form {--ep-page-gutter:var(--space-x);--ep-nav-target:var(--touch)}
+#bibliotheque-app #elp-add-book .ep-header {grid-template-columns:minmax(0,1fr) var(--touch)}
+#bibliotheque-app #elp-add-book .ep-title {gap:clamp(9px,2.2vw,21px)}
+#bibliotheque-app #elp-add-book .ep-title h2,
+#bibliotheque-app #elp-add-book[data-step="next"] .ep-title h2 {font-size:var(--title-size);line-height:1.1}
+#bibliotheque-app #elp-add-book .ep-art-open,
+#bibliotheque-app #elp-add-book[data-step="next"] .ep-art-open {width:clamp(42px,8.8vw,83px);height:clamp(42px,8vw,76px)}
+#bibliotheque-app #elp-add-book .ep-icon-button {width:var(--touch);height:var(--touch)}
+#bibliotheque-app #elp-add-book .ep-question {font-size:clamp(20px,3.6vw,31px);line-height:1.4;margin:clamp(27px,5vw,60px) 0 clamp(17px,3.1vw,30px)}
+#bibliotheque-app #elp-add-book .ep-choices {gap:clamp(10px,1.8vw,19px)}
+#bibliotheque-app #elp-add-book .ep-card {gap:clamp(15px,3.5vw,36px);min-height:clamp(87px,15.3vw,154px);padding:clamp(13px,2.7vw,28px) clamp(15px,3.8vw,42px)}
+#bibliotheque-app #elp-add-book .ep-card .ep-art {width:clamp(42px,8vw,82px);height:clamp(42px,8vw,82px)}
+#bibliotheque-app #elp-add-book .ep-card-copy {gap:clamp(5px,1vw,9px)}
+#bibliotheque-app #elp-add-book .ep-card-title {font-size:clamp(28px,4.8vw,43px)}
+#bibliotheque-app #elp-add-book .ep-card-detail {font-size:clamp(15px,2.3vw,21px);line-height:1.35}
+#bibliotheque-app #elp-add-book :is(.ep-digital,.ep-paper) {margin-top:clamp(26px,5vw,54px);padding-top:clamp(23px,4.2vw,46px)}
+#bibliotheque-app #elp-add-book :is(.ep-digital,.ep-paper) h3 {font-size:clamp(27px,4.2vw,39px);margin-bottom:clamp(16px,2.8vw,30px)}
+#bibliotheque-app #elp-add-book .ep-drop {min-height:clamp(144px,22vw,225px);gap:8px;font-size:clamp(17px,2.6vw,23px)}
+#bibliotheque-app #elp-add-book .ep-drop svg {width:clamp(26px,4vw,40px);height:clamp(26px,4vw,40px)}
+#bibliotheque-app #elp-add-book :is(.ep-drop-detail,.ep-drop-drag) {font-size:clamp(14px,2vw,18px)}
+#bibliotheque-app #elp-add-book .ep-paper-search {grid-template-columns:minmax(0,1fr) var(--touch);gap:clamp(9px,1.8vw,18px)}
+#bibliotheque-app #elp-add-book :is(.ep-search-field,.ep-scan,.ep-access-primary) {min-height:var(--touch)}
+#bibliotheque-app #elp-add-book .ep-results {gap:clamp(12px,3.8vw,38px);margin-top:clamp(14px,3vw,32px)}
+#bibliotheque-app #elp-add-book .ep-result .ep-cover {width:min(96%,clamp(120px,30vw,250px))}
+#bibliotheque-app #elp-add-book .ep-result .ep-book-name {font-size:clamp(23px,3.8vw,34px)}
+#bibliotheque-app #elp-add-book .ep-result .ep-book-author {font-size:clamp(15px,2.2vw,20px)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-snapshot {grid-template-columns:min(34%,245px) minmax(0,1fr);align-items:center;gap:clamp(18px,4vw,48px)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-name {font-size:clamp(29px,5vw,52px)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-author {font-size:clamp(16px,2.6vw,23px)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-access-primary {margin-top:clamp(20px,4vw,38px);font-size:clamp(16px,2.4vw,22px)}
+#bibliotheque-app #elp-add-book .ep-summary-heading#ep-summary-heading {font-family:"Baskervville Formulaire",Georgia,serif;font-size:14px;color:var(--ep-summary-text)}
+@media(max-width:355px) {
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-title h2 {font-size:28px}
+}
+
+#bibliotheque-app #elp-add-book .ep-icon-button.ep-close {
+  border:1px solid var(--ep-line);
+  border-radius:50%;
+  background:var(--ep-card);
+}
+#bibliotheque-app #elp-add-book .ep-close:hover { background:var(--ep-pressed); }
+#bibliotheque-app #elp-add-book .ep-tablet-decoration {display:none;}
+@media (min-width:650px) and (min-height:500px) {
+  #bibliotheque-app #elp-add-book .ep-header,
+  #bibliotheque-app #elp-add-book[data-step="next"] .ep-header {
+    grid-template-columns:var(--touch) minmax(0,1fr) var(--touch);
+  }
+  #bibliotheque-app #elp-add-book .ep-back {grid-column:1;grid-row:1}
+  #bibliotheque-app #elp-add-book .ep-title {grid-column:2;grid-row:1;justify-content:center;text-align:center}
+  #bibliotheque-app #elp-add-book .ep-close {grid-column:3;grid-row:1;justify-self:end}
+  #bibliotheque-app #elp-add-book .ep-title .ep-art-open {display:none}
+  #bibliotheque-app #elp-add-book .ep-tablet-decoration {
+    display:block;inline-size:clamp(150px,23vw,220px);margin:8px auto 0;
+  }
+  #bibliotheque-app #elp-add-book .ep-question {font-size:clamp(19px,3.2vw,28px)}
+}

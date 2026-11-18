@@ -1,0 +1,765 @@
+@import url("https://fonts.googleapis.com/css2?family=Italianno&display=swap");
+
+@font-face {
+  font-family: "ELP Italianno";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/italianno-catalogue.woff2") format("woff2");
+  unicode-range: U+0054;
+}
+
+@font-face {
+  font-family: "ELP Italianno";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/italianno-initial-m.ttf") format("truetype");
+  unicode-range: U+004D;
+}
+
+#bibliotheque-app :is(.elp-books, [data-library-search-results]) {
+  --elp-surface: light-dark(#faf3ef, #2b242b);
+  --elp-tint: light-dark(#eadbd8, #3b303f);
+  --elp-line: light-dark(#d9c0bd, #584459);
+  --elp-ink: light-dark(#471e30, #e4c6df);
+  --elp-muted: light-dark(#6e5258, #c0a8be);
+  --elp-accent: light-dark(#784b5b, #d5bedc);
+  --elp-heading: "Cormorant Garamond", Georgia, serif;
+  --elp-serif: Baskervville, Georgia, serif;
+}
+#bibliotheque-app .elp-books { margin-block-end: max(24px, env(safe-area-inset-bottom)); }
+#bibliotheque-app[data-catalogue-open] .library-main { max-inline-size: 730px; }
+#bibliotheque-app .elp-books h1,
+#bibliotheque-app .elp-books p { margin: 0; }
+#bibliotheque-app .elp-books :is(i, svg)[data-lucide],
+#bibliotheque-app .library-scroll-top svg { inline-size: 16px; block-size: 16px; stroke-width: 1.55; }
+#bibliotheque-app .elp-books .elp-page-heading p { margin-block-start: 5px; }
+#bibliotheque-app .elp-books .catalogue-empty {
+  padding: 16px 0;
+  text-align: center;
+  color: var(--elp-muted);
+}
+#bibliotheque-app .elp-cover-placeholder {
+  background: linear-gradient(155deg, var(--elp-surface), var(--elp-tint));
+}
+#bibliotheque-app .elp-cover-placeholder svg[data-lucide] { inline-size: 22px; block-size: 22px; }
+#bibliotheque-app [data-save-catalogue-filter] { margin-block-start: 10px; }
+#bibliotheque-app .catalogue-favorite-filter {
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+  gap: 8px;
+  color: var(--title);
+}
+#bibliotheque-app .catalogue-favorite-filter input { accent-color: var(--accent); }
+
+#bibliotheque-app .elp-page-heading { margin-block: 20px 15px; text-align: center; }
+#bibliotheque-app .elp-page-heading h1 {
+  color: var(--elp-ink);
+  font: 400 clamp(33px, 10.5cqi, 48px)/.99 var(--elp-heading);
+  letter-spacing: -.026em;
+  overflow-wrap: anywhere;
+}
+#bibliotheque-app .elp-page-heading .elp-signed-heading {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  justify-content: center;
+  min-block-size: clamp(69px, 20cqi, 103px);
+  font-size: clamp(32px, 10.5cqi, 51px);
+}
+#bibliotheque-app .elp-script {
+  display: block;
+  color: var(--elp-ink);
+  font: 400 clamp(64px, 19cqi, 96px)/.86 "ELP Italianno", cursive;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+#bibliotheque-app .elp-heading-rest {
+  display: block;
+  padding-inline-end: 1px;
+  white-space: nowrap;
+}
+#bibliotheque-app .elp-signed-heading .elp-script {
+  margin-inline-end: -1px;
+  margin-block-end: -2px;
+}
+#bibliotheque-app .elp-page-heading p { margin-block-start: 5px; color: var(--elp-muted); font-size: 13px; }
+#bibliotheque-app .elp-book-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#bibliotheque-app .elp-book-count::before,
+#bibliotheque-app .elp-book-count::after {
+  content: "";
+  inline-size: clamp(16px, 8cqi, 36px);
+  block-size: 1px;
+  background: var(--elp-line);
+}
+#bibliotheque-app .elp-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+  padding-inline: 11px 6px;
+  border: 1px solid var(--elp-line);
+  border-radius: 22px;
+  color: var(--elp-accent);
+}
+#bibliotheque-app .elp-search input {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 42px;
+  padding: 0 4px 0 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--elp-ink);
+  font-size: 16px;
+}
+#bibliotheque-app .elp-search input::placeholder { color: var(--elp-muted); opacity: 1; }
+#bibliotheque-app [data-catalogue-books] { position: relative; margin-block-start: 15px; }
+#bibliotheque-app .elp-mosaic {
+  --elp-columns: 3;
+  display: grid;
+  grid-template-columns: repeat(var(--elp-columns), minmax(0,1fr));
+  align-items: start;
+  gap: 17px clamp(8px, 3.2cqi, 18px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#bibliotheque-app[data-format="tablet"] .elp-mosaic { --elp-columns: 4; }
+#bibliotheque-app .elp-mosaic > li { min-inline-size: 0; }
+#bibliotheque-app :is(.elp-books, [data-library-search-results]) .elp-book-main {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: center;
+}
+#bibliotheque-app .elp-book-copy {
+  display: grid;
+  gap: 4px;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+#bibliotheque-app .elp-cover {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 2px 4px 4px 2px;
+  background: var(--elp-tint);
+  color: var(--elp-accent);
+  object-fit: cover;
+  box-shadow: 0 2px 5px rgb(47 27 39 / .19);
+}
+#bibliotheque-app .elp-book-main:hover .elp-cover { box-shadow: 0 2px 8px rgb(47 27 39 / .28); }
+#bibliotheque-app .elp-title {
+  color: light-dark(#471e30, #e4c6df);
+  font: 400 clamp(16px, 4.9cqi, 22px)/1.06 var(--elp-heading);
+  overflow-wrap: anywhere;
+}
+#bibliotheque-app .elp-book-author,
+#bibliotheque-app .elp-book-meta {
+  overflow-wrap: anywhere;
+}
+#bibliotheque-app .elp-book-meta {
+  color: light-dark(#784b5b, #c0a8be);
+  font: 400 clamp(11px, 3.1cqi, 13px)/1.2 var(--elp-serif);
+}
+#bibliotheque-app .elp-book-author {
+  color: light-dark(#6e5258, #c0a8be);
+  font: italic 400 clamp(12px, 3.5cqi, 15px)/1.2 var(--elp-heading);
+}
+#bibliotheque-app .elp-folder-cover {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--elp-surface), var(--elp-tint));
+  box-shadow: inset 0 0 0 1px var(--elp-line);
+}
+#bibliotheque-app .elp-folder-cover .elp-cover {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  pointer-events: none;
+}
+#bibliotheque-app .elp-folder-cover .elp-folder-glyph {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  inset: auto 8% 8% auto;
+  min-inline-size: 31%;
+  min-block-size: 22%;
+  border: 1px solid var(--elp-line);
+  border-radius: 5px;
+  background: var(--elp-tint);
+  color: var(--elp-accent);
+}
+#bibliotheque-app .elp-folder-glyph :is(i, svg)[data-lucide] {
+  inline-size: min(20px, 80%);
+  block-size: 17px;
+}
+#bibliotheque-app .elp-folder-copy {
+  margin-block-start: 6px;
+  text-align: center;
+}
+#bibliotheque-app .elp-books .elp-saga-first {
+  position: relative;
+  justify-self: center;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: light-dark(#784b5b, #c0a8be);
+  font: 400 clamp(11px, 3.1cqi, 13px)/1.2 var(--elp-serif);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#bibliotheque-app .elp-saga-first::after {
+  content: "";
+  position: absolute;
+  inset: -6px -9px;
+}
+#bibliotheque-app .elp-leaving-tile { position: absolute; z-index: 1; pointer-events: none; list-style: none; }
+
+#bibliotheque-app .catalogue-book-actions {
+  display: grid;
+  gap: 8px;
+  max-inline-size: 330px;
+  padding: 10px;
+  margin: 12px 0 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+#bibliotheque-app .catalogue-book-actions label { display: grid; gap: 4px; }
+#bibliotheque-app .catalogue-book-actions :is(select, button) {
+  min-block-size: 44px;
+  color: var(--title);
+  background: var(--paper);
+}
+#bibliotheque-app .catalogue-book-actions select { font: inherit; border: 1px solid var(--rule); border-radius: 7px; padding-inline: 8px; }
+#bibliotheque-app .catalogue-book-actions [aria-pressed="true"] { background: var(--tint); }
+#bibliotheque-app .catalogue-book-actions svg { inline-size: 16px; block-size: 16px; vertical-align: middle; }
+
+#app-lecture #bibliotheque-app .library-scroll-top {
+  position: fixed;
+  inset-inline-end: max(13px, env(safe-area-inset-right));
+  inset-block-end: calc(76px + env(safe-area-inset-bottom));
+  z-index: 2;
+  inline-size: 44px;
+  block-size: 44px;
+  border-color: light-dark(#dac4c2, #685268);
+  color: light-dark(#784b5b, #d5bedc);
+  background: light-dark(#f7eeeb, #342a35);
+  box-shadow: 0 2px 7px light-dark(#52233316, #09050940);
+}
+#app-lecture #bibliotheque-app[data-catalogue-open] .library-scroll-top {
+  inset-block-end: calc(13px + env(safe-area-inset-bottom));
+}
+#app-lecture #bibliotheque-app .library-scroll-top:hover {
+  background: light-dark(#efdfdb, #46364a);
+}
+
+#bibliotheque-app .section-heading.catalogue-zone-heading {
+  margin-block-end: 8px;
+}
+#bibliotheque-app .section-heading.catalogue-zone-heading::before,
+#bibliotheque-app .section-heading.catalogue-zone-heading::after {
+  content: none;
+}
+#bibliotheque-app .catalogue-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+#bibliotheque-app .catalogue-section-toggle:hover {
+  color: var(--accent);
+}
+#bibliotheque-app .catalogue-filet {
+  flex: 0 1 clamp(22px, 20cqi, 124px);
+  block-size: 1px;
+  background: var(--surface-line, var(--rule));
+  transform-origin: right center;
+}
+#bibliotheque-app .catalogue-filet:last-child { transform-origin: left center; }
+#bibliotheque-app .catalogue-fold-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 450ms cubic-bezier(.25,.73,.26,1);
+}
+#bibliotheque-app .catalogue-fold-panel[data-collapsed] { grid-template-rows: 0fr; }
+#bibliotheque-app .catalogue-fold-clip {
+  min-block-size: 0;
+  overflow: hidden;
+  opacity: 1;
+  translate: none;
+  transition: opacity 360ms ease, translate 450ms cubic-bezier(.25,.73,.26,1);
+}
+#bibliotheque-app [data-collapsed] .catalogue-fold-clip { opacity: 0; translate: 0 -6px; }
+#bibliotheque-app [data-prepare-entrance] :is(.catalogue-fold-panel, .catalogue-fold-clip) {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #bibliotheque-app :is(.catalogue-fold-panel, .catalogue-fold-clip) { transition: none; }
+}
+#bibliotheque-app .catalogue-folder-section { margin-block-start: 16px; }
+#bibliotheque-app .catalogue-books-section { margin-block-start: 19px; }
+#bibliotheque-app [data-catalogue-books] { margin-block-start: 0; }
+
+#bibliotheque-app .elp-page-heading { margin-block-start: 10px; }
+#bibliotheque-app [data-category-catalogue] .elp-signed-heading {
+  grid-template-columns: auto minmax(0, max-content);
+}
+#bibliotheque-app [data-category-catalogue] .elp-heading-rest {
+  white-space: normal;
+  text-align: start;
+  text-wrap: balance;
+}
+#bibliotheque-app [data-category-catalogue] .elp-script { font-family: "ELP Italianno", Italianno, cursive; }
+#bibliotheque-app .catalogue-folder-dialog {
+  inline-size: min(330px, calc(100% - 24px));
+  max-inline-size: none;
+  max-block-size: calc(100% - 24px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+#bibliotheque-app .catalogue-folder-dialog::backdrop { background: rgb(66 36 53 / 22%); }
+#bibliotheque-app[data-theme="dark"] .catalogue-folder-dialog::backdrop { background: rgb(17 10 18 / 42%); }
+#bibliotheque-app .catalogue-folder-form {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  font: 400 14px/1.35 var(--body);
+}
+#bibliotheque-app .catalogue-folder-heading { display: flex; align-items: center; gap: 7px; }
+#bibliotheque-app .catalogue-folder-heading h2 { flex: 1; min-inline-size: 0; margin: 0; font: 400 20px/1.05 var(--section); }
+#bibliotheque-app .catalogue-folder-heading .catalogue-folder-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+}
+#bibliotheque-app .catalogue-folder-close:hover { background: var(--tint); }
+#bibliotheque-app .catalogue-folder-form label { display: grid; gap: 5px; color: var(--title); }
+#bibliotheque-app .catalogue-folder-form input {
+  min-inline-size: 0;
+  min-block-size: 44px;
+  inline-size: 100%;
+  padding: 7px 10px;
+  font: 400 16px/1.2 var(--body);
+  color: var(--title);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+}
+#bibliotheque-app .catalogue-folder-form input::placeholder { color: var(--muted); opacity: 1; }
+#bibliotheque-app .catalogue-folder-form input[aria-invalid="true"] { border-color: var(--accent); }
+#bibliotheque-app .catalogue-folder-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: -4px 0 0;
+  color: var(--text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+#bibliotheque-app .catalogue-folder-feedback[data-state=""],
+#bibliotheque-app .catalogue-folder-feedback[data-state="success"] { display: none; }
+#bibliotheque-app .catalogue-folder-feedback svg { display: block; inline-size: 15px; block-size: 15px; margin-block-start: 1px; }
+#bibliotheque-app .catalogue-folder-form .catalogue-folder-submit {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: light-dark(#784B5B, #D5BEDC);
+  color: light-dark(#FFF6F1, #291E2C);
+  text-align: center;
+}
+#bibliotheque-app .catalogue-folder-submit:enabled:hover { box-shadow: inset 0 0 0 1px currentColor; }
+#bibliotheque-app .catalogue-folder-submit:disabled { opacity: .65; }
+#bibliotheque-app .catalogue-folder-art > .art {
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: 100%;
+}
+#app-lecture #bibliotheque-app .folder-mask {
+  mask: var(--folder-art) center / contain no-repeat;
+}
+#app-lecture #bibliotheque-app .catalogue-collection-grid {
+  --genre-columns: 3;
+}
+#bibliotheque-app .folder-mask[data-artwork="sagas"] { --folder-art: url("./art/dossier-sagas.png"); }
+#bibliotheque-app .folder-mask[data-artwork="reread"] { --folder-art: url("./art/dossier-reread.png"); }
+#bibliotheque-app .folder-mask[data-artwork="favorites"] { --folder-art: url("./art/dossier-favorites.png"); }
+#bibliotheque-app .folder-mask[data-artwork="short"] { --folder-art: url("./art/dossier-short.png"); }
+#bibliotheque-app .folder-mask[data-artwork="new"] { --folder-art: url("./art/dossier-new.png"); }
+
+#app-lecture .eli-bibliotheque .sort-panel {
+  inset-inline-end: 0;
+}
+#app-lecture .eli-bibliotheque .organise-panel {
+  inline-size: min(230px, 100%);
+}
+#bibliotheque-app .organise-panel [data-organise-choice] {
+  gap: 8px;
+  min-block-size: 44px;
+}
+
+#app-lecture .eli-bibliotheque .toolbar .toolbar-action {
+  --toolbar-disc: color-mix(in srgb, var(--tint) 58%, var(--paper));
+  --toolbar-disc-border: color-mix(in srgb, var(--quiet-line) 70%, var(--paper));
+  border-color: transparent;
+  background: transparent;
+}
+#app-lecture .eli-bibliotheque .toolbar .toolbar-action:is(:hover, [aria-expanded="true"], .filter-active) {
+  --toolbar-disc: var(--tint);
+  --toolbar-disc-border: var(--quiet-line);
+}
+#app-lecture .eli-bibliotheque .toolbar .toolbar-action::before {
+  content: '';
+  grid-area: 1 / 1;
+  inline-size: 38px;
+  block-size: 38px;
+  border: 1px solid var(--toolbar-disc-border);
+  border-radius: 50%;
+  background: var(--toolbar-disc);
+}
+#app-lecture .eli-bibliotheque .toolbar .toolbar-action .navigation-icon {
+  grid-area: 1 / 1;
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+#app-lecture #bibliotheque-app .catalogue-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+#app-lecture #bibliotheque-app .catalogue-title-row h1 {
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+#app-lecture #bibliotheque-app [data-favorites-catalogue] .catalogue-title-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+#app-lecture #bibliotheque-app .catalogue-view-switch {
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  color: var(--accent);
+  border: 0;
+  background: transparent;
+}
+#app-lecture #bibliotheque-app .catalogue-view-switch-face {
+  display: grid;
+  place-items: center;
+  inline-size: 38px;
+  block-size: 38px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tint) 58%, var(--paper));
+}
+#app-lecture #bibliotheque-app .catalogue-view-switch:is(:hover, :active) .catalogue-view-switch-face {
+  background: var(--tint);
+}
+#app-lecture #bibliotheque-app .catalogue-view-switch-face > span {
+  display: grid;
+  place-items: center;
+}
+#app-lecture #bibliotheque-app .catalogue-view-switch-face svg {
+  inline-size: 16px;
+  block-size: 16px;
+  stroke-width: 1.65;
+}
+@container (max-width: 310px) {
+  #app-lecture #bibliotheque-app .catalogue-title-row h1 {
+    font-size: clamp(25px, 8.9cqi, 31px);
+  }
+  #app-lecture #bibliotheque-app .catalogue-title-row .elp-script {
+    font-size: clamp(50px, 17cqi, 63px);
+  }
+}
+
+#bibliotheque-app .elp-search:has([data-clear-catalogue-search]:not([hidden])) input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#app-lecture #bibliotheque-app .catalogue-clear-search {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  min-block-size: 40px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--elp-accent);
+}
+
+#app-lecture #bibliotheque-app [data-catalogue-view] .catalogue-view-switch {
+  perspective: 250px;
+}
+#app-lecture #bibliotheque-app [data-catalogue-view] .catalogue-view-switch-face {
+  inline-size: 42px;
+  block-size: 42px;
+  background: var(--tint);
+}
+#app-lecture #bibliotheque-app [data-catalogue-view] .catalogue-view-art svg { display: none; }
+#app-lecture #bibliotheque-app [data-catalogue-view] .catalogue-view-art,
+#app-lecture #bibliotheque-app .catalogue-saga-art {
+  display: block;
+  inline-size: 27px;
+  block-size: 27px;
+  background: var(--elp-accent);
+  mask: url('./art/catalogue-illustrations.png') var(--catalogue-art-position) / 292% no-repeat;
+}
+#bibliotheque-app .catalogue-view-art[data-view-destination="collections"] { --catalogue-art-position: 12% 13%; }
+#bibliotheque-app .catalogue-view-art[data-view-destination="books"] { --catalogue-art-position: 88% 13%; }
+#bibliotheque-app .catalogue-view-art[data-view-destination="overview"] { --catalogue-art-position: 12% 88%; }
+#bibliotheque-app .catalogue-saga-art { --catalogue-art-position: 88% 88%; }
+#app-lecture #bibliotheque-app [data-catalogue-view] .elp-folder-glyph {
+  inline-size: 38px;
+  block-size: 38px;
+  border-radius: 9px;
+}
+#app-lecture #bibliotheque-app .catalogue-saga-art {
+  inline-size: 29px;
+  block-size: 29px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  #bibliotheque-app [data-catalogue-view] .catalogue-view-switch:not([data-turning]) .catalogue-view-switch-face {
+    animation: ep-note-rock 5.6s ease-in-out infinite;
+  }
+}
+#bibliotheque-app[data-auto-motion-paused] [data-catalogue-view] .catalogue-view-switch-face {
+  animation-play-state: paused;
+}
+
+#bibliotheque-app .catalogue-illustrated-empty { padding-block-start: 17px; }
+#bibliotheque-app [data-catalogue-panel="books"]:has(.library-search-empty:not([hidden])) > .catalogue-zone-heading {
+  display: none;
+}
+#bibliotheque-app [data-catalogue-list] .catalogue-illustrated-empty .library-empty-art {
+  inline-size: 89px;
+  block-size: 84px;
+}
+
+#app-lecture #bibliotheque-app .catalogue-favorites-empty {
+  margin-block-start: 14px;
+  padding-block: 11px 15px;
+}
+#bibliotheque-app .catalogue-favorites-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  inline-size: min(85%, 225px);
+}
+#bibliotheque-app .catalogue-favorites-illustration::before,
+#bibliotheque-app .catalogue-favorites-illustration::after {
+  content: '';
+  flex: 0 1 35px;
+  block-size: 1px;
+  background: var(--elp-line);
+}
+#bibliotheque-app .catalogue-favorites-illustration span {
+  display: block;
+  flex: 0 1 137px;
+  block-size: 75px;
+  background: var(--elp-accent);
+  mask: url('./art/livre-et-coeur.png') center / contain no-repeat;
+}
+#app-lecture #bibliotheque-app .catalogue-favorites-browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-block-size: 44px;
+  padding: 4px 11px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--elp-accent);
+  background: transparent;
+  font: 400 15px/1.2 Baskervville, Georgia, serif;
+}
+#bibliotheque-app .catalogue-favorites-browse svg { inline-size: 15px; block-size: 15px; }
+
+#app-lecture #bibliotheque-app .catalogue-favorite-filter {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-block-size: 44px;
+  gap: 7px;
+  padding: 4px 8px;
+  color: var(--read-cacao);
+}
+#bibliotheque-app .catalogue-favorite-filter input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+#bibliotheque-app .catalogue-favorite-track {
+  position: relative;
+  flex: 0 0 43px;
+  block-size: 24px;
+  border: 1px solid var(--read-line);
+  border-radius: 16px;
+  background: var(--read-surface);
+}
+#bibliotheque-app .catalogue-favorite-track::after {
+  content: '';
+  position: absolute;
+  inset: 3px auto auto 3px;
+  inline-size: 16px;
+  block-size: 16px;
+  border-radius: 50%;
+  background: var(--read-rose);
+  transition: transform .18s ease;
+}
+#bibliotheque-app .catalogue-favorite-filter input:focus-visible ~ .catalogue-favorite-track {
+  outline: 2px solid var(--read-rose);
+  outline-offset: 2px;
+}
+#bibliotheque-app .catalogue-favorite-filter input:checked ~ .catalogue-favorite-track {
+  background: var(--read-rose);
+  border-color: var(--read-rose);
+}
+#bibliotheque-app .catalogue-favorite-filter input:checked ~ .catalogue-favorite-track::after {
+  background: var(--read-surface);
+  transform: translateX(19px);
+}
+@media (prefers-reduced-motion: reduce) {
+  #bibliotheque-app .catalogue-favorite-track::after { transition: none; }
+}
+
+#bibliotheque-app [data-folder-form] { display: grid; gap: 8px; }
+#bibliotheque-app .catalogue-folder-drawing {
+  display: block;
+  flex: 0 0 58px;
+  block-size: 45px;
+  background: var(--accent);
+  mask: url('./art/creation-dossier.webp') center / contain no-repeat;
+}
+#bibliotheque-app .catalogue-folder-created {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: var(--tint);
+  color: var(--title);
+}
+#bibliotheque-app .catalogue-folder-created[hidden] { display: none; }
+#bibliotheque-app .catalogue-folder-created-mark {
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent);
+}
+#bibliotheque-app .catalogue-folder-created-mark svg { inline-size: 17px; block-size: 17px; stroke-width: 1.6; }
+#bibliotheque-app .catalogue-folder-created-copy { display: grid; gap: 2px; overflow-wrap: anywhere; }
+#bibliotheque-app .catalogue-folder-created-copy strong { font: 400 18px/1.12 var(--section); }
+#bibliotheque-app .catalogue-folder-created-copy > span { color: var(--accent); font: 400 14px/1.35 var(--body); }
+#bibliotheque-app #elp-add-book .catalogue-folder-created { margin-block-end: 8px; }
+#bibliotheque-app .catalogue-folder-name-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 6px;
+}
+#bibliotheque-app .catalogue-folder-index-button {
+  display: flex; align-items: center; gap: 5px; min-block-size: 44px; padding: 4px 8px;
+  border: 0; border-radius: 8px; background: var(--tint); color: var(--title); font: inherit;
+}
+#bibliotheque-app .catalogue-folder-index-button svg { inline-size: 15px; block-size: 15px; }
+#bibliotheque-app .catalogue-folder-destination {
+  display: grid; grid-template-columns: 17px minmax(0, 1fr) 16px; align-items: center; gap: 8px;
+  min-block-size: 48px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--paper); color: var(--title); text-align: start; font: inherit;
+}
+#bibliotheque-app .catalogue-folder-destination > span { display: grid; min-inline-size: 0; overflow-wrap: anywhere; }
+#bibliotheque-app .catalogue-folder-destination small { color: var(--accent); font-size: 12px; }
+#bibliotheque-app .catalogue-folder-destination svg { inline-size: 16px; block-size: 16px; color: var(--accent); }
+#bibliotheque-app .catalogue-folder-index-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 3px; margin-block-end: 9px;
+  border-radius: 10px; background: var(--paper);
+}
+#bibliotheque-app .catalogue-folder-index-tabs button {
+  min-inline-size: 0; min-block-size: 44px; padding: 5px; border: 1px solid transparent; border-radius: 8px;
+  color: var(--title); background: transparent; font: 400 18px/1.12 var(--section);
+}
+#bibliotheque-app .catalogue-folder-index-tabs button[aria-pressed="true"] { background: var(--tint); border-color: var(--rule); }
+#bibliotheque-app .catalogue-folder-index-search { position: relative; }
+#bibliotheque-app .catalogue-folder-index-search svg {
+  position: absolute; inset: 15px auto auto 10px; inline-size: 15px; block-size: 15px; color: var(--accent); pointer-events: none;
+}
+#bibliotheque-app .catalogue-folder-index-search input { padding-inline-start: 33px; }
+#bibliotheque-app .catalogue-folder-parent-picker { display: grid; gap: 4px; margin-block-start: 7px; }
+#bibliotheque-app .catalogue-folder-parent-picker > span { color: var(--title); font-size: 13px; }
+#bibliotheque-app .catalogue-folder-parent-trigger, #bibliotheque-app .catalogue-folder-parent-option {
+  display: grid; grid-template-columns: minmax(0, 1fr) 28px; align-items: center; gap: 6px;
+  min-block-size: 44px; padding: 4px 6px 4px 11px; border: 0; border-radius: 8px;
+  background: var(--tint); color: var(--title); text-align: start; font: 400 15px/1.2 var(--elp-serif); overflow-wrap: anywhere;
+}
+#bibliotheque-app .catalogue-folder-parent-trigger svg { justify-self: center; }
+#bibliotheque-app .catalogue-folder-parent-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+#bibliotheque-app .catalogue-folder-parent-menu, #bibliotheque-app .catalogue-folder-picker-list {
+  max-block-size: 239px; overflow: auto; scrollbar-width: thin; overscroll-behavior: contain;
+}
+#bibliotheque-app .catalogue-folder-parent-menu {
+  display: grid; gap: 1px; max-block-size: 207px; padding: 4px; border: 1px solid var(--rule); border-radius: 8px; background: var(--card);
+}
+#bibliotheque-app .catalogue-folder-parent-option {
+  grid-template-columns: 17px minmax(0, 1fr) 17px; padding: 4px 6px; border-radius: 5px; background: transparent;
+}
+#bibliotheque-app .catalogue-folder-parent-option:is([aria-pressed="true"], :hover) { background: var(--tint); }
+#bibliotheque-app .catalogue-folder-parent-option[aria-pressed="false"] svg:last-child { visibility: hidden; }
+#bibliotheque-app .catalogue-folder-parent-picker svg,
+#bibliotheque-app .catalogue-folder-index-choice svg { inline-size: 16px; block-size: 16px; color: var(--accent); flex: none; }
+#bibliotheque-app .catalogue-folder-picker-list { margin-block: 7px; }
+#bibliotheque-app .catalogue-folder-index-choice {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; inline-size: 100%; min-block-size: 49px;
+  padding: 9px 8px; border: 0; border-block-end: 1px solid var(--rule); background: transparent; color: var(--title);
+  text-align: start; font: 400 17px/1.22 var(--elp-serif); overflow-wrap: anywhere;
+}
+#bibliotheque-app .catalogue-folder-index-choice:hover { background: var(--tint); }
+#bibliotheque-app .catalogue-folder-up { border: 0; border-radius: 8px; background: var(--tint); }
+#bibliotheque-app .catalogue-folder-location-path {
+  margin: 0 0 5px; padding: 7px 8px; border-radius: 8px; background: var(--paper); color: var(--title); overflow-wrap: anywhere;
+}
+#bibliotheque-app .catalogue-folder-picker-empty { text-align: center; margin: 12px 0; }
+#app-lecture #bibliotheque-app .catalogue-folder-destination-grid { gap: 6px; padding: 2px; margin: 0; }
+#app-lecture #bibliotheque-app .catalogue-folder-destination-grid .genre { padding: 6px; }
+#app-lecture #bibliotheque-app .catalogue-folder-destination-grid .genre-title { font-size: clamp(13px, 4cqi, 17px); }

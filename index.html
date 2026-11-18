@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7EEEB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Entre les pages">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org; object-src 'none'; base-uri 'none'">
+<title>Ma bibliothèque · Entre les pages</title>
+<link rel="manifest" href="./app.webmanifest?v=entre-les-pages-2" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
+<link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
+<link rel="stylesheet" href="./app.css?v=16">
+<script defer src="./vendor/lucide.min.js"></script>
+<link rel="stylesheet" href="./compte.css">
+<script defer src="./vendor/supabase-2.119.1.js"></script>
+<script defer src="./compte.js"></script>
+<script defer src="./bibliotheque-supabase.js"></script>
+<script defer src="./storage.js?v=6"></script>
+<script defer src="./library-sync.js?v=2"></script>
+<link rel="stylesheet" href="./catalogue.css?v=12">
+<link rel="stylesheet" href="./add-book.css?v=8">
+<script defer src="./book-scan.js?v=1"></script>
+<script defer src="./add-book.js?v=7"></script>
+<link rel="stylesheet" href="./book-detail.css?v=2">
+<script defer src="./book-detail.js?v=4"></script>
+<script defer src="./app.js?v=26"></script>
+</head>
+<body>
+<main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
+        data-heading="ample" data-eye="pastille" data-hint="pastille" data-look="plein" data-symbol="enveloppe">
+
+    <article class="stage" aria-label="Entre les pages">
+  <div class="scene" data-scene>
+    <section class="welcome" data-step="welcome">
+      <div class="welcome-copy">
+        <header class="account-header">
+          <p class="brand">Entre les pages</p>
+          <div class="illustration" aria-hidden="true"><span class="art art-reader"></span></div>
+          <h1 data-login-title>Créer ton compte</h1>
+        </header>
+        <form class="auth-form" autocomplete="on" data-auth-form>
+          <div class="auth-field" data-field="email" data-treatment="filet">
+            <label for="pwd-email-contours-aplat">Adresse e-mail</label>
+            <div class="field-frame"><input id="pwd-email-contours-aplat" type="email" required name="email" autocomplete="email" data-email></div>
+          </div>
+          <div class="auth-field password-area" data-field="password" data-treatment="contour">
+            <label for="pwd-secret-contours-aplat">Mot de passe</label>
+            <div class="field-frame password-field">
+              <input type="password" id="pwd-secret-contours-aplat" required minlength="8" name="password" autocomplete="new-password" data-password aria-describedby="pwd-minimum-contours-aplat">
+              <button type="button" class="icon-button cursor-interaction" data-visibility aria-label="Afficher le mot de passe" aria-pressed="false">
+                <i data-lucide="eye" aria-hidden="true"></i><span data-visibility-text aria-hidden="true">Afficher</span>
+              </button>
+            </div>
+            <p class="field-hint" id="pwd-minimum-contours-aplat" data-minimum>8 caractères minimum</p>
+          </div>
+          <div class="auth-field" data-field="confirmation" data-treatment="contour" data-confirm-password>
+            <label for="pwd-repeat-contours-aplat">Confirmer le mot de passe</label>
+            <div class="field-frame"><input type="password" id="pwd-repeat-contours-aplat" required minlength="8" name="confirmation" autocomplete="new-password" data-repeat></div>
+          </div>
+          <p class="code-error" data-auth-error role="alert" hidden></p>
+          <div class="account-actions">
+            <button type="submit" class="primary cursor-interaction" data-submit>
+              <i class="submit-envelope" data-lucide="mail" aria-hidden="true"></i>
+              <span data-submit-text>Créer mon compte</span>
+            </button>
+            <div class="account-alternate">
+              <div class="account-link">
+                <span data-switch-lead>Déjà un compte ?</span>
+                <button type="button" class="minor cursor-interaction" data-switch>Se connecter</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div></article></main>
+<div hidden id="app-lecture" lang="fr">
+<div id="bibliotheque-app" class="eli-bibliotheque" data-design="librairie" data-layout="compacte" lang="fr" data-format="phone" data-theme="light" data-sidebar-open="false" data-storage-state="opening" style="--sidebar-duration: 230ms">
+  <p class="storage-alert" role="alert" data-storage-alert hidden></p>
+    <div class="sidebar-layer" id="bibliotheque-app-menu" data-sidebar-layer role="dialog" aria-modal="true" aria-label="Navigation latérale" hidden>
+      <button type="button" class="sidebar-scrim cursor-interaction" data-sidebar-dismiss aria-label="Fermer la barre latérale"></button>
+      <div class="sidebar-drawer">
+        <aside class="library-sidebar" aria-labelledby="bibliotheque-app-menu-brand">
+      <div class="sidebar-compare-inner">
+      <header class="sidebar-profile">
+        <span class="profile-avatar" aria-hidden="true">E</span>
+        <div class="profile-copy">
+          <span class="profile-name">Eli</span>
+          <span class="profile-caption" id="bibliotheque-app-menu-brand">Mon profil</span>
+        </div>
+      </header>
+      <nav class="sidebar-library-navigation" aria-label="Rubriques d’Entre les pages">
+        <div class="sidebar-page-group">
+          <button type="button" class="cursor-interaction" data-view-choice="home" data-menu-page="home">
+            <svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg><span>Bibliothèque</span>
+          </button>
+          <div class="sidebar-subpages" data-library-subpages role="group" aria-label="Sous-rubriques de Bibliothèque">
+            <button type="button" class="cursor-interaction" data-view-choice="all" data-menu-page="all"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><span>Tous les livres</span></button>
+            <button type="button" class="cursor-interaction" data-view-choice="pile" data-menu-page="pile"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg><span>Ma pile à lire</span></button>
+            <button type="button" class="cursor-interaction" data-view-choice="finished" data-menu-page="finished"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg><span>Livres terminés</span></button>
+            <button type="button" class="cursor-interaction" data-view-choice="favorites" data-menu-page="favorites"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg><span>Coups de cœur</span></button>
+          </div>
+        </div>
+      </nav>
+      <nav class="sidebar-account" aria-label="Compte et réglages">
+        <button type="button" class="cursor-interaction" data-view-choice="settings" data-menu-page="settings">
+          <span class="account-icon" aria-hidden="true"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></span><span>Réglages</span>
+        </button>
+        <button type="button" class="cursor-interaction" data-exit-trigger aria-haspopup="dialog" aria-controls="bibliotheque-app-exit">
+          <span class="account-icon" aria-hidden="true"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg></span><span>Déconnexion</span>
+        </button>
+      </nav>
+      </div>
+        </aside>
+      </div>
+    </div>
+  <section class="library" aria-label="Entre les pages">
+    <div class="library-main">
+    <header class="toolbar" inert>
+      <div class="toolbar-group">
+        <button type="button" class="round cursor-interaction" aria-label="Ouvrir la barre latérale" aria-haspopup="dialog" aria-controls="bibliotheque-app-menu" aria-expanded="false" data-window-choice="menu"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></button>
+        <button type="button" class="round toolbar-action cursor-interaction" data-book-home hidden aria-label="Revenir à ma bibliothèque" title="Revenir à ma bibliothèque"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+        <button type="button" class="round toolbar-action note-create cursor-interaction" data-create-note aria-label="Remplir ma fiche de lecture" aria-controls="book-reading-sheet" hidden><svg class="navigation-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1"></rect><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.5"></path><path d="M16 4h2a2 2 0 0 1 1.73 1"></path><path d="M8 18h1"></path><path d="M21.378 12.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"></path></svg></button>
+        <button type="button" class="round toolbar-action cursor-interaction" aria-label="Revenir à la bibliothèque" data-catalogue-back hidden><i class="navigation-icon" data-lucide="chevron-left" aria-hidden="true"></i></button>
+        <button type="button" class="round toolbar-action cursor-interaction" aria-label="Ajouter un livre" data-view-choice="add"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+      </div>
+      <div class="toolbar-group">
+        <button type="button" class="round toolbar-action cursor-interaction" data-book-edit hidden aria-label="Modifier la fiche du livre" title="Modifier la fiche du livre" aria-expanded="false"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
+      <button type="button" class="round toolbar-action cursor-interaction" data-book-trash hidden aria-label="Supprimer le livre" aria-controls="delete-panel" aria-expanded="false" title="Supprimer le livre" aria-haspopup="dialog"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+        <button type="button" class="round toolbar-action cursor-interaction" data-create-folder aria-label="Créer un dossier" aria-haspopup="dialog" aria-expanded="false" aria-controls="elp-folder-dialog">
+          <svg class="navigation-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17V7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v2"/><path d="M5 19h12a2 2 0 0 0 1.9-1.4l1.8-5.6a1 1 0 0 0-.9-1.3h-12a2 2 0 0 0-1.9 1.4L4 17.7A1 1 0 0 0 5 19z"/><path d="M12.5 12.5v4M10.5 14.5h4"/></svg>
+        </button>
+        <button type="button" class="round toolbar-action cursor-interaction" aria-label="Menu" data-window-choice="organiser" aria-haspopup="dialog" aria-controls="elp-organiser" aria-expanded="false"><svg class="navigation-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h8m4 0h4M4 12h3m4 0h9M4 18h10m4 0h2"/><circle cx="14" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></svg></button>
+      </div>
+
+      <section class="dropdown read-filter-popover organise-panel" id="elp-organiser" data-organise-popover role="dialog" aria-labelledby="elp-organiser-title" hidden>
+        <div class="read-filter-panel sort-panel" data-window="organiser" hidden>
+          <header class="read-filter-head">
+            <span class="read-filter-heading-icon" aria-hidden="true"><i data-lucide="sliders-horizontal"></i></span>
+            <h2 id="elp-organiser-title">Menu</h2>
+            <button type="button" class="cursor-interaction" data-close-window aria-label="Fermer le menu"><span><i data-lucide="x" aria-hidden="true"></i></span></button>
+          </header>
+          <div class="read-filter-lines" role="group" aria-label="Commandes">
+            <button type="button" class="read-filter-line cursor-interaction" data-organise-choice="sort"><span class="read-filter-heading-icon"><i data-lucide="arrow-down-up" aria-hidden="true"></i></span><span>Trier</span><i class="menu-arrow" data-lucide="chevron-right" aria-hidden="true"></i></button>
+            <button type="button" class="read-filter-line cursor-interaction" data-organise-choice="filter"><span class="read-filter-heading-icon"><i data-lucide="filter" aria-hidden="true"></i></span><span>Filtrer</span><i class="menu-arrow" data-lucide="chevron-right" aria-hidden="true"></i></button>
+            <button type="button" class="read-filter-line cursor-interaction" data-organise-choice="remove"><span class="read-filter-heading-icon"><i data-lucide="trash-2" aria-hidden="true"></i></span><span>Supprimer</span></button>
+          </div>
+        </div>
+
+        <div class="read-filter-panel sort-panel" id="bibliotheque-app-sort" data-window="sort" hidden>
+          <header class="read-filter-head library-slide-head">
+            <button type="button" class="cursor-interaction" data-menu-back aria-label="Revenir au menu"><span><i data-lucide="arrow-left" aria-hidden="true"></i></span></button>
+            <h2 id="bibliotheque-app-sort-title"><span class="read-filter-heading-icon"><i data-lucide="arrow-down-up" aria-hidden="true"></i></span> Trier</h2>
+          </header>
+          <h3 class="library-sort-heading">Genres</h3>
+          <div class="read-filter-lines" role="group" aria-label="Ordre des genres" data-genre-sort>
+            <button type="button" class="read-filter-line cursor-interaction" aria-pressed="true" data-sort-choice="custom"><span class="read-filter-dot" aria-hidden="true"></span>Mon ordre</button>
+            <button type="button" class="read-filter-line cursor-interaction" aria-pressed="false" data-sort-choice="alpha"><span class="read-filter-dot" aria-hidden="true"></span>A à Z</button>
+          </div>
+          <h3 class="library-sort-heading">Livres</h3>
+          <div class="read-filter-lines" role="group" aria-label="Ordre des livres" data-catalogue-sort>
+            <button type="button" class="read-filter-line cursor-interaction" aria-pressed="true" data-book-sort="author"><span class="read-filter-dot" aria-hidden="true"></span>Auteur A–Z, puis titre</button>
+            <button type="button" class="read-filter-line cursor-interaction" aria-pressed="false" data-book-sort="title"><span class="read-filter-dot" aria-hidden="true"></span>Titre A–Z</button>
+          </div>
+        </div>
+
+        <div class="read-filter-panel" id="bibliotheque-app-filter" data-window="filter" hidden>
+          <header class="read-filter-head library-slide-head">
+            <button type="button" class="cursor-interaction" data-menu-back aria-label="Revenir au menu"><span><i data-lucide="arrow-left" aria-hidden="true"></i></span></button>
+            <h2 id="bibliotheque-app-filter-title"><span class="read-filter-heading-icon"><i data-lucide="sliders-horizontal" aria-hidden="true"></i></span> Flitrer</h2>
+          </header>
+          <button type="button" class="read-filter-picker cursor-interaction" data-filter-picker aria-expanded="false" aria-controls="bibliotheque-app-filter-categories">
+            <span data-filter-picker-label>Choisir les filtres</span>
+            <span class="read-filter-chevron"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+          <div class="read-category-menu" id="bibliotheque-app-filter-categories" data-filter-categories role="group" aria-label="Filtres disponibles" hidden></div>
+          <div data-filter-rows></div>
+          <template data-catalogue-favorite-template>
+            <label class="catalogue-favorite-filter cursor-interaction">
+              <input type="checkbox" role="switch" data-catalogue-favorite>
+              <span>Afficher mes coups de cœur</span>
+              <span class="catalogue-favorite-track" aria-hidden="true"></span>
+            </label>
+          </template>
+          <div class="read-filter-footer" role="group" aria-label="Actions des filtres">
+            <button type="button" class="read-filter-reset cursor-interaction" data-clear-filters><i data-lucide="rotate-ccw" aria-hidden="true"></i><span>Effacer les filtres</span></button>
+            <button type="button" class="read-filter-apply cursor-interaction" data-apply-filters><i data-lucide="check" aria-hidden="true"></i><span>Appliquer</span></button>
+          </div>
+        </div>
+
+        <div class="read-filter-panel" id="bibliotheque-app-removal" data-window="remove" hidden>
+          <header class="read-filter-head library-slide-head">
+            <button type="button" class="cursor-interaction" data-menu-back aria-label="Revenir au menu"><span><i data-lucide="arrow-left" aria-hidden="true"></i></span></button>
+            <h2 id="bibliotheque-app-removal-title"><span class="read-filter-heading-icon"><i data-lucide="trash-2" aria-hidden="true"></i></span> Supprimer</h2>
+          </header>
+          <p class="library-removal-count" data-removal-count role="status"></p>
+          <ul class="library-removal-summary" data-removal-summary aria-label="Éléments sélectionnés" hidden></ul>
+          <p class="library-removal-note" data-removal-folder-note hidden>Les dossiers sélectionnés et leurs sous-dossiers seront supprimés. Seuls les livres cochés seront supprimés de la bibliothèque.</p>
+          <p class="library-removal-note" role="alert" data-removal-error hidden></p>
+          <div class="library-removal-track" data-removal-track>
+            <span aria-hidden="true">Glisser pour supprimer</span>
+            <button class="cursor-interaction" type="button" data-removal-thumb aria-label="Confirmer la suppression en glissant jusqu’au bout ou en appuyant sur Entrée" disabled><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <section class="elp-books" id="bibliotheque-app-catalogue" data-catalogue-view aria-labelledby="bibliotheque-app-catalogue-title" hidden>
+      <header class="elp-page-heading">
+        <div class="catalogue-title-row">
+          <h1 class="elp-signed-heading" id="bibliotheque-app-catalogue-title" aria-label="Tous les livres" tabindex="-1"><span class="elp-script" aria-hidden="true">T</span><span class="elp-heading-rest" aria-hidden="true">ous les livres</span></h1>
+          <button class="catalogue-view-switch cursor-interaction" type="button" aria-label="Afficher Mes collections"
+                  aria-controls="catalogue-collections-view catalogue-books-view" data-catalogue-view-switch>
+            <span class="catalogue-view-switch-face" aria-hidden="true">
+              <span class="catalogue-view-art" data-view-destination="books" hidden><i data-lucide="library" aria-hidden="true"></i></span>
+              <span class="catalogue-view-art" data-view-destination="collections"><i data-lucide="layout-grid" aria-hidden="true"></i></span>
+              <span class="catalogue-view-art" data-view-destination="overview" hidden><i data-lucide="house" aria-hidden="true"></i></span>
+            </span>
+          </button>
+        </div>
+        <p class="elp-book-count" data-catalogue-count aria-live="polite">0 livres</p>
+      </header>
+      <form class="elp-search" data-catalogue-search-form role="search" aria-label="Rechercher dans Tous les livres">
+        <i data-lucide="search" aria-hidden="true"></i>
+        <input type="search" data-catalogue-search placeholder="Titre, auteur ou saga" aria-label="Rechercher un titre, un auteur ou une saga" autocomplete="off">
+        <button type="button" class="catalogue-clear-search cursor-interaction" aria-label="Effacer la recherche" data-clear-catalogue-search hidden><i data-lucide="x" aria-hidden="true"></i></button>
+      </form>
+      <button class="plain cursor-interaction" type="button" data-save-catalogue-filter hidden>Enregistrer ce filtre</button>
+      <p class="list-notice" data-catalogue-filter-notice role="status" hidden></p>
+      <section class="catalogue-folder-section" id="catalogue-collections-view" data-catalogue-panel="collections" aria-labelledby="elp-preview-collections-title">
+        <h2 class="section-heading catalogue-zone-heading" id="elp-preview-collections-title">
+          <button type="button" class="catalogue-section-toggle cursor-interaction" data-catalogue-section-toggle aria-expanded="true" aria-controls="elp-folder-section-content"><span class="catalogue-filet" aria-hidden="true"></span><span>Mes collections</span><span class="catalogue-filet" aria-hidden="true"></span></button>
+        </h2>
+        <div id="elp-folder-section-content" class="catalogue-fold-panel">
+          <div class="catalogue-fold-clip">
+            <p class="catalogue-empty" data-collection-empty>Aucun dossier.</p>
+            <ul class="genre-grid collection-grid catalogue-collection-grid" data-collection-grid aria-labelledby="elp-preview-collections-title"></ul>
+          </div>
+        </div>
+      </section>
+      <section class="catalogue-books-section" id="catalogue-books-view" data-catalogue-panel="books" aria-labelledby="elp-preview-books-title">
+        <h2 class="section-heading catalogue-zone-heading" id="elp-preview-books-title">
+          <button type="button" class="catalogue-section-toggle cursor-interaction" data-catalogue-section-toggle aria-expanded="true" aria-controls="elp-books-section-content"><span class="catalogue-filet" aria-hidden="true"></span><span>Mes livres</span><span class="catalogue-filet" aria-hidden="true"></span></button>
+        </h2>
+        <div id="elp-books-section-content" class="catalogue-fold-panel">
+          <div class="catalogue-fold-clip">
+            <div data-catalogue-books></div>
+            <section class="library-search-empty catalogue-illustrated-empty" data-catalogue-no-results aria-labelledby="catalogue-no-results-title" hidden>
+              <span class="library-search-art" aria-hidden="true"></span>
+              <h2 id="catalogue-no-results-title">Aucun résultat</h2>
+              <p>Essaie un autre titre ou le nom de l’auteur.</p>
+              <div class="library-search-empty-actions">
+                <button class="search-empty-clear cursor-interaction" type="button" data-clear-catalogue-search><i data-lucide="rotate-ccw" aria-hidden="true"></i> Effacer la recherche</button>
+                <button class="search-empty-clear cursor-interaction" type="button" data-clear-result-filters hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i> Effacer les filtres</button>
+              </div>
+            </section>
+            <section class="library-empty catalogue-illustrated-empty" data-catalogue-empty-list aria-labelledby="catalogue-empty-list-title" hidden>
+              <span class="library-empty-art" aria-hidden="true"></span>
+              <h2 id="catalogue-empty-list-title">Aucun livre</h2>
+              <p data-catalogue-empty-description></p>
+              <button class="library-empty-add cursor-interaction" type="button" data-view-choice="add"><i data-lucide="plus" aria-hidden="true"></i> Ajouter un livre</button>
+            </section>
+            <section class="library-empty catalogue-favorites-empty" data-catalogue-favorites-empty aria-labelledby="catalogue-favorites-empty-title" hidden>
+              <div class="catalogue-favorites-illustration" aria-hidden="true"><span></span></div>
+              <h2 id="catalogue-favorites-empty-title">Aucun coup de cœur</h2>
+              <p>Touche le cœur sur la fiche d’un livre pour le retrouver ici.</p>
+              <button class="catalogue-favorites-browse cursor-interaction" type="button" data-browse-from-favorites>
+                <i data-lucide="book-open" aria-hidden="true"></i> Voir mes livres
+              </button>
+            </section>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <div data-library-content>
+      <h1 class="library-title signed-title title-with-initial" aria-label="Ma bibliothèque">
+        <span class="title-initial" aria-hidden="true"></span>
+        <span class="title-word" aria-hidden="true">bibliothèque<span class="title-baseline" data-baseline-b></span></span>
+      </h1>
+      <div class="title-decoration" aria-hidden="true"></div>
+      <p class="library-sync-status" role="status" data-library-sync-status hidden></p>
+      <p class="storage-loading" role="status" data-storage-loading>Chargement de ta bibliothèque…</p>
+      <section class="storage-recovery" aria-labelledby="library-storage-title" data-storage-recovery hidden>
+        <span class="storage-recovery-art" aria-hidden="true"></span>
+        <div>
+          <h2 id="library-storage-title">Stockage indisponible</h2>
+          <p data-storage-recovery-message role="alert"></p>
+        </div>
+        <button class="storage-retry cursor-interaction" type="button" data-storage-retry>
+          <i data-lucide="rotate-ccw" aria-hidden="true"></i><span data-storage-retry-label>Réessayer</span>
+        </button>
+      </section>
+      <section class="current-reading" data-current-reading aria-labelledby="bibliotheque-app-lectures" hidden>
+        <h2 class="section-heading reading-feature-heading" id="bibliotheque-app-lectures">Ma lecture en cours</h2>
+        <button type="button" class="reading reading-feature cursor-interaction" data-view-choice="reading" aria-label="Aucune lecture en cours" disabled>
+          <span class="cover-slot" aria-hidden="true"><span data-cover-empty><i data-lucide="book-open"></i></span><img class="official-cover" data-current-image alt="" hidden></span>
+          <span class="reading-summary">
+            <span class="reading-series" data-current-series hidden></span>
+            <span class="reading-title">Aucune lecture en cours</span>
+            <span class="reading-author" data-current-author hidden></span>
+            <span class="reading-progress" hidden><span class="progress-label"><span></span><span></span></span><span class="track" aria-hidden="true"><span></span></span></span>
+            <span class="resume-cta" aria-hidden="true"><span>Reprendre</span><span class="cue" aria-hidden="true"><i data-lucide="chevron-right"></i></span></span>
+          </span>
+        </button>
+      </section>
+
+      <section class="library-empty" data-library-empty aria-labelledby="library-empty-title" hidden>
+        <span class="library-empty-art" aria-hidden="true"></span>
+        <h2 id="library-empty-title">Aucun livre</h2>
+        <p>Ajoute ton premier livre à ta bibliothèque.</p>
+        <button class="library-empty-add cursor-interaction" type="button" data-view-choice="add"><i data-lucide="plus" aria-hidden="true"></i> Ajouter un livre</button>
+      </section>
+
+      <h2 class="section-heading genre-heading" id="bibliotheque-app-genres">Mes collections</h2>
+      <div class="search" id="bibliotheque-app-search">
+        <i class="navigation-icon" data-lucide="search" aria-hidden="true"></i>
+        <input type="search" aria-label="Rechercher un titre, un auteur ou une saga" placeholder="Rechercher un titre ou un auteur" data-library-search autocomplete="off">
+        <button type="button" class="plain search-clear cursor-interaction" aria-label="Effacer la recherche" hidden data-clear-search><i class="navigation-icon" data-lucide="x" aria-hidden="true"></i></button>
+      </div>
+      <div class="library-tabs" data-library-tabs role="group" aria-label="Onglets de la bibliothèque">
+        <button class="library-tab cursor-interaction" type="button" data-library-tab="all" aria-pressed="true" aria-controls="bibliotheque-app-tab-body">
+          <span class="library-tab-label">Tous mes livres</span>
+          <span class="library-tab-count" data-tab-count>0</span>
+        </button>
+        <button class="library-tab cursor-interaction" type="button" data-library-tab="pile" aria-pressed="false" aria-controls="bibliotheque-app-tab-body">
+          <span class="library-tab-label">Ma pile à lire</span>
+          <span class="library-tab-count" data-tab-count>0</span>
+        </button>
+        <button class="library-tab cursor-interaction" type="button" data-library-tab="finished" aria-pressed="false" aria-controls="bibliotheque-app-tab-body">
+          <span class="library-tab-label">Mes livres lus</span>
+          <span class="library-tab-count" data-tab-count>0</span>
+        </button>
+      </div>
+      <div class="library-tab-body" id="bibliotheque-app-tab-body">
+        <button class="collections-list-button cursor-interaction" type="button" data-open-collection-list aria-controls="bibliotheque-app-catalogue">
+          <span class="library-list-vignette" aria-hidden="true"></span>
+          <span class="library-list-caption"><span data-collection-list-label>Afficher tous mes livres</span></span>
+        </button>
+        <ul class="genre-grid collection-grid" aria-label="Mes collections" data-genre-grid></ul>
+
+        <section id="bibliotheque-app-list-results" data-results hidden>
+          <header class="list-heading" data-results-header>
+            <h2 data-results-title></h2><span class="number-pill" data-results-count aria-live="polite"></span>
+          </header>
+          <button type="button" class="plain cursor-interaction" data-save-filter hidden>Enregistrer ce filtre</button>
+          <p class="list-notice" data-filter-notice role="status" hidden></p>
+          <p class="list-notice" data-status-notice role="status" hidden></p>
+          <div data-book-list></div>
+          <section class="library-search-empty" data-search-empty aria-labelledby="library-search-empty-title" hidden>
+            <span class="library-search-art" aria-hidden="true"></span>
+            <h2 id="library-search-empty-title">Aucun résultat</h2>
+            <p>Essaie un autre titre ou le nom de l’auteur.</p>
+            <div class="library-search-empty-actions">
+              <button class="search-empty-clear cursor-interaction" type="button" data-clear-search><i data-lucide="rotate-ccw" aria-hidden="true"></i> Effacer la recherche</button>
+              <button class="search-empty-clear cursor-interaction" type="button" data-clear-result-filters hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i> Effacer les filtres</button>
+            </div>
+          </section>
+        </section>
+      </div>
+    </div>
+
+<template data-saved-book-template>
+        <button class="note-switch cursor-interaction" type="button" data-cancel-note aria-label="Revenir au livre" aria-controls="elp-saved-book" hidden>
+          <span class="note-switch-face" aria-hidden="true"><svg class="navigation-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></span>
+        </button>
+        <section id="elp-saved-book" class="ep-stage" data-book-stage data-saved-book data-step="next"><section class="ep-following">
+          <section class="ep-book-snapshot" data-book-preview aria-labelledby="fiche-titre">
+            <div data-cover-column>
+              <button class="note-switch cursor-interaction" type="button" data-open-note aria-label="Afficher ma fiche de lecture" aria-controls="book-reading-sheet" hidden>
+                <span class="note-switch-face" aria-hidden="true">
+                  <span class="note-switch-art" data-note-next></span>
+                  <span class="note-switch-art" data-note-previous hidden></span>
+                </span>
+              </button>
+              <span class="ep-cover" aria-hidden="true"><img alt=""></span>
+            </div>
+            <div class="ep-book-copy">
+              <div class="ep-book-identity">
+                <h1 class="ep-book-name" id="fiche-titre"></h1>
+                <span class="ep-book-author"><span data-author-prefix-label>Par </span><span data-author-value></span></span>
+                <span class="ep-book-series"><span data-series-name></span><span data-series-separator aria-hidden="true"> · </span><span data-series-volume></span></span>
+              </div>
+              <div class="ep-tag-group" data-book-genres role="group" aria-label="Genres">
+                <span class="ep-tag-label">Genres</span>
+                <span class="ep-tag-values"></span>
+              </div>
+              <div class="ep-tag-group" data-book-subgenres role="group" aria-label="Sous-genres">
+                <span class="ep-tag-label">Sous-genres</span>
+                <span class="ep-tag-values"></span>
+              </div>
+          <section class="ep-saved-status" data-saved-status aria-label="Statut de lecture et coup de cœur">
+              <div class="ep-status-disclosure" data-status-disclosure>
+                <button type="button" class="ep-saved-status-button cursor-interaction" data-status-trigger aria-expanded="false" aria-controls="ep-saved-status-options">
+                  <span class="ep-status-art ep-status-art-cours" data-current-status-icon aria-hidden="true"></span>
+                  <span data-current-status-name>En cours</span>
+                  <span class="ep-picker-chevron" aria-hidden="true"></span>
+                </button>
+                <div class="ep-saved-status-menu" id="ep-saved-status-options" data-status-popup role="group" aria-label="Choisir un statut de lecture" hidden>
+                  <button type="button" class="cursor-interaction" data-pick-status="pile"><span data-option-icon aria-hidden="true"></span><span>Pile à lire</span></button>
+                  <button type="button" class="cursor-interaction" data-pick-status="en-cours"><span data-option-icon aria-hidden="true"></span><span>En cours</span></button>
+                  <button type="button" class="cursor-interaction" data-pick-status="finished"><span data-option-icon aria-hidden="true"></span><span>Livre lu</span></button>
+                </div>
+              </div>
+              <button type="button" class="ep-saved-favorite cursor-interaction" data-saved-favorite aria-label="Coup de cœur" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>
+              </button>
+          </section>
+            </div>
+          </section>
+          <section class="ep-saved-summary" aria-labelledby="ep-summary-view-heading" data-summary-view>
+            <h2 class="ep-summary-heading" id="ep-summary-view-heading">Résumé</h2>
+            <p class="ep-next-summary" data-summary-copy></p>
+          </section>
+          <div class="ep-reader-access" data-reader-access data-read-art="reader" data-art-place="left" data-read-chevron="no" data-read-rules="no" data-read-surface="soft" data-read-border="yes" data-reader-motion="running">
+            <button class="ep-read-book cursor-interaction" type="button" data-open-reader>
+              <span class="ep-read-content">
+                <span class="ep-read-art" aria-hidden="true"></span>
+                <span class="ep-read-caption"><span class="ep-read-label" data-reader-label>Lire ce livre</span></span>
+              </span>
+              <span class="ep-read-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div data-edit-fields hidden>
+          <form id="saved-book-editor" class="saved-book-editor" aria-label="Modifier les informations du livre" hidden>
+        <div class="ep-edit-cover">
+          <div data-edit-cover-preview></div>
+          <label class="ep-access ep-edit-cover-button cursor-interaction">
+            <input type="file" class="sr-only" data-edit-cover accept="image/jpeg,image/png,image/webp,image/gif">
+            Changer la couverture
+          </label>
+        </div>
+        <div class="ep-book-edit-fields">
+          <label>Titre <input name="title" type="text" required></label>
+          <label>Auteur ou autrice <input name="author" type="text"></label>
+          <div class="ep-edit-series">
+            <label>Saga <input name="series" type="text"></label>
+            <label>Tome <input name="volume" type="text"></label>
+          </div>
+          <label>Genres <input name="genres" type="text" placeholder="Séparés par des points-virgules"></label>
+          <label>Sous-genres <input name="subgenres" type="text" placeholder="Séparés par des points-virgules"></label>
+        </div>
+        <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
+      </form>
+          <h3 class="ep-summary-heading" id="saved-summary-heading">Résumé</h3>
+          <textarea id="saved-summary-editor" class="ep-summary-editor" aria-labelledby="saved-summary-heading" form="saved-book-editor" rows="5" hidden></textarea>
+          <button type="submit" form="saved-book-editor" class="ep-access ep-access-primary cursor-interaction book-editor-actions">Enregistrer</button>
+          </div>
+        </section></section>
+        <section class="ep-note-preview" id="book-reading-sheet" data-note-preview aria-labelledby="book-reading-sheet-title" hidden>
+          <h1 id="book-reading-sheet-title"></h1>
+          <p data-note-book></p>
+        </section>
+        <section class="book-reader" data-book-reader aria-labelledby="ep-reading-title" hidden>
+          <header class="toolbar book-reader-toolbar">
+            <button class="round cursor-interaction" type="button" data-close-reader aria-label="Revenir à la fiche"><span class="ep-reader-back" aria-hidden="true"></span></button>
+            <span data-reading-book></span>
+          </header>
+          <article class="book-reader-page" aria-live="polite">
+            <h2 id="ep-reading-title"></h2><div data-reader-content></div>
+            <div data-bookmark-controls hidden>
+              <button class="plain" data-bookmark type="button" aria-pressed="false">Marquer cette position</button>
+              <select data-bookmarks aria-label="Aller à un marque-page"><option value="">Mes marque-pages</option></select>
+            </div>
+            <nav aria-label="Pagination" data-reader-pages hidden>
+              <button class="plain" data-reader-prev type="button">Précédent</button>
+              <button class="plain" data-reader-next type="button">Suivant</button>
+            </nav>
+            <button class="plain cursor-interaction" data-reader-details type="button" hidden>Voir la fiche</button>
+          </article>
+        </section>
+      <div class="delete-layer" data-delete-layer hidden>
+        <section class="account-exit delete-panel" data-delete-dialog id="delete-panel" role="dialog" aria-labelledby="book-delete-title" aria-describedby="book-delete-copy">
+          <h2 id="book-delete-title">Supprimer le livre ?</h2>
+          <p id="book-delete-copy" data-delete-copy></p>
+          <div class="account-exit-actions">
+            <button type="button" class="plain cursor-interaction" data-cancel>Annuler</button>
+            <button type="button" class="plain cursor-interaction" data-delete>Supprimer</button>
+          </div>
+        </section>
+      </div>
+</template>
+    <div data-saved-book-host hidden></div>
+    <section class="library-removal-items" aria-labelledby="library-removal-items-title" data-removal-items hidden>
+      <h2 class="section-heading" id="library-removal-items-title">Mes livres et dossiers</h2>
+      <div data-removal-grid></div>
+    </section>
+
+    <section class="other-view" data-other-view hidden>
+      <div data-other-body></div>
+    </section>
+    <nav class="library-destinations" aria-label="Navigation d’Entre les pages">
+      <button type="button" class="cursor-interaction" data-view-choice="home" data-bottom-page="home" aria-current="page"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg><span>Bibliothèque</span></button>
+      <button type="button" class="cursor-interaction" data-view-choice="reading" data-bottom-page="reading"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><span>Lecture</span></button>
+      <button type="button" class="cursor-interaction" data-view-choice="journal" data-bottom-page="journal"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg><span>Journal</span></button>
+      <button type="button" class="cursor-interaction" data-view-choice="sheets" data-bottom-page="sheets"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span>Fiches</span></button>
+    </nav>
+    <button type="button" class="round library-scroll-top cursor-interaction" aria-label="Revenir en haut" data-library-scroll-top hidden>
+      <i data-lucide="arrow-up" aria-hidden="true"></i>
+    </button>
+    <p class="visually-hidden" role="status" data-feedback></p>
+    </div>
+  </section>
+
+    <dialog class="catalogue-folder-dialog" id="elp-folder-dialog" aria-labelledby="elp-folder-form-title" data-folder-dialog>
+      <div class="catalogue-folder-form">
+        <header class="catalogue-folder-heading">
+          <span class="catalogue-folder-drawing" data-folder-heading-icon aria-hidden="true"></span>
+          <button type="button" class="catalogue-folder-close cursor-interaction" data-folder-panel-back aria-label="Revenir à la création" hidden><i data-lucide="chevron-left" aria-hidden="true"></i></button>
+          <h2 id="elp-folder-form-title">Ajouter un dossier</h2>
+          <button type="button" class="catalogue-folder-close cursor-interaction" data-folder-close aria-label="Fermer la fenêtre"><i data-lucide="x" aria-hidden="true"></i></button>
+        </header>
+        <form data-folder-form data-folder-panel="create" novalidate>
+          <div class="catalogue-folder-created" data-folder-created role="status" hidden>
+            <span class="catalogue-folder-created-mark" aria-hidden="true"><i data-lucide="check"></i></span>
+            <span class="catalogue-folder-created-copy"><strong>Dossier créé</strong><span data-folder-created-path></span></span>
+          </div>
+          <div class="catalogue-folder-name-row">
+            <label>Titre du dossier
+              <input type="text" data-folder-input maxlength="45" autocomplete="off" placeholder="Ex. Lectures du soir" aria-describedby="elp-folder-feedback" required autofocus>
+            </label>
+            <button type="button" class="catalogue-folder-index-button cursor-interaction" data-folder-open-index aria-label="Ouvrir l’index des genres et sous-genres"><i data-lucide="list-tree" aria-hidden="true"></i> Index</button>
+          </div>
+          <button type="button" class="catalogue-folder-destination cursor-interaction" data-folder-open-location aria-label="Choisir l’emplacement du dossier" aria-describedby="elp-folder-destination">
+            <i data-lucide="folder" aria-hidden="true"></i>
+            <span><small>Créer dans</small><span id="elp-folder-destination" data-folder-destination></span></span>
+            <i data-lucide="chevron-right" aria-hidden="true"></i>
+          </button>
+          <p class="catalogue-folder-feedback" id="elp-folder-feedback" data-folder-feedback data-state="" role="status">
+            <span data-folder-error aria-hidden="true"><i data-lucide="circle-alert"></i></span>
+            <span data-folder-feedback-text></span>
+          </p>
+          <button type="submit" class="catalogue-folder-submit cursor-interaction" data-folder-submit>Créer le dossier</button>
+        </form>
+        <div data-folder-panel="index" hidden>
+          <div class="catalogue-folder-index-tabs" role="group" aria-label="Types de dossiers dans l’index">
+            <button type="button" class="cursor-interaction" data-folder-index-mode="genre" aria-pressed="true">Genres</button>
+            <button type="button" class="cursor-interaction" data-folder-index-mode="subgenre" aria-pressed="false">Sous-genres</button>
+          </div>
+          <label class="catalogue-folder-index-search">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <input type="search" data-folder-index-search aria-label="Rechercher un genre" placeholder="Rechercher un genre…" autocomplete="off">
+          </label>
+          <div class="catalogue-folder-parent-picker" data-folder-parent-picker hidden>
+            <span id="elp-folder-parent-label">Genre parent</span>
+            <button type="button" class="catalogue-folder-parent-trigger cursor-interaction" data-folder-parent-trigger aria-expanded="false" aria-controls="elp-folder-parent-menu" aria-labelledby="elp-folder-parent-label elp-folder-parent-value">
+              <span id="elp-folder-parent-value" data-folder-parent-value>Tous les genres</span><i data-lucide="chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="catalogue-folder-parent-menu" id="elp-folder-parent-menu" role="group" aria-labelledby="elp-folder-parent-label" data-folder-parent-menu hidden></div>
+          </div>
+          <div class="catalogue-folder-picker-list" data-folder-index-results></div>
+        </div>
+        <div data-folder-panel="location" hidden>
+          <p class="catalogue-folder-location-path" data-folder-location-path aria-live="polite"></p>
+          <button type="button" class="catalogue-folder-index-choice catalogue-folder-up cursor-interaction" data-folder-location-back><span>Revenir au dossier parent</span><i data-lucide="chevron-up" aria-hidden="true"></i></button>
+          <div class="catalogue-folder-picker-list">
+            <ul class="genre-grid collection-grid catalogue-collection-grid catalogue-folder-destination-grid" data-folder-location-cards aria-label="Dossiers à cet emplacement"></ul>
+            <p class="catalogue-folder-picker-empty" data-folder-location-empty hidden>Aucun dossier ici.</p>
+          </div>
+          <button type="button" class="catalogue-folder-submit cursor-interaction" data-folder-choose-location>Choisir cet emplacement</button>
+        </div>
+      </div>
+    </dialog>
+
+  <main data-add-book-page hidden></main>
+
+  <dialog class="account-exit" id="bibliotheque-app-exit" data-exit-dialog aria-labelledby="bibliotheque-app-exit-title" aria-describedby="bibliotheque-app-exit-message">
+    <h2 id="bibliotheque-app-exit-title">Déconnexion</h2>
+    <p id="bibliotheque-app-exit-message">Se déconnecter d’Entre les pages ?</p>
+    <div class="account-exit-actions">
+      <button type="button" class="plain cursor-interaction" data-exit-dismiss autofocus>Annuler</button>
+      <button type="button" class="primary cursor-interaction" data-exit-confirm>Se déconnecter</button>
+    </div>
+  </dialog>
+
+  <script type="application/json" data-catalogue>{"genres":[{"name":"Romance contemporaine","count":3,"groups":["5","6","7","8","9"],"observed":["Romantic Suspense","Univers des secouristes","Romance à dimension psychologique et sociale","Romance médical","Workplace romance","Drame émotionnel et familial","Reconstruction psychologique","Romance New Adult","Romance Psychologique","Romance dramatique","Romance émotionelle","Reconstruction personnelle","Deuil et santé"],"crop":[453,61,350],"supplementaryArt":-1},{"name":"Dark romance","count":3,"groups":["7","5","6","8","9"],"observed":["Romantic Suspense","Romance criminelle","Romance mafieuse","Romance psychologique sombre"],"crop":null,"supplementaryArt":0},{"name":"Romance sportive","count":0,"groups":["6","5","7","8","9"],"observed":[],"crop":null,"supplementaryArt":1},{"name":"Romantasy","count":1,"groups":["10","5","6","7","8","9"],"observed":["Fantasy humoristique","Mystère / suspense"],"crop":null,"supplementaryArt":2},{"name":"Romance historique","count":0,"groups":["8","5","6","7","9"],"observed":[],"crop":null,"supplementaryArt":3},{"name":"Romance paranormale","count":0,"groups":["9","5","6","7","8"],"observed":[],"crop":null,"supplementaryArt":4},{"name":"Romantic suspense","count":2,"groups":["12","5","6","7","8","9"],"observed":["Romance contemporaine","Romance d’espionnage","Romance avec célébrité / show-business","infiltration et contre-espionnage","Workplace romance"],"crop":null,"supplementaryArt":5},{"name":"Romance mafieuse","count":0,"groups":["7","5","6","8","9"],"observed":[],"crop":null,"supplementaryArt":6},{"name":"Romance New Adult","count":0,"groups":["5","6","7","8","9"],"observed":[],"crop":null,"supplementaryArt":7},{"name":"Romance Young Adult","count":0,"groups":["5","6","7","8","9"],"observed":[],"crop":null,"supplementaryArt":8},{"name":"Romance érotique","count":0,"groups":["5","19","6","7","8","9"],"observed":[],"crop":null,"supplementaryArt":9},{"name":"Romance LGBTQIA+","count":0,"groups":["5","6","7","8","9"],"observed":[],"crop":null,"supplementaryArt":10},{"name":"Fantasy","count":0,"groups":["10"],"observed":[],"crop":[55,55,350],"supplementaryArt":-1},{"name":"Science-fiction","count":0,"groups":["11"],"observed":[],"crop":[832,428,382],"supplementaryArt":-1},{"name":"Thriller","count":3,"groups":["12"],"observed":["Suspense psychologique","Huis clos domestique","Manipulation psychologique","Mystère / crime","Romantic Suspense","Novella"],"crop":[848,44,362],"supplementaryArt":-1},{"name":"Policier","count":0,"groups":["12"],"observed":[],"crop":[62,867,342],"supplementaryArt":-1},{"name":"Mystère","count":0,"groups":["12"],"observed":[],"crop":null,"supplementaryArt":11},{"name":"Horreur","count":0,"groups":["13"],"observed":[],"crop":[820,830,386],"supplementaryArt":-1},{"name":"Fantastique","count":0,"groups":["13"],"observed":[],"crop":[441,842,368],"supplementaryArt":-1},{"name":"Fiction historique","count":0,"groups":["14"],"observed":[],"crop":[438,444,356],"supplementaryArt":-1},{"name":"Fiction contemporaine","count":0,"groups":["15"],"observed":[],"crop":[52,452,355],"supplementaryArt":-1},{"name":"Aventure","count":0,"groups":["16"],"observed":[],"crop":null,"supplementaryArt":12},{"name":"Drame","count":0,"groups":["17"],"observed":[],"crop":null,"supplementaryArt":13},{"name":"Humour / Comédie","count":0,"groups":["18"],"observed":[],"crop":null,"supplementaryArt":14},{"name":"Fiction érotique","count":0,"groups":["19"],"observed":[],"crop":null,"supplementaryArt":15},{"name":"Poésie","count":0,"groups":["20"],"observed":[],"crop":null,"supplementaryArt":16},{"name":"Théâtre","count":0,"groups":["21"],"observed":[],"crop":null,"supplementaryArt":17},{"name":"Biographie / Autobiographie","count":0,"groups":["22"],"observed":[],"crop":null,"supplementaryArt":18},{"name":"Mémoires / Témoignage","count":0,"groups":["23"],"observed":[],"crop":null,"supplementaryArt":19},{"name":"Essai","count":0,"groups":["24"],"observed":[],"crop":null,"supplementaryArt":20},{"name":"True crime","count":0,"groups":["25"],"observed":[],"crop":null,"supplementaryArt":21},{"name":"Développement personnel","count":0,"groups":["26"],"observed":[],"crop":null,"supplementaryArt":22},{"name":"Documentaire / Non-fiction","count":0,"groups":["27"],"observed":[],"crop":null,"supplementaryArt":23},{"name":"Dystopie","count":0,"groups":[],"observed":["Dystopie politique"],"crop":null,"supplementaryArt":24}],"familyLabels":{"5":"Romance · Cadres / milieux","6":"Romance · Sports","7":"Romance · Univers criminels","8":"Romance · Périodes historiques","9":"Romance · Éléments paranormaux","10":"Fantasy","11":"Science-fiction","12":"Thriller / Policier / Mystère","13":"Horreur / Fantastique","14":"Fiction historique","15":"Fiction contemporaine","16":"Aventure","17":"Drame","18":"Humour / Comédie","19":"Fiction érotique","20":"Poésie","21":"Théâtre","22":"Biographie / Autobiographie","23":"Mémoires / Témoignage","24":"Essai","25":"True crime","26":"Développement personnel","27":"Documentaire / Non-fiction"},"families":{"5":["Small town","Campus / College","Workplace","Military","Western","Royal","Holiday / Seasonal","Celebrity","Music / Rockstar","Medical","Legal","Culinary","Travel romance","Romance universitaire","Romance de bureau","Small town — petite ville"],"6":["Hockey","Football","Football américain","Basket-ball","Baseball","Formule 1 / Motorsport","Rugby","Tennis","Boxe / MMA","Patinage artistique","Natation","Gymnastique","E-sport"],"7":["Mafia italienne","Bratva","Yakuza","Cartel","Bikers / MC","Crime organisé","Gang romance","Yakuzas","Bikers"],"8":["Régence","Victorienne","Édouardienne","Médiévale","Renaissance","Époque géorgienne","Seconde Guerre mondiale","Far West","Antiquité"],"9":["Vampires","Loups-garous / Métamorphes","Sorcières","Démons","Anges","Fantômes","Fae / Faës","Créatures mythologiques"],"10":["High fantasy","Low fantasy","Dark fantasy","Epic fantasy","Urban fantasy","Cozy fantasy","Grimdark","Sword and sorcery","Heroic fantasy","Portal fantasy","Historical fantasy","Mythological fantasy","Fairy tale fantasy","Gaslamp fantasy","Science fantasy","Military fantasy","Political fantasy","Medieval fantasy","Folklore fantasy","Arthurian fantasy","Asian-inspired fantasy","Arabian-inspired fantasy","African-inspired fantasy","Celtic fantasy","Slavic fantasy","Academy fantasy","Magical realism","Contemporary fantasy","Progression fantasy","LitRPG","Dungeon fantasy","Monster fantasy","Dragon fantasy","Fae fantasy","Witch fantasy","Vampire fantasy","Shifter fantasy","Necromancy fantasy","High fantasy — monde entièrement imaginaire","Low fantasy — magie dans notre monde","Fantasy urbaine","Fantasy de conte de fées"],"11":["Dystopie","Uchronie","Post-apocalyptique","Apocalyptique","Space opera","Hard science-fiction","Soft science-fiction","Cyberpunk","Biopunk","Solarpunk","Dieselpunk","Steampunk","Cli-fi / Climate fiction","Science-fiction militaire","Science-fiction politique","Science-fiction sociale","Science-fiction philosophique","Science-fiction horrifique","Science-fiction humoristique","Voyage dans le temps","Univers parallèles","Multivers","Premier contact","Invasion extraterrestre","Colonisation spatiale","Exploration spatiale","Generation ship","Alien world / Monde extraterrestre","Intelligence artificielle","Robots / Androïdes","Transhumanisme","Réalité virtuelle","Simulation","Techno-thriller SF","Near future","Far future","Dystopie politique"],"12":["Thriller psychologique","Thriller domestique","Thriller politique","Thriller juridique","Thriller médical","Thriller d’espionnage","Thriller technologique","Thriller de survie","Thriller d’action","Thriller de conspiration","Noir","Nordic noir","Crime fiction","Procédural policier","Détective","Enquêteur amateur","Private investigator","Cozy mystery","Whodunit","Locked-room mystery","Mystère historique","Mystère paranormal","Thriller surnaturel"],"13":["Horreur gothique","Horreur psychologique","Horreur surnaturelle","Folk horror","Body horror","Cosmic horror","Horreur occulte","Horreur religieuse","Horreur de survie","Gore / Splatter","Maison hantée","Ghost story","Horreur monstrueuse","Horreur vampirique","Zombies","Possession / démoniaque","Weird fiction","Paranormal","Surnaturel","Fiction gothique"],"14":["Régence","Renaissance","Seconde Guerre mondiale","Far West","Antiquité","Médiéval","Géorgien","Victorien","Édouardien","Première Guerre mondiale","Guerre froide","Saga historique","Fiction historique militaire","Fiction historique maritime","Fiction biographique"],"15":["Fiction littéraire","Saga familiale","Drame familial","Coming of age","Slice of life","Fiction sociale","Fiction domestique","Relations humaines","Campus novel","Workplace fiction"],"16":["Survie","Exploration","Expédition","Aventure maritime","Chasse au trésor","Wilderness adventure","Swashbuckling","Aventure historique","Aventure militaire"],"17":["Drame familial","Drame psychologique","Drame social","Drame domestique","Drame judiciaire","Tragédie","Drame initiatique"],"18":["Fiction humoristique","Satire","Parodie","Comédie noire","Comédie romantique","Absurde","Humour social"],"19":["Érotique contemporain","Érotique historique","Érotique paranormal","Érotique dark","BDSM erotica"],"20":["Poésie lyrique","Poésie narrative","Vers libres","Poème en prose","Slam / Spoken word","Haïku","Sonnet","Poésie épique"],"21":["Tragédie","Comédie","Tragi-comédie","Théâtre de l’absurde","Théâtre historique","Théâtre contemporain"],"22":["Biographie historique","Biographie artistique","Biographie littéraire","Biographie sportive","Biographie scientifique","Autobiographie"],"23":["Mémoires de voyage","Mémoires familiales","Récit de survie","Témoignage de guerre","Récit personnel","Journal / Carnet"],"24":["Philosophie","Société","Histoire","Politique","Sciences","Psychologie","Littérature","Art & culture","Féminisme","Écologie","Économie"],"25":["Crime organisé","Meurtres","Serial killers","Disparitions","Sectes","Criminalité financière","Enquête criminelle","Médecine légale","Erreur judiciaire"],"26":["Confiance en soi","Habitudes","Productivité","Relations","Communication","Carrière","Finances personnelles","Créativité","Mindfulness / Pleine conscience","Organisation"],"27":["Société","Histoire","Sciences","Économie","Nature","Animaux","Voyage","Géographie","Art","Musique","Cinéma","Politique / Géopolitique","Technologie","Éducation","Spiritualité / Religions"]},"unassigned":[],"subgenreCount":316}</script>
+  <template data-add-book-template>
+    <section id="elp-add-book" class="ep-stage" aria-labelledby="ep-add-title">
+      <section class="ep-form">
+        <header class="ep-page-header">
+          <div class="ep-header">
+      <button class="ep-icon-button ep-back cursor-interaction" type="button" aria-label="Étape précédente" hidden>
+        <i data-lucide="chevron-left" aria-hidden="true"></i>
+      </button>
+      <div class="ep-title">
+        <span class="ep-art ep-art-open" aria-hidden="true"></span>
+        <h2 id="ep-add-title">Ajouter un livre</h2>
+      </div>
+      <button class="ep-icon-button ep-close cursor-interaction" type="button" aria-label="Fermer et retourner à la bibliothèque">×</button>
+          </div>
+          <div class="ep-tablet-decoration title-decoration" aria-hidden="true"></div>
+          <div class="ep-edit-toolbar" hidden>
+            <button class="ep-icon-button ep-edit-toggle cursor-interaction" type="button" aria-label="Modifier la fiche" title="Modifier la fiche" aria-controls="ep-book-editor ep-summary-editor" aria-expanded="false">
+              <span data-edit-pencil aria-hidden="true"><i data-lucide="pencil"></i></span>
+              <span data-edit-check aria-hidden="true" hidden><i data-lucide="check"></i></span>
+            </button>
+          </div>
+    </header>
+    <p class="ep-question">Quel livre veux-tu ajouter ?</p>
+    <div class="ep-choices">
+      <button class="ep-card cursor-interaction" type="button" data-book="digital" aria-expanded="false">
+        <span class="ep-art ep-art-reader" aria-hidden="true"></span>
+        <span class="ep-card-copy"><span class="ep-card-title">Livre numérique</span><span class="ep-card-detail">Importer un EPUB ou un PDF</span></span>
+      </button>
+      <button class="ep-card cursor-interaction" type="button" data-book="paper" aria-expanded="false">
+        <span class="ep-art ep-art-closed" aria-hidden="true"></span>
+        <span class="ep-card-copy"><span class="ep-card-title">Livre papier</span><span class="ep-card-detail">Retrouver un livre dans le catalogue</span></span>
+      </button>
+    </div>
+
+      <section class="ep-step ep-digital" aria-label="Importer un fichier" hidden>
+        <div data-ep-file-choice>
+          <h3>Importer un fichier</h3>
+          <label class="ep-drop cursor-interaction">
+                <input class="sr-only ep-file" data-ep-document type="file" accept=".epub,.pdf,application/epub+zip,application/pdf">
+                <i data-lucide="file-up" aria-hidden="true"></i>
+                <span>Choisir un fichier</span>
+                <span class="ep-drop-detail">EPUB ou PDF</span>
+                <span class="ep-drop-drag">Glisser un EPUB ou un PDF ici</span>
+              </label>
+        </div>
+        <p class="ep-message" data-ep-import-status role="status" hidden></p>
+        <div data-ep-digital-preview hidden>
+          <div data-ep-snapshot></div>
+          <button type="button" class="ep-access ep-access-primary cursor-interaction" data-ep-continue>Continuer</button>
+        </div>
+        <div class="ep-import-recovery" data-ep-recovery hidden>
+          <label data-ep-title-field hidden>Titre <input type="text" data-ep-manual-title maxlength="220"></label>
+          <details data-ep-cover-tools>
+            <summary class="cursor-interaction">Changer la couverture</summary>
+            <p class="ep-message" data-ep-pages-label hidden>Touche la page qui porte la couverture.</p>
+            <div class="cover-pages" data-ep-pages hidden></div>
+            <div class="ep-cover-modes" role="group" aria-label="Recadrage de la couverture" data-ep-cover-modes hidden>
+              <button type="button" class="ep-access" data-ep-cropped aria-pressed="true">Marges retirées</button>
+              <button type="button" class="ep-access" data-ep-original aria-pressed="false">Original</button>
+            </div>
+            <label>Choisir une image <input type="file" data-ep-image accept="image/jpeg,image/png,image/webp,image/gif"></label>
+          </details>
+        </div>
+      </section>
+        <section class="ep-step ep-paper" aria-label="Retrouver un livre papier" hidden>
+      <h3>Retrouver un livre papier</h3>
+      <form class="ep-paper-search" role="search" aria-label="Rechercher dans le catalogue">
+        <label class="ep-search-field">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <span class="sr-only">Rechercher par titre, auteur ou ISBN</span>
+          <input class="ep-search-input" type="search" placeholder="Titre, auteur ou ISBN" enterkeyhint="search" autocomplete="off">
+        </label>
+        <button class="ep-scan cursor-interaction" type="button" aria-label="Scanner le code-barres du livre">
+          <i data-lucide="qr-code" aria-hidden="true"></i>
+        </button>
+      </form>
+      <ul class="ep-results" aria-label="Livres trouvés"></ul>
+      <p class="ep-message" data-empty hidden>Aucun livre trouvé.</p>
+      <p class="ep-message" data-scan-message role="status"></p>
+    </section>
+        <section class="ep-step ep-following" aria-label="Étape suivante" hidden>
+      <div data-next-book></div>
+      <form id="ep-book-editor" class="ep-book-editor" aria-label="Modifier les informations du livre" hidden>
+        <div class="ep-edit-cover">
+          <div data-edit-cover-preview></div>
+          <label class="ep-access ep-edit-cover-button cursor-interaction">
+            <input type="file" class="sr-only" data-edit-cover accept="image/jpeg,image/png,image/webp,image/gif">
+            Changer la couverture
+          </label>
+        </div>
+        <div class="ep-book-edit-fields">
+          <label>Titre <input name="title" type="text" required></label>
+          <label>Auteur ou autrice <input name="author" type="text"></label>
+          <div class="ep-edit-series">
+            <label>Saga <input name="series" type="text"></label>
+            <label>Tome <input name="volume" type="text"></label>
+          </div>
+          <label>Genres <input name="genres" type="text" placeholder="Séparés par des points-virgules"></label>
+          <label>Sous-genres <input name="subgenres" type="text" placeholder="Séparés par des points-virgules"></label>
+        </div>
+        <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
+      </form>
+      <h3 class="ep-summary-heading" id="ep-summary-heading">Résumé</h3>
+      <p class="ep-next-summary"></p>
+      <textarea id="ep-summary-editor" class="ep-summary-editor" aria-labelledby="ep-summary-heading" form="ep-book-editor" rows="5" hidden></textarea>
+      <section class="ep-status-section" aria-label="Statut de lecture">
+        <h3 class="ep-summary-heading">Statut de lecture</h3>
+        <div class="ep-status-options" role="radiogroup" aria-label="Choisir le statut de lecture">
+          <label class="ep-status-option cursor-interaction">
+            <input class="sr-only" type="radio" name="ep-statut-lecture" value="to-read" checked>
+            <span class="ep-status-face">
+              <span class="ep-status-art ep-status-art-pile" aria-hidden="true"></span>
+              <span>Pile à lire</span>
+            </span>
+          </label>
+          <label class="ep-status-option cursor-interaction">
+            <input class="sr-only" type="radio" name="ep-statut-lecture" value="reading">
+            <span class="ep-status-face">
+              <span class="ep-status-art ep-status-art-cours" aria-hidden="true"></span>
+              <span>En cours</span>
+            </span>
+          </label>
+          <label class="ep-status-option cursor-interaction">
+            <input class="sr-only" type="radio" name="ep-statut-lecture" value="finished">
+            <span class="ep-status-face">
+              <span class="ep-status-art ep-status-art-lu" aria-hidden="true"></span>
+              <span>Livre lu</span>
+            </span>
+          </label>
+        </div>
+        <div class="ep-reading-fields" data-reading-fields data-reading-status="to-read" hidden>
+          <div class="ep-reading-field ep-date-field" data-reading-date="start">
+            <span class="ep-field-label" id="ep-start-heading">Début de lecture</span>
+            <div class="ep-date-parts" role="group" aria-labelledby="ep-start-heading"></div>
+            <span class="ep-date-feedback" data-date-feedback role="status" hidden></span>
+          </div>
+          <div class="ep-reading-field" data-reading-for="reading" hidden>
+            <span class="ep-field-label" id="ep-progress-label">Progression</span>
+            <div class="ep-progress-row">
+              <div class="ep-picker">
+                <button type="button" class="ep-picker-trigger cursor-interaction" data-picker data-progress-unit
+                        aria-label="Unité de progression" aria-describedby="ep-progress-unit" aria-expanded="false" aria-controls="ep-progress-options">
+                  <span id="ep-progress-unit" data-value>Page</span><span class="ep-picker-chevron" aria-hidden="true"></span>
+                </button>
+                <div class="ep-picker-list" id="ep-progress-options" role="group" aria-label="Unités de progression" hidden></div>
+              </div>
+              <input type="number" min="0" step="1" inputmode="numeric" aria-labelledby="ep-progress-label ep-progress-unit" data-progress>
+            </div>
+          </div>
+          <div class="ep-reading-field ep-date-field" data-reading-date="finish" data-reading-for="finished">
+            <span class="ep-field-label" id="ep-finish-heading">Date de fin</span>
+            <div class="ep-date-parts" role="group" aria-labelledby="ep-finish-heading"></div>
+            <span class="ep-date-feedback" data-date-feedback role="status" hidden></span>
+          </div>
+          <div class="ep-finished-evaluation" data-reading-for="finished">
+            <div class="ep-rating-field">
+              <span class="ep-field-label" id="ep-rating-label">Note sur 5</span>
+              <div class="ep-rating-controls" role="group" aria-labelledby="ep-rating-label" aria-describedby="ep-rating-keys">
+                <button type="button" class="ep-rating-step cursor-interaction" data-rating-step="-0.5"
+                        aria-label="Retirer une demi-étoile" aria-disabled="true">
+                  <span aria-hidden="true">−</span>
+                </button>
+                <div class="ep-rating-stars" data-rating-stars></div>
+                <button type="button" class="ep-rating-step cursor-interaction" data-rating-step="0.5"
+                        aria-label="Ajouter une demi-étoile" aria-disabled="false">
+                  <span aria-hidden="true">+</span>
+                </button>
+                <p class="sr-only" id="ep-rating-keys">Les flèches ajustent la note par demi-étoile. La touche Suppr efface la note.</p>
+                <p class="sr-only" data-rating-status role="status"></p>
+              </div>
+            </div>
+            <label class="ep-favorite-switch cursor-interaction">
+              <span class="ep-field-label">Coup de cœur</span>
+              <input type="checkbox" role="switch" class="sr-only" data-favorite>
+              <span class="ep-switch-target" aria-hidden="true"><span class="ep-switch-track"></span></span>
+            </label>
+          </div>
+        </div>
+      </section>
+      <section class="ep-folder-zone" aria-labelledby="ep-collections-heading">
+        <h3 class="ep-summary-heading" id="ep-collections-heading">Mes collections</h3>
+        <div class="catalogue-folder-created" data-book-folder-created role="status" hidden>
+          <span class="catalogue-folder-created-mark" aria-hidden="true"><i data-lucide="check"></i></span>
+          <span class="catalogue-folder-created-copy"><strong>Dossier créé</strong><span data-book-folder-created-path></span></span>
+        </div>
+        <button type="button" class="ep-folder-disclosure cursor-interaction" data-book-folders aria-controls="ep-book-folders" aria-expanded="false">
+          <i data-lucide="folders" aria-hidden="true"></i>
+          <span data-book-folder-value>Voir les dossiers</span>
+          <i data-lucide="chevron-down" aria-hidden="true"></i>
+        </button>
+        <div class="ep-folder-panel" id="ep-book-folders" data-book-folder-panel hidden>
+          <p class="catalogue-folder-location-path" data-book-folder-path hidden></p>
+          <button type="button" class="catalogue-folder-index-choice catalogue-folder-up ep-folder-parent cursor-interaction" data-book-folder-parent hidden>
+            <i data-lucide="chevron-left" aria-hidden="true"></i><span>Dossier parent</span>
+          </button>
+          <ul class="genre-grid collection-grid catalogue-collection-grid catalogue-folder-destination-grid" data-book-folder-grid aria-label="Dossiers à cet emplacement"></ul>
+          <p class="catalogue-folder-picker-empty" data-book-folder-empty hidden>Aucun dossier ici.</p>
+          <button type="button" class="catalogue-folder-submit ep-folder-choose cursor-interaction" data-book-folder-choose hidden>Choisir ce dossier</button>
+          <button type="button" class="ep-folder-add cursor-interaction" data-book-folder-create aria-haspopup="dialog">
+            <i data-lucide="plus" aria-hidden="true"></i><span>Créer un dossier</span>
+          </button>
+        </div>
+        <button type="button" class="ep-folder-remove cursor-interaction" data-book-folder-remove hidden>Retirer le dossier</button>
+        <p class="sr-only" role="status" data-creation-status></p>
+      </section>
+      <section class="ep-confirm-zone" aria-label="Confirmer l’ajout du livre">
+        <button type="button" class="ep-access ep-access-primary cursor-interaction" data-confirm-book>Ajouter à ma bibliothèque</button>
+      </section>
+    </section>
+      </section>
+      <template class="ep-book-template">
+<span class="ep-book-snapshot">
+      <span class="ep-cover" aria-hidden="true">
+        <img data-book-cover alt="" hidden><span class="ep-cover-mark"></span><span data-cover-caption></span>
+      </span>
+      <span class="ep-book-copy">
+        <span class="ep-book-name"></span>
+        <span class="ep-book-author"></span>
+        <span class="ep-book-series" hidden></span>
+      </span>
+    </span>
+</template>
+      <template class="ep-rating-star-template">
+<button type="button" class="ep-rating-star cursor-interaction" aria-pressed="false">
+      <span class="ep-rating-glyph" aria-hidden="true"></span>
+    </button>
+</template>
+      <template class="ep-date-picker-template">
+<div class="ep-picker">
+      <button type="button" class="ep-picker-trigger cursor-interaction" data-picker aria-expanded="false">
+        <span data-value></span><span class="ep-picker-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="ep-picker-list" role="group" hidden></div>
+    </div>
+</template>
+    <dialog class="ep-folder-dialog ep-scan-dialog" aria-labelledby="ep-scan-title" data-ep-scan-dialog>
+      <div class="ep-folder-create">
+        <header class="ep-folder-dialog-header">
+          <h2 id="ep-scan-title">Scanner un code-barres</h2>
+          <button type="button" class="ep-icon-button cursor-interaction" data-ep-scan-close aria-label="Fermer le scanner">×</button>
+        </header>
+        <video data-ep-camera autoplay muted playsinline hidden></video>
+        <p class="ep-message" data-ep-camera-message role="status"></p>
+        <label class="ep-access cursor-interaction">Scanner une photo <input type="file" class="sr-only" data-ep-photo accept="image/*" capture="environment"></label>
+      </div>
+    </dialog>
+    </section>
+  </template>
+</div>
+</div>
+</body>
+</html>
