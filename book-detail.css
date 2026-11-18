@@ -670,3 +670,29 @@
 #bibliotheque-app [data-saved-book-host] [hidden] {display:none!important}
 #bibliotheque-app[data-book-open] .toolbar [hidden] {display:none!important}
 #bibliotheque-app [data-saved-book-host] .ep-book-name:focus {outline:none}
+
+/* Cartouche commun avec deux commandes indépendantes. */
+#bibliotheque-app #elp-saved-book .ep-saved-status {
+  gap:0;align-items:stretch;isolation:isolate;border:1px solid var(--ep-line);
+  border-radius:10px;background:var(--ep-card);
+}
+#bibliotheque-app #elp-saved-book .ep-saved-status-button {
+  grid-template-columns:24px minmax(0,1fr) 8px;gap:5px;
+  min-block-size:44px;padding-inline:7px;border-radius:9px 0 0 9px;
+}
+#bibliotheque-app #elp-saved-book .ep-saved-status-button::before {content:none}
+#bibliotheque-app #elp-saved-book .ep-saved-status-button .ep-status-art {inline-size:24px}
+#bibliotheque-app #elp-saved-book .ep-saved-favorite {
+  position:relative;border-radius:0 9px 9px 0;background:transparent;
+}
+#bibliotheque-app #elp-saved-book .ep-saved-favorite::before {
+  content:"";position:absolute;inset-inline-start:0;inset-block:8px;inline-size:1px;background:var(--ep-line);
+}
+#bibliotheque-app #elp-saved-book :is(.ep-saved-status-button,.ep-saved-favorite):hover,
+#bibliotheque-app #elp-saved-book :is(.ep-saved-status-button[aria-expanded="true"],.ep-saved-favorite[aria-pressed="true"]) {
+  background:var(--ep-pressed);
+}
+@container (max-width:295px) {
+  #bibliotheque-app #elp-saved-book .ep-saved-status-button {grid-template-columns:20px minmax(0,1fr) 7px;gap:4px;padding-inline:5px}
+  #bibliotheque-app #elp-saved-book .ep-saved-status-button .ep-status-art {inline-size:20px}
+}

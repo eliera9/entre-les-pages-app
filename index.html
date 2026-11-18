@@ -21,12 +21,13 @@
 <script defer src="./storage.js?v=6"></script>
 <script defer src="./library-sync.js?v=2"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=8">
+<link rel="stylesheet" href="./add-book.css?v=10">
 <script defer src="./book-scan.js?v=1"></script>
-<script defer src="./add-book.js?v=7"></script>
-<link rel="stylesheet" href="./book-detail.css?v=2">
-<script defer src="./book-detail.js?v=4"></script>
-<script defer src="./app.js?v=26"></script>
+<script defer src="./book-tags.js?v=2"></script>
+<script defer src="./add-book.js?v=10"></script>
+<link rel="stylesheet" href="./book-detail.css?v=4">
+<script defer src="./book-detail.js?v=6"></script>
+<script defer src="./app.js?v=28"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -440,9 +441,8 @@
             <label>Saga <input name="series" type="text"></label>
             <label>Tome <input name="volume" type="text"></label>
           </div>
-          <label>Genres <input name="genres" type="text" placeholder="Séparés par des points-virgules"></label>
-          <label>Sous-genres <input name="subgenres" type="text" placeholder="Séparés par des points-virgules"></label>
         </div>
+        <div class="ep-tag-editor" data-book-tags></div>
         <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
       </form>
           <h3 class="ep-summary-heading" id="saved-summary-heading">Résumé</h3>
@@ -581,6 +581,14 @@
     <section id="elp-add-book" class="ep-stage" aria-labelledby="ep-add-title">
       <section class="ep-form">
         <header class="ep-page-header">
+          <nav class="ep-top-nav" aria-label="Navigation d’ajout de livre">
+            <div class="ep-top-group">
+              <button data-add-menu type="button" class="ep-icon-button cursor-interaction" aria-label="Ouvrir la barre latérale" aria-haspopup="dialog" aria-controls="bibliotheque-app-menu" aria-expanded="false"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></button>
+              <button data-add-paper-back hidden type="button" class="ep-icon-button cursor-interaction" aria-label="Revenir aux résultats de recherche" ><i class="navigation-icon" data-lucide="chevron-left" aria-hidden="true"></i></button>
+              <button data-add-home type="button" class="ep-icon-button cursor-interaction"  aria-label="Aller à ma bibliothèque"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+            </div>
+            <div class="ep-top-group" data-add-nav-actions></div>
+          </nav>
           <div class="ep-header">
       <button class="ep-icon-button ep-back cursor-interaction" type="button" aria-label="Étape précédente" hidden>
         <i data-lucide="chevron-left" aria-hidden="true"></i>
@@ -594,7 +602,7 @@
           <div class="ep-tablet-decoration title-decoration" aria-hidden="true"></div>
           <div class="ep-edit-toolbar" hidden>
             <button class="ep-icon-button ep-edit-toggle cursor-interaction" type="button" aria-label="Modifier la fiche" title="Modifier la fiche" aria-controls="ep-book-editor ep-summary-editor" aria-expanded="false">
-              <span data-edit-pencil aria-hidden="true"><i data-lucide="pencil"></i></span>
+              <span data-edit-pencil aria-hidden="true"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></span>
               <span data-edit-check aria-hidden="true" hidden><i data-lucide="check"></i></span>
             </button>
           </div>
@@ -647,15 +655,24 @@
         <label class="ep-search-field">
           <i data-lucide="search" aria-hidden="true"></i>
           <span class="sr-only">Rechercher par titre, auteur ou ISBN</span>
-          <input class="ep-search-input" type="search" placeholder="Titre, auteur ou ISBN" enterkeyhint="search" autocomplete="off">
+          <input class="ep-search-input" type="search" maxlength="200" placeholder="Titre, auteur ou ISBN" enterkeyhint="search" autocomplete="off">
         </label>
         <button class="ep-scan cursor-interaction" type="button" aria-label="Scanner le code-barres du livre">
           <i data-lucide="qr-code" aria-hidden="true"></i>
         </button>
       </form>
-      <ul class="ep-results" aria-label="Livres trouvés"></ul>
-      <p class="ep-message" data-empty hidden>Aucun livre trouvé.</p>
-      <p class="ep-message" data-scan-message role="status"></p>
+      <p class="ep-message ep-catalogue-message" data-scan-message role="status"></p>
+      <button class="search-empty-clear cursor-interaction ep-search-retry" type="button" data-retry-paper hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i> Réessayer</button>
+      <ul class="ep-results" aria-label="Livres trouvés" hidden></ul>
+      <button class="ep-access ep-search-more cursor-interaction" type="button" data-more-paper hidden>Voir plus de résultats</button>
+      <section class="library-search-empty" data-empty aria-labelledby="ep-paper-empty-title" hidden>
+        <span class="library-search-art" aria-hidden="true"></span>
+        <h2 id="ep-paper-empty-title">Aucun résultat</h2>
+        <p>Essaie un autre titre, un nom d’auteur ou un ISBN.</p>
+        <div class="library-search-empty-actions">
+          <button class="search-empty-clear cursor-interaction" type="button" data-clear-paper><i data-lucide="rotate-ccw" aria-hidden="true"></i> Effacer la recherche</button>
+        </div>
+      </section>
     </section>
         <section class="ep-step ep-following" aria-label="Étape suivante" hidden>
       <div data-next-book></div>
@@ -674,9 +691,8 @@
             <label>Saga <input name="series" type="text"></label>
             <label>Tome <input name="volume" type="text"></label>
           </div>
-          <label>Genres <input name="genres" type="text" placeholder="Séparés par des points-virgules"></label>
-          <label>Sous-genres <input name="subgenres" type="text" placeholder="Séparés par des points-virgules"></label>
         </div>
+        <div class="ep-tag-editor" data-book-tags></div>
         <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
       </form>
       <h3 class="ep-summary-heading" id="ep-summary-heading">Résumé</h3>

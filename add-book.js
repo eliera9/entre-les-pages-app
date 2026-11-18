@@ -1,4 +1,4 @@
-function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, refreshIcons}) {
+function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
   const root=stage;
   const copy=selector=>root.querySelector(selector).content.cloneNode(true);
   const lifecycle=new AbortController();
@@ -445,6 +445,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const digital=get(".ep-digital");
   const following=get(".ep-following");
   const back=get(".ep-back");
+  const paperBack=get("[data-add-paper-back]");
+  const nav=get(".ep-top-nav");
+  const actions=get("[data-add-nav-actions]");
+  const legacyHeader=get(".ep-header");
+  const decoration=get(".ep-tablet-decoration");
   const exit=get(".ep-close");
   const editToolbar=get(".ep-edit-toolbar");
   const editButton=get(".ep-edit-toggle");
@@ -455,13 +460,16 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const editCoverStatus=get("[data-edit-cover-status]");
   const nextBook=get("[data-next-book]");
   const summary=get(".ep-next-summary");
-  const editFields=["title","author","series","volume","genres","subgenres"].map(name=>editForm.elements.namedItem(name));
+  const editFields=["title","author","series","volume"].map(name=>editForm.elements.namedItem(name));
+  const tags=mountBookTags(editForm.querySelector("[data-book-tags]"),bookTagOptions,refreshIcons);
   const cards=[...form.querySelectorAll("[data-book]")];
   const searchForm=get(".ep-paper-search");
   const query=get(".ep-search-input");
   const results=get(".ep-results");
   const empty=get("[data-empty]");
   const searchMessage=get("[data-scan-message]");
+  const retrySearch=get("[data-retry-paper]");
+  const moreSearch=get("[data-more-paper]");
   const nextButton=get("[data-ep-continue]");
   const addButton=get("[data-confirm-book]");
   const saveStatus=document.createElement("p");
@@ -512,6 +520,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   let trimmedCanvas;
   let searchTimer;
   let searchRequest;
+  let searchPage=0;
+  let retryPage=1;
 
   const isbn=value=>{
     const code=(value || "").replace(/[\s-]/g,"").toUpperCase();
@@ -525,8 +535,19 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const pane={digital,paper,next:following}[step];
     const changed=pane?.hidden;
     stage.dataset.step=step;
-    back.hidden=step!=="next";
-    editToolbar.hidden=step!=="next";
+    const recap=step==="next";
+    const paperRecap=recap && lastStep==="paper";
+    const digitalRecap=recap && !paperRecap;
+    stage.toggleAttribute("data-paper-recap",paperRecap);
+    nav.hidden=digitalRecap;
+    legacyHeader.hidden=decoration.hidden=paperRecap;
+    back.hidden=!digitalRecap;
+    paperBack.hidden=!paperRecap;
+    exit.hidden=paperRecap;
+    editButton.hidden=!recap;
+    (digitalRecap ? legacyHeader : actions).append(exit);
+    (paperRecap ? actions : editToolbar).append(editButton);
+    editToolbar.hidden=!digitalRecap;
     for (const item of [digital,paper,following]) item.hidden=item!==pane;
     for (const card of cards) card.setAttribute("aria-expanded",String(card.dataset.book===step));
     if (changed && animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -556,10 +577,10 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     originScroll=window.scrollY;
     renderBook(book);
     saveStatus.textContent="";
-    back.setAttribute("aria-label",step==="paper" ? "Revenir aux résultats de recherche" : "Revenir à l’aperçu du livre");
+    back.setAttribute("aria-label","Revenir à l’aperçu du livre");
     showStep("next");
     window.scrollTo({top:0,behavior:"instant"});
-    back.focus({preventScroll:true});
+    (step==="paper" ? paperBack : back).focus({preventScroll:true});
   }
 
   function setEditing(editing) {
@@ -588,6 +609,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       field.value=Array.isArray(value) ? value.join("; ") : value || "";
     }
     editFields[0].setCustomValidity("");
+    tags.set(currentBook);
     editSummary.value=currentBook.summary || "";
     editSummaryChanged=false;
     editCoverPreview.replaceChildren(drawBook(currentBook).querySelector(".ep-cover"));
@@ -601,12 +623,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const title=editFields[0];
     title.setCustomValidity(title.value.trim() ? "" : "Renseigne le titre du livre.");
     if (!editForm.reportValidity()) return false;
-    for (const field of editFields) {
-      const value=field.value.trim();
-      currentBook[field.name]=["genres","subgenres"].includes(field.name)
-        ? [...new Set(value.split(/[;\n]/).map(part=>part.trim()).filter(Boolean))]
-        : value;
-    }
+    for (const field of editFields) currentBook[field.name]=field.value.trim();
+    Object.assign(currentBook,tags.values());
     if (editSummaryChanged) {
       currentBook.summary=editSummary.value.trim();
       editedSummaries.add(currentBook);
@@ -643,8 +661,13 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       // The same catalogue adapters can reach the public sources from the device.
       const {createCatalogue}=await import("./catalogue-engine.js?v=1");
+      if (query.paper && Number(query.page)>1) {
+        if (serverData) return serverData;
+        throw new Error("Recherche complémentaire indisponible.");
+      }
       const local=createCatalogue([],requestSignal);
-      return await (action==="details" ? local.details(params) : local.search(params));
+      const fallback=await (action==="details" ? local.details(params) : local.search(params));
+      return query.paper ? {...fallback,partial:true} : fallback;
     } catch (error) {
       if (requestSignal.aborted || !serverData) throw error;
       return serverData;
@@ -656,7 +679,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     if (cached && cached.until>Date.now()) return cached.data;
     const data=await queryCatalogues("catalogue",query,requestSignal);
     if (!Array.isArray(data.books)) throw new Error("Catalogue indisponible.");
-    if (data.books.length && !requestSignal.aborted) {
+    if (!data.partial && !requestSignal.aborted) {
       if (catalogueCache.size>=30) catalogueCache.delete(catalogueCache.keys().next().value);
       catalogueCache.set(key,{until:Date.now()+300000,data});
     }
@@ -705,42 +728,86 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }
   }
 
-  function showSearch() {
+  function appendSearchResults(books) {
+    const seen=new Set([...results.children].map(item=>item.dataset.catalogueId));
+    for (const info of books) {
+      if (seen.has(info.id)) continue;
+      seen.add(info.id);
+      const book={...info,format:"Papier"};
+      const item=document.createElement("li");
+      item.dataset.catalogueId=book.id;
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="ep-result cursor-interaction";
+      button.append(drawBook(book,true));
+      button.addEventListener("click",()=>openBook(book,"paper",button));
+      item.append(button);
+      results.append(item);
+    }
+    results.hidden=!results.children.length;
+  }
+
+  function showSearch({page=1, delay=400}={}) {
     clearTimeout(searchTimer);
     searchRequest?.abort();
     const text=query.value.trim();
+    paper.dataset.searchState="idle";
     empty.hidden=true;
+    retrySearch.hidden=true;
+    moreSearch.hidden=true;
     searchMessage.textContent="";
-    results.replaceChildren();
-    results.hidden=true;
+    if (page===1) {
+      searchPage=0;
+      results.replaceChildren();
+      results.hidden=true;
+    }
     if (text.length<2) return;
     searchTimer=setTimeout(async()=>{
       const request=new AbortController();
       searchRequest=request;
+      const timeout=setTimeout(()=>request.abort("timeout"),19000);
+      const active=()=>!signal.aborted && searchRequest===request && !request.signal.aborted;
+      const canFinish=()=>!signal.aborted && searchRequest===request &&
+        (!request.signal.aborted || request.signal.reason==="timeout");
       const code=isbn(text);
-      searchMessage.textContent="Recherche en cours…";
+      const params={q:text,paper:"1",page:String(page),...(/^97[89]\d{10}$/.test(code) ? {isbn:code} : {})};
+      const originalCount=results.children.length;
+      let complete=false;
+      let hasMore=false;
+      paper.dataset.searchState="loading";
+      searchMessage.textContent=page===1 ? "Recherche en cours…" : "";
       try {
-        const {books:rows,partial}=await catalogue({q:text,...(/^(?:\d{13}|\d{9}[\dX])$/.test(code) ? {isbn:code} : {})},request.signal);
-        if (request.signal.aborted || signal.aborted) return;
-        const items=rows.map(info=>{
-          const book={...info,format:"Papier"};
-          const item=document.createElement("li");
-          const button=document.createElement("button");
-          button.type="button";
-          button.className="ep-result cursor-interaction";
-          button.append(drawBook(book,true));
-          button.addEventListener("click",()=>openBook(book,"paper",button));
-          item.append(button);
-          return item;
-        });
-        results.replaceChildren(...items);
-        results.hidden=!items.length;
-        empty.hidden=Boolean(items.length) || partial;
-        searchMessage.textContent=!items.length && partial ? "Recherche incomplète. Un catalogue est momentanément indisponible. Réessaie dans un instant." : "";
-      } catch {
-        if (!request.signal.aborted && !signal.aborted) searchMessage.textContent="Le catalogue est momentanément indisponible. Réessaie dans un instant.";
+        for (const retry of [false,true]) {
+          try {
+            const batch=await catalogue(params,request.signal);
+            if (!active()) break;
+            appendSearchResults(batch.books);
+            hasMore ||= Boolean(batch.hasMore);
+            complete=!batch.partial;
+            if (complete) break;
+          } catch {
+            if (!active()) break;
+          }
+          if (!retry) {
+            paper.dataset.searchState="recovering";
+            if (!results.hidden) searchMessage.textContent="";
+            await new Promise(resolve=>setTimeout(resolve,550));
+            if (!active()) break;
+          }
+        }
+        if (!canFinish()) return;
+        const hasNewResults=results.children.length>originalCount;
+        if (complete || hasNewResults) searchPage=page;
+        retryPage=page;
+        empty.hidden=!complete || !results.hidden;
+        retrySearch.hidden=complete || hasNewResults;
+        moreSearch.hidden=!hasMore || !retrySearch.hidden;
+        searchMessage.textContent="";
+        paper.dataset.searchState=complete ? "ready" : hasNewResults ? "partial" : "unavailable";
+      } finally {
+        clearTimeout(timeout);
       }
-    },400);
+    },delay);
   }
 
   function message(text="") {
@@ -963,19 +1030,31 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     query.focus();
   });
   get(".ep-scan").addEventListener("click",scanner.open);
-  query.addEventListener("input",showSearch);
-  searchForm.addEventListener("submit",event=>{event.preventDefault();showSearch();});
+  query.addEventListener("input",()=>showSearch());
+  searchForm.addEventListener("submit",event=>{event.preventDefault();showSearch({delay:0});});
+  get("[data-clear-paper]").addEventListener("click",()=>{
+    query.value="";
+    showSearch();
+    query.focus();
+  });
+  retrySearch.addEventListener("click",()=>showSearch({page:retryPage,delay:0}));
+  moreSearch.addEventListener("click",()=>showSearch({page:searchPage+1,delay:0}));
   for (const card of cards) card.addEventListener("click",()=>showStep(card.dataset.book));
   nextButton.addEventListener("click",()=>{if (digitalBook?.title) openBook(digitalBook,"digital",nextButton);});
-  back.addEventListener("click",()=>{
+  function returnToResults() {
     if (!applyBookEdits()) return;
     showStep(lastStep);
     window.scrollTo({top:originScroll,behavior:"instant"});
     origin?.focus({preventScroll:true});
-  });
+  }
+  back.addEventListener("click",returnToResults);
+  paperBack.addEventListener("click",returnToResults);
   exit.addEventListener("click",close);
+  get("[data-add-home]").addEventListener("click",home);
+  const menu=get("[data-add-menu]");
+  menu.addEventListener("click",()=>openSidebar(menu));
   stage.addEventListener("keydown",event=>{
-    if (event.key!=="Escape" || folderDialog.open || scanner.active()) return;
+    if (event.defaultPrevented || event.key!=="Escape" || folderDialog.open || scanner.active()) return;
     if (pickers.closeMenu(true) || folderPicker.close()) event.preventDefault();
     else if (!editForm.hidden) {
       setEditing(false);

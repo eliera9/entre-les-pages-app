@@ -438,6 +438,7 @@ async function activateLibrary(root) {
     genre: sorted(genres.map(genre => genre.name)), subgenre: sorted(allSubgenres),
     trope: sorted(unique(books.flatMap(book => book.tropes))), status: statuses, author: sorted(unique(books.map(book => book.author).filter(Boolean))),
   };
+  const bookTagOptions = {genres: options.genre, subgenres: options.subgenre};
   const emptyFilters = () => Object.fromEntries(Object.keys(options).map(kind => [kind, []]));
   const copy = filters => Object.fromEntries(Object.entries(filters).map(([kind, values]) => [kind, [...values]]));
   const countFilters = filters => Object.values(filters).filter(values => values.length).length;
@@ -610,7 +611,9 @@ async function activateLibrary(root) {
 
   let sidebarHideTimer;
 
-  function setSidebarOpen(open) {
+  let sidebarOpener = sidebarToggle;
+
+  function setSidebarOpen(open, opener = sidebarToggle) {
     if (open === (root.dataset.sidebarOpen === 'true')) return;
     clearTimeout(sidebarHideTimer);
     const animate = window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches;
@@ -619,21 +622,27 @@ async function activateLibrary(root) {
     sidebarToggle.setAttribute('aria-label', open ? 'Fermer la barre latérale' : 'Ouvrir la barre latérale');
 
     if (open) {
+      sidebarOpener = opener;
+      sidebarOpener.setAttribute('aria-expanded', 'true');
       closeFolderForm();
       showWindow();
       sidebarLayer.hidden = false;
       sidebarLayer.inert = false;
       sidebarLayer.removeAttribute('aria-hidden');
       libraryMain.inert = true;
+      addBookPage.inert = true;
       if (animate) sidebarLayer.getBoundingClientRect();
       root.dataset.sidebarOpen = 'true';
       updateScrollTop();
-      libraryTitle.focus({preventScroll: true});
+      (addBookPage.hidden ? libraryTitle : find('[data-menu-page="home"]', sidebar)).focus({preventScroll: true});
       return;
     }
 
     libraryMain.inert = false;
-    sidebarToggle.focus({preventScroll: true});
+    addBookPage.inert = false;
+    sidebarOpener.setAttribute('aria-expanded', 'false');
+    const target = sidebarOpener.isConnected ? sidebarOpener : sidebarToggle;
+    target.focus({preventScroll: true});
     sidebarLayer.inert = true;
     sidebarLayer.setAttribute('aria-hidden', 'true');
     root.dataset.sidebarOpen = 'false';
@@ -2336,6 +2345,13 @@ async function activateLibrary(root) {
       openFolderEditor,
       saveBook: saveAddedBook,
       close: returnFromSecondary,
+      home() {
+        setScope('home');
+        window.scrollTo({top: 0, behavior: 'instant'});
+        sidebarToggle.focus({preventScroll: true});
+      },
+      openSidebar: button => setSidebarOpen(true, button),
+      bookTagOptions,
       refreshIcons,
     });
   }
@@ -2423,7 +2439,7 @@ async function activateLibrary(root) {
         sidebarToggle.focus({preventScroll:true});
       }
       disposeBook = mountSavedBook({
-        root, host: bookHost, book, storage, engine: coverReader, home: fromLibrary ? returnFromSecondary : home,
+        root, host: bookHost, book, storage, engine: coverReader, bookTagOptions, refreshIcons, home: fromLibrary ? returnFromSecondary : home,
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
         startInNote: openReadingSheet,
         returnToLibrary: fromLibrary ? returnFromSecondary : null,

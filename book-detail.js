@@ -1,4 +1,4 @@
-function mountSavedBook({root, host, book, storage, engine, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
   const scope = new AbortController();
   const on = (node, type, callback) => node.addEventListener(type, callback, {signal: scope.signal});
   host.replaceChildren(root.querySelector('[data-saved-book-template]').content.cloneNode(true));
@@ -13,6 +13,7 @@ function mountSavedBook({root, host, book, storage, engine, home, startInReader,
   const preview = q('[data-book-preview]');
   const editor = q('[data-edit-fields]');
   const form = q('form');
+  const tags = mountBookTags(form.querySelector('[data-book-tags]'), bookTagOptions, refreshIcons);
   const summary = q('[data-summary-view]');
   const access = q('[data-reader-access]');
   const read = q('[data-open-reader]');
@@ -207,10 +208,11 @@ function mountSavedBook({root, host, book, storage, engine, home, startInReader,
     coverRevision++;
     previewCover();
     q('[data-edit-cover]').value = '';
-    for (const field of ['title','author','series','volume','genres','subgenres']) {
+    for (const field of ['title','author','series','volume']) {
       const value = field === 'series' ? book.saga || book.series : book[field];
       form.elements.namedItem(field).value = Array.isArray(value) ? value.join('; ') : value ?? '';
     }
+    tags.set(book);
     q('#saved-summary-editor').value = book.summary || '';
     render();
     focus(form.elements.title);
@@ -234,7 +236,7 @@ function mountSavedBook({root, host, book, storage, engine, home, startInReader,
     const title = value('title');
     if (!title) {focus(form.elements.title); return;}
     const changes = {title, author:value('author'), saga:value('series'), volume:value('volume'),
-      genres:list(value('genres')), subgenres:list(value('subgenres')), summary:q('#saved-summary-editor').value.trim(), coverData:pendingCover};
+      ...tags.values(), summary:q('#saved-summary-editor').value.trim(), coverData:pendingCover};
     if ('series' in book) changes.series = changes.saga;
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });

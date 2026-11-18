@@ -328,5 +328,5 @@ export function createCatalogue(localRows=[], signal) {
   }
 
 
-  return {search,details};
+  return {search,details,appleSearch,openLibraryIsbn};
 }
