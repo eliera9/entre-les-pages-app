@@ -1,3 +1,6 @@
+// Reopening a book must wait for its previous reader's pending writes.
+const readerAnnotationWriteQueues = new Map();
+
 function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,signal,refreshIcons,onBookmark}) {
   const config = {"colors":[["Rose poudré","#d1aab6"],["Rose boisé","#b77b8d"],["Lilas doux","#c4a7cb"],["Sauge","#a7ad94"],["Miel","#d8b578"],["Sable","#d1b49c"],["Vieux rose","#c58a9c"],["Framboise","#b65c7c"],["Lavande","#ab9acf"],["Prune","#8e6384"],["Bleu brume","#adc6d8"],["Bleu ardoise","#788fa9"],["Vert amande","#c4ceaa"],["Eucalyptus","#83aea0"],["Pêche","#efb9a4"],["Terracotta","#c78772"],["Vanille","#ebd7a4"],["Taupe","#aa968b"]],"tools":[["surligner","Surligner"],["souligner","Souligner"],["entourer-le-texte","Entourer le texte"],["symbole","Symbole"],["note-de-passage","Note de passage"],["note-de-page","Note de page"],["note-de-chapitre","Note de chapitre"],["marque-page","Marque-page"],["passage-favori","Passage favori"],["citation","Citation"],["etiquette-personnalisee","Étiquette personnalisée"]]};
   const preferences = {color:config.colors[0][1],strength:"light",shape:"rounded"};
@@ -30,11 +33,13 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   let state = {annotations:[],placement:[],bookmarked:false};
   let savedFilter = "all";
   let persisted = {};
-  let writeQueue = Promise.resolve();
+  let writeQueue = readerAnnotationWriteQueues.get(book.id)?.promise || Promise.resolve();
   const toolLabels = new Map(config.tools);
+  toolLabels.set("crochet-en-marge","Crochet");
   const bookmarkNoteTypes = new Set(["note-de-page","note-de-chapitre"]);
   const contextualTools = new Set(["note-de-passage","passage-favori","citation",...bookmarkNoteTypes]);
-  const railTools = config.tools.filter(([slug]) => !contextualTools.has(slug));
+  const railTools = config.tools.filter(([slug]) => !contextualTools.has(slug) && slug !== "etiquette-personnalisee");
+  railTools.push(["crochet-en-marge","Crochet"]);
   const toolButtons = new Map();
   const symbols = [
     ["♡","J’ai adoré ce passage"],["☺","Ça m’a fait rire"],["!","Ça m’a surprise"],
@@ -46,7 +51,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   const notes = new Map([
     ["note-de-passage",() => ""],["note-de-page",pageLabel],["note-de-chapitre",chapterLabel]
   ]);
-  const textTools = new Map([["surligner","highlight"],["souligner","underline"],["entourer-le-texte","circle"]]);
+  const textTools = new Map([["surligner","highlight"],["souligner","underline"],["entourer-le-texte","circle"],["crochet-en-marge","bracket"]]);
   const panelViews = new Map([["etiquette-personnalisee","editor"],["symbole","symbol"]]);
   function pageLabel() { return current?.label || ""; }
   function chapterLabel() { return current?.chapter?.label || ""; }
@@ -72,6 +77,14 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   let currentEditor = null;
   let editedAnnotation = null;
   let activeTag = null;
+  let eraseMode = false;
+  let deletionBusy = false;
+  let deleteMessage = "";
+  const undoStack = [];
+  const bookmarkOverrides = new Map();
+  let annotationGeometry = [];
+  let decorationFrame = 0;
+  let deleteGesture = null;
 
   function span(className,text = "") {
     const item = document.createElement("span");
@@ -80,6 +93,11 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     return item;
   }
   function art(id) {
+    if (id === "crochet-en-marge") {
+      const icon = vector("svg",{class:"bracket-icon",viewBox:"0 0 20 20",width:17,height:17,"aria-hidden":"true",focusable:"false"});
+      icon.append(vector("path",{d:"M13 3H8Q6 3 6 5V15Q6 17 8 17H13",fill:"none",stroke:"currentColor","stroke-width":1.5,"stroke-linecap":"round","stroke-linejoin":"round"}));
+      return icon;
+    }
     const icon = span("line-art");
     icon.dataset.art = id;
     icon.setAttribute("aria-hidden","true");
@@ -100,6 +118,11 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
   function announce(text) {
     status.textContent = text;
+  }
+  function vector(name,attributes = {}) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg",name);
+    for (const [key,value] of Object.entries(attributes)) node.setAttribute(key,String(value));
+    return node;
   }
 
   function syncChrome() {
@@ -124,6 +147,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     }
     item.addEventListener("focus",() => {
       for (const other of toolButtons.values()) other.tabIndex = other === item ? 0 : -1;
+      deleteTool.tabIndex = -1;
     });
     item.addEventListener("click",() => {
       if (!current) return;
@@ -189,6 +213,46 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   pinned.setAttribute("aria-label","Outils épinglés");
   rest.className = "rail-rest";
   rail.append(pinned,rest);
+  const railFooter = document.createElement("div");
+  railFooter.className = "rail-footer";
+  const deleteTool = button("","rail-button");
+  deleteTool.dataset.deleteTool = "";
+  deleteTool.setAttribute("aria-label","Supprimer une annotation");
+  deleteTool.setAttribute("data-tooltip","Supprimer une annotation");
+  deleteTool.setAttribute("data-tooltip-placement","left");
+  deleteTool.setAttribute("aria-pressed","false");
+  deleteTool.tabIndex = -1;
+  const trashIcon = vector("svg",{viewBox:"0 0 24 24",width:17,height:17,fill:"none",stroke:"currentColor","stroke-width":1.4,"stroke-linecap":"round","stroke-linejoin":"round","aria-hidden":"true",focusable:"false"});
+  trashIcon.append(vector("path",{d:"M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"}));
+  deleteTool.append(trashIcon);
+  railFooter.append(deleteTool);
+  rail.append(railFooter);
+  const annotationDrawing = vector("svg",{class:"annotation-drawing","data-annotation-drawing":"","aria-hidden":"true",focusable:"false"});
+  const deleteTargets = document.createElement("div");
+  deleteTargets.className = "annotation-delete-targets";
+  deleteTargets.dataset.deleteTargets = "";
+  deleteTargets.hidden = true;
+  const deleteChoice = document.createElement("div");
+  deleteChoice.className = "delete-choice";
+  deleteChoice.dataset.deleteChoice = "";
+  deleteChoice.setAttribute("role","group");
+  deleteChoice.setAttribute("aria-label","Choisir l’annotation à supprimer");
+  deleteChoice.hidden = true;
+  page.append(annotationDrawing,deleteTargets,deleteChoice);
+  const deleteStatus = one("[data-delete-status]") || document.createElement("div");
+  if (!deleteStatus.isConnected) {
+    deleteStatus.className = "delete-status";
+    deleteStatus.dataset.deleteStatus = "";
+    const message = span("");
+    message.dataset.deleteMessage = "";
+    message.setAttribute("role","status");
+    const undo = button("Annuler","delete-undo");
+    undo.dataset.deleteUndo = "";
+    deleteStatus.append(message,undo);
+    readingColumn.insertBefore(deleteStatus,one(".reader-progress"));
+  }
+  const undoButton = deleteStatus.querySelector("[data-delete-undo]");
+  const undoMessage = deleteStatus.querySelector("[data-delete-message]");
   let profile = {};
   const pinnedIds = new Set(["surligner","souligner","symbole","marque-page"]);
   const highlightSettings = one("[data-highlight-settings]");
@@ -198,6 +262,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   const colorButtons = new Map();
   let lastHighlight = preferences.color;
   let lastUnderline = null;
+  let lastBracket = null;
   let underlineLine = "simple";
   const underlineStyles = one("[data-underline-styles]");
   const lineChoices = all("[data-line]");
@@ -239,18 +304,20 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function refreshHighlightSettings() {
-    highlightSettings.hidden = configuring !== "surligner" && configuring !== "souligner";
+    highlightSettings.hidden = !["surligner","souligner","crochet-en-marge"].includes(configuring);
     if (highlightSettings.hidden) return;
     const isUnderline = configuring === "souligner";
-    const color = isUnderline ? lastUnderline || underlineDefault() : lastHighlight;
-    const [name] = config.colors.find(([,value]) => value === color);
+    const isBracket = configuring === "crochet-en-marge";
+    const color = isUnderline ? lastUnderline || underlineDefault() : isBracket ? lastBracket || underlineDefault() : lastHighlight;
+    const [name] = config.colors.find(([,value]) => value === color) || ["Couleur du thème"];
     for (const [value,item] of colorButtons) item.setAttribute("aria-pressed",String(value === color));
-    highlightColors.setAttribute("aria-label",isUnderline ? "Couleurs du soulignement" : "Couleurs de surlignage");
+    highlightColors.setAttribute("aria-label",isUnderline ? "Couleurs du soulignement" : isBracket ? "Couleurs du crochet" : "Couleurs de surlignage");
     colorName.textContent = name;
     underlineStyles.hidden = !isUnderline;
     if (isUnderline) {
       underlineStyles.style.setProperty("--line-color",color);
       for (const choice of lineChoices) choice.setAttribute("aria-pressed",String(choice.dataset.line === underlineLine));
+      drawUnderlineSamples();
     }
   }
 
@@ -265,6 +332,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     item.append(swatch);
     item.addEventListener("click",() => {
       if (configuring === "souligner") lastUnderline = color;
+      else if (configuring === "crochet-en-marge") lastBracket = color;
       else lastHighlight = color;
       colorStatus.textContent = "Couleur sélectionnée · " + name;
       refreshHighlightSettings();
@@ -282,6 +350,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function openOptions(id,trigger,focus = true) {
+    if (deletionBusy) return;
+    setEraseMode(false);
     selectedRange = currentSelection() || selectedRange;
     closeRibbonNotes();
     closeLinkMenu();
@@ -459,7 +529,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   });
   wireScroll(rest,true);
   rail.addEventListener("keydown",event => {
-    const current = event.target.closest("[data-tool]");
+    const current = event.target.closest("[data-tool],[data-delete-tool]");
     if (!current) return;
     if (event.key === "Escape" && !options.hidden) {
       event.preventDefault();
@@ -467,11 +537,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       return;
     }
     if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      if (!current.dataset.tool) return;
       event.preventDefault();
       openOptions(current.dataset.tool,current);
       return;
     }
-    const list = [...rail.querySelectorAll("[data-tool]")];
+    const list = [...rail.querySelectorAll("[data-tool],[data-delete-tool]")];
     const index = list.indexOf(current);
     const next = {ArrowUp:index - 1,ArrowDown:index + 1,Home:0,End:list.length - 1}[event.key];
     if (next === undefined || !list[next]) return;
@@ -532,15 +603,16 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function saveBookmarkNote(slug,text) {
+    if (deletionBusy) return;
     if (slug === "note-de-chapitre") {
       const key = current.chapter.key;
-      const note = {kind:"note",slug,text};
+      const note = {kind:"note",slug,text,id:bookmarkNoteFor(slug)?.id || newId()};
       persisted[key] = {...persisted[key],note,label:current.chapter.label,position:current.chapter.position,documentRevision:book.documentRevision || ""};
       enqueue({readerAnnotations:{[key]:persisted[key]}});
     } else {
       const existing = bookmarkNoteFor(slug);
       if (existing) existing.text = text;
-      else state.annotations.push({kind:"note",slug,text});
+      else state.annotations.push({kind:"note",slug,text,id:newId()});
       persistPage();
     }
     recordUse("marque-page");
@@ -632,6 +704,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function openTool(slug) {
+    if (deletionBusy) return;
+    setEraseMode(false);
     closeRibbonNotes();
     closeLinkMenu();
     if (!sheet.hidden && view !== "saved" && tool === slug && panelViews.has(slug)) {
@@ -660,7 +734,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     } else if (slug === "souligner") {
       armUnderline();
     } else if (textTools.has(slug)) {
-      const color = slug === "surligner" ? lastHighlight : undefined;
+      const color = slug === "surligner" ? lastHighlight : slug === "crochet-en-marge" ? lastBracket : undefined;
       arm({kind:textTools.get(slug),owner:slug,color});
     }
   }
@@ -710,11 +784,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function applyRange(operation,range) {
+    if (deletionBusy || eraseMode) return;
     if (operation.kind === "highlight" || operation.kind === "underline") {
       applyTextMark(operation,range);
       return;
     }
-    state.annotations.push({...operation,range});
+    state.annotations.push({...operation,range,id:newId()});
     persistPage();
     recordUse(operation.owner);
     announce("Annotation appliquée.");
@@ -730,6 +805,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function linkedAnnotation(highlight,kind) {
+    if (highlight.kind === kind) return highlight;
     if (kind === "favorite" || kind === "citation") return annotationAt(kind,highlight.range) || null;
     return state.annotations.find(item => item.kind === kind && item.highlightId === highlight.id) || null;
   }
@@ -764,11 +840,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   ];
 
   function showLinkMenu(highlight) {
+    if (eraseMode || !highlight?.range) return;
     closeRibbonNotes();
     if (linkHighlight !== highlight) collapseLinkEntry();
     linkHighlight = highlight;
-    linkMenu.setAttribute("aria-label",highlight.kind === "underline" ?
-      "Associer au passage souligné" : "Associer au passage surligné");
+    linkMenu.setAttribute("aria-label",highlight.kind === "underline" ? "Associer au passage souligné" :
+      highlight.kind === "highlight" ? "Associer au passage surligné" : "Annotations du passage");
     for (const {selector,kind,add,linked} of linkActions) {
       const control = one(selector);
       const associated = Boolean(linkedAnnotation(highlight,kind));
@@ -1053,6 +1130,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
 
   linkEntry.addEventListener("submit",event => {
     event.preventDefault();
+    if (deletionBusy || eraseMode) return;
     if (!linkHighlight || !activeLinkEntry || linkEntry.hidden) return;
     const {kind,owner} = activeLinkEntry;
     if (linkSave.disabled) return;
@@ -1083,7 +1161,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       existing.text = text;
       if (repereId) existing.repereId = repereId;
     } else {
-      state.annotations.push({kind,slug:owner,text,range:highlight.range,highlightId:highlight.id,repereId});
+      state.annotations.push({id:newId(),kind,slug:owner,text,range:highlight.range,highlightId:highlight.id,repereId});
       recordUse(owner);
     }
     persistPage(repereId ? {readerReperes:{[repereId]:findRepere(repereId)}} : {});
@@ -1094,17 +1172,18 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     renderFooter();
     renderPageAnnotations();
     announce(kind === "note" ? "Note enregistrée sur ce passage." : "Repère enregistré sur ce passage.");
-    toolButtons.get(highlight.owner).focus({preventScroll:true});
+    (toolButtons.get(highlight.owner) || toolButtons.get("surligner")).focus({preventScroll:true});
   });
 
   function associatePassage(highlight,kind,owner) {
+    if (deletionBusy || eraseMode) return;
     let annotation = annotationAt(kind,highlight.range);
     if (!annotation) {
-      annotation = {kind,owner,range:highlight.range};
+      annotation = {id:newId(),kind,owner,range:highlight.range};
       state.annotations.push(annotation);
       recordUse(owner);
     }
-    annotation.highlightId = highlight.id;
+    if (annotation !== highlight) annotation.highlightId = highlight.id;
     persistPage();
     closeLinkMenu();
     renderText();
@@ -1128,10 +1207,11 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (event.key === "Escape" && !linkMenu.hidden) {
       const owner = linkHighlight.owner;
       closeLinkMenu();
-      toolButtons.get(owner).focus({preventScroll:true});
+      (toolButtons.get(owner) || toolButtons.get("surligner")).focus({preventScroll:true});
     }
   });
   reading.addEventListener("click",event => {
+    if (eraseMode || deletionBusy) return;
     if (activeLinkEntry?.kind === "tag") return;
     const id = event.target.closest("[data-linked-mark]")?.dataset.linkedMark;
     if (!id || currentSelection() || !sheet.hidden) return;
@@ -1142,6 +1222,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   });
 
   function applyTextMark(operation,range) {
+    if (deletionBusy || eraseMode) return;
     let mark = annotationAt(operation.kind,range);
     const changed = !mark || mark.color !== operation.color || mark.line !== operation.line;
     if (mark) {
@@ -1164,7 +1245,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   document.addEventListener("selectionchange",() => {
-    if (root.hidden || !current) return;
+    if (root.hidden || !current || eraseMode || deletionBusy) return;
     const range = currentSelection();
     if (!range) {
       if (pending) clearTimeout(selectionTimer);
@@ -1189,6 +1270,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   sheet.addEventListener("pointerdown",() => { selectedRange = currentSelection() || selectedRange; });
   rail.addEventListener("pointerdown",() => { selectedRange = currentSelection() || selectedRange; });
   fiche.addEventListener("click",() => {
+    setEraseMode(false);
     if (!options.hidden) closeOptions();
     if (!sheet.hidden && view === "saved") {
       showSheet(false);
@@ -1212,6 +1294,11 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   function makeSymbol(glyph,className,origin) {
     const item = button("",className + " symbol-button");
     item.setAttribute("aria-label",symbolNames.get(glyph));
+    if (origin) {
+      origin.id ??= newId();
+      item.dataset.annotationId = origin.id;
+      item.dataset.annotationKind = "symbol";
+    }
     item.append(symbolArt(glyph));
     wireSymbol(item,glyph,origin);
     return item;
@@ -1248,6 +1335,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     return null;
   }
   function placeSymbol(glyph,clientX,clientY,origin) {
+    if (deletionBusy || eraseMode) return;
     const bounds = page.getBoundingClientRect();
     const inPage = bounds.width && bounds.height && clientX >= bounds.left && clientX <= bounds.right &&
       clientY >= bounds.top && clientY <= bounds.bottom;
@@ -1258,8 +1346,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       const index = collection.indexOf(origin);
       if (index >= 0) collection.splice(index,1);
     }
-    if (range) state.annotations.push({kind:"symbol",glyph,range});
-    else state.placement.push({glyph,x:(clientX - bounds.left)/bounds.width,y:(clientY - bounds.top)/bounds.height});
+    if (range) state.annotations.push({id:origin?.id || newId(),kind:"symbol",glyph,range});
+    else state.placement.push({id:origin?.id || newId(),glyph,x:(clientX - bounds.left)/bounds.width,y:(clientY - bounds.top)/bounds.height});
     clearSelection();
     persistPage();
     renderText();
@@ -1287,10 +1375,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       gesture = null;
     }
     item.addEventListener("click",event => {
+      if (eraseMode || deletionBusy) return;
       if (event.detail > 0 && performance.now() < suppressUntil) return;
       showMeaning(glyph);
     });
     item.addEventListener("pointerdown",event => {
+      if (eraseMode || deletionBusy) return;
       if (event.button !== 0 || event.isPrimary === false) return;
       gesture = {id:event.pointerId,held:false,x:event.clientX,y:event.clientY};
       item.setPointerCapture?.(event.pointerId);
@@ -1347,6 +1437,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   });
 
   function renderText() {
+    ensureAnnotationIds(state);
     const marks = state.annotations.filter(item => item.range);
     sections.forEach(({slot},index) => {
       const offset = offsets[index];
@@ -1373,7 +1464,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
         const highlight = inkMarks.findLast(item => item.kind === "highlight");
         if (highlight?.color) part.style.setProperty("--mark-color",highlight.color);
         const linked = applicable.filter(item => item.id !== undefined &&
-          (item.kind === "highlight" || item.kind === "underline"));
+          (item.kind === "highlight" || item.kind === "underline" ||
+            (!item.highlightId && ["note","tag","favorite","citation"].includes(item.kind))));
         if (linked.length) {
           part.dataset.textFrom = from;
           part.dataset.textTo = to;
@@ -1389,6 +1481,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
           if (underline) {
             part.classList.add("underline-ink");
             part.style.setProperty("--line-color",underline.color || "var(--line-default)");
+            part.dataset.underlineId = underline.id;
+            part.dataset.underlineStyle = style;
           }
           if (cited && underline && style !== "dotted") {
             part.replaceChildren(span("marked-underline marked-dotted citation-on-line",text));
@@ -1400,6 +1494,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
             const heart = art("passage-favori");
             heart.classList.add("favorite-heart");
             heart.dataset.readingDecoration = "";
+            heart.dataset.annotationId = item.id;
             fragment.append(heart);
           }
           if (item.kind === "symbol") {
@@ -1419,6 +1514,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       return marker;
     }));
     renderMarginReperes();
+    scheduleDecorations();
   }
 
   function positionMarginReperes() {
@@ -1454,14 +1550,14 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       const marker = button("","margin-repere");
       marker.dataset.marginRepere = item.repereId;
       marker.dataset.marginStart = item.range.start;
+      marker.dataset.annotationId = item.id;
       const label = repereDescription(item);
       marker.setAttribute("aria-label",label);
       marker.setAttribute("data-tooltip",label);
       marker.append(repereEmblem(repere.symbol),span("margin-repere-label",repere.name));
       marker.addEventListener("click",() => {
         if (activeLinkEntry?.kind === "tag") return;
-        const highlight = state.annotations.find(entry => entry.id === item.highlightId);
-        if (!highlight) return;
+        const highlight = state.annotations.find(entry => entry.id === item.highlightId) || item;
         if (!options.hidden) closeOptions();
         if (!sheet.hidden) showSheet(false);
         showLinkMenu(highlight);
@@ -1473,6 +1569,442 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (markers.length) paintRepereEmblems();
     positionMarginReperes();
   }
+
+  function ensureAnnotationIds(entry) {
+    for (const item of [...(entry.annotations || []),...(entry.placement || []),...(entry.note ? [entry.note] : [])]) {
+      item.id ??= newId();
+    }
+    return entry;
+  }
+
+  function bookmarkValue(key) {
+    return bookmarkOverrides.has(key) ? bookmarkOverrides.get(key) : Boolean(book.bookmarkMap?.[key]);
+  }
+
+  function snapshotPage() {
+    if (!current) return;
+    ensureAnnotationIds(state);
+    persisted[current.key] = {
+      ...persisted[current.key],position:current.position,label:current.label,
+      annotations:state.annotations.map(item => item.range ? {...item,quote:quoteFor(item.range)} : {...item}),
+      placement:state.placement.map(item => ({...item})),documentRevision:book.documentRevision || ""
+    };
+  }
+
+  function mergeRectangles(rectangles) {
+    const result = [];
+    for (const rectangle of rectangles.filter(rect => rect.width > .2 && rect.height > .2)
+      .map(rect => ({left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom,width:rect.width,height:rect.height}))
+      .sort((a,b) => Math.abs(a.top - b.top) < 2 ? a.left - b.left : a.top - b.top)) {
+      const previous = result.at(-1);
+      if (previous && Math.abs(previous.top - rectangle.top) < 2 && Math.abs(previous.bottom - rectangle.bottom) < 2 && rectangle.left <= previous.right + 2) {
+        previous.right = Math.max(previous.right,rectangle.right);
+        previous.width = previous.right - previous.left;
+      } else result.push(rectangle);
+    }
+    return result;
+  }
+
+  function textRange(range) {
+    if (!range || !Number.isFinite(range.start) || !Number.isFinite(range.end) || range.end <= range.start) return null;
+    const domRange = document.createRange();
+    let began = false;
+    for (let index = 0; index < sections.length; index++) {
+      if (offsets[index + 1] <= range.start || offsets[index] >= range.end) continue;
+      const walker = document.createTreeWalker(sections[index].slot,NodeFilter.SHOW_TEXT,{
+        acceptNode(node) { return node.parentElement?.closest("[data-reading-decoration]") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+      });
+      let offset = offsets[index];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const end = offset + node.data.length;
+        if (!began && range.start < end && range.start >= offset) {
+          domRange.setStart(node,range.start - offset);
+          began = true;
+        }
+        if (began && range.end <= end) {
+          domRange.setEnd(node,Math.max(0,range.end - offset));
+          return domRange;
+        }
+        offset = end;
+      }
+    }
+    return null;
+  }
+
+  function rangeRectangles(range) {
+    const selection = textRange(range);
+    return selection ? mergeRectangles([...selection.getClientRects()]) : [];
+  }
+
+  function drawSoftLines(svg,rectangles,style,bounds) {
+    for (const rect of rectangles) {
+      const x = rect.left - bounds.left + .3;
+      const y = rect.bottom - bounds.top + .25;
+      const width = Math.max(.5,rect.width - .6);
+      if (style === "dotted") {
+        const radius = Math.min(1.1,width / 2);
+        const count = Math.max(1,Math.floor(width / 5.5) + 1);
+        const step = count > 1 ? Math.max(0,width - radius * 2) / (count - 1) : 0;
+        for (let dot = 0; dot < count; dot++) svg.append(vector("circle",{cx:x + radius + dot * step,cy:y,r:radius,fill:"currentColor"}));
+      } else {
+        const stroke = style === "double" ? 1.2 : 1.5;
+        svg.append(vector("line",{x1:x,y1:y,x2:x + width,y2:y,stroke:"currentColor","stroke-width":stroke,"stroke-linecap":"round"}));
+        if (style === "double") svg.append(vector("line",{x1:x,y1:y + 3.2,x2:x + width,y2:y + 3.2,stroke:"currentColor","stroke-width":stroke,"stroke-linecap":"round"}));
+      }
+    }
+  }
+
+  function drawUnderlineSamples() {
+    if (underlineStyles.hidden || options.hidden) return;
+    for (const choice of lineChoices) {
+      const sample = choice.querySelector(".marked-underline");
+      if (!sample) continue;
+      sample.querySelector(".ink-drawing")?.remove();
+      sample.removeAttribute("data-ink-drawn");
+      const bounds = sample.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) continue;
+      const drawing = vector("svg",{class:"ink-drawing",width:bounds.width,height:bounds.height,viewBox:`0 0 ${bounds.width} ${bounds.height}`,"aria-hidden":"true",focusable:"false"});
+      drawing.style.color = "var(--line-color,var(--line-default))";
+      drawSoftLines(drawing,[bounds],choice.dataset.line,bounds);
+      sample.append(drawing);
+      sample.dataset.inkDrawn = "";
+    }
+  }
+
+  function scheduleDecorations() {
+    if (decorationFrame) cancelAnimationFrame(decorationFrame);
+    decorationFrame = requestAnimationFrame(() => {
+      decorationFrame = 0;
+      renderDecorations();
+    });
+  }
+
+  function renderDecorations() {
+    if (!current || root.hidden || signal.aborted) return;
+    const bounds = page.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    annotationDrawing.replaceChildren();
+    annotationDrawing.setAttribute("width",bounds.width);
+    annotationDrawing.setAttribute("height",bounds.height);
+    annotationDrawing.setAttribute("viewBox",`0 0 ${bounds.width} ${bounds.height}`);
+    const inkGroups = new Map();
+    for (const part of reading.querySelectorAll("[data-underline-id]")) {
+      const group = inkGroups.get(part.dataset.underlineId) || {parts:[],style:part.dataset.underlineStyle};
+      group.parts.push(part);
+      inkGroups.set(part.dataset.underlineId,group);
+    }
+    for (const [id,{parts,style}] of inkGroups) {
+      const mark = state.annotations.find(item => item.id === id);
+      if (!mark) continue;
+      const rectangles = mergeRectangles(parts.flatMap(part => [...part.getClientRects()]));
+      if (!rectangles.length) continue;
+      const group = vector("g",{"data-annotation-id":id,"data-annotation-kind":"underline"});
+      group.style.color = mark.color || "var(--line-default)";
+      drawSoftLines(group,rectangles,style,bounds);
+      annotationDrawing.append(group);
+      for (const part of parts) part.dataset.inkDrawn = "";
+    }
+    const geometry = [];
+    function register(type,item,rectangles,key = current.key) {
+      if (!rectangles.length) return;
+      geometry.push({type,item,id:item.id,key,label:annotationName(item),rectangles});
+    }
+    for (const item of state.annotations) {
+      let rectangles = item.range ? rangeRectangles(item.range) : [];
+      if (item.kind === "bracket" && rectangles.length) {
+        const textBounds = reading.getBoundingClientRect();
+        const x = Math.max(6,textBounds.left - bounds.left - 10);
+        const top = Math.min(...rectangles.map(rect => rect.top)) - bounds.top - 2;
+        const bottom = Math.max(...rectangles.map(rect => rect.bottom)) - bounds.top + 2;
+        const bracket = vector("path",{class:"annotation-bracket","data-annotation-id":item.id,"data-annotation-kind":"bracket",
+          d:`M ${x + 5} ${top} H ${x + 2} Q ${x} ${top} ${x} ${top + 2} V ${bottom - 2} Q ${x} ${bottom} ${x + 2} ${bottom} H ${x + 5}`,
+          fill:"none",stroke:"currentColor","stroke-width":1.5,"stroke-linecap":"round","stroke-linejoin":"round"});
+        bracket.style.color = item.color || "var(--line-default)";
+        annotationDrawing.append(bracket);
+        rectangles = [{left:bounds.left + x - 2,right:bounds.left + x + 7,top:bounds.top + top,bottom:bounds.top + bottom,width:9,height:bottom - top}];
+      }
+      const controls = [...root.querySelectorAll("[data-annotation-id]")].filter(element =>
+        element.dataset.annotationId === item.id && !annotationDrawing.contains(element) && !deleteTargets.contains(element));
+      const controlRects = controls.filter(element => !element.closest("[hidden]")).flatMap(element => [...element.getClientRects()]);
+      if (item.kind === "symbol" && controlRects.length) rectangles = controlRects;
+      else rectangles.push(...controlRects);
+      if (!rectangles.length && bookmarkNoteTypes.has(item.slug) && !ribbonOpen.hidden) rectangles = [...ribbonOpen.getClientRects()];
+      register("annotation",item,rectangles);
+    }
+    for (const item of state.placement) {
+      const symbol = [...one("[data-free-symbols]").children].find(element => element.dataset.annotationId === item.id);
+      if (symbol) register("placement",{...item,kind:"symbol"},[...symbol.getClientRects()]);
+    }
+    if (state.bookmarked) register("bookmark",{id:"bookmark:" + current.key,kind:"bookmark"},[...ribbonOpen.getClientRects()]);
+    const chapterNote = current.chapter && persisted[current.chapter.key]?.note;
+    if (chapterNote) register("chapter-note",chapterNote,[...ribbonOpen.getClientRects()],current.chapter.key);
+    annotationGeometry = geometry;
+    renderDeleteTargets();
+    drawUnderlineSamples();
+  }
+
+  function closeDeleteChoice() {
+    deleteChoice.hidden = true;
+    deleteChoice.replaceChildren();
+  }
+
+  function renderDeletionChrome() {
+    root.dataset.deleteMode = String(eraseMode);
+    root.dataset.hasUndo = String(Boolean(undoStack.length));
+    deleteTool.setAttribute("aria-pressed",String(eraseMode));
+    deleteTool.setAttribute("aria-label",eraseMode ? "Quitter la suppression d’annotations" : "Supprimer une annotation");
+    deleteStatus.hidden = !current || (!eraseMode && !undoStack.length && !deleteMessage);
+    undoMessage.textContent = deleteMessage || (eraseMode ? "Touche l’annotation à supprimer." : "");
+    undoButton.hidden = !undoStack.length;
+    undoButton.disabled = deletionBusy;
+    undoButton.setAttribute("aria-label",undoStack.length ? "Annuler la suppression · " + undoStack.at(-1).label : "Annuler la suppression");
+    deleteTargets.hidden = !eraseMode;
+  }
+
+  function setEraseMode(enabled) {
+    if (eraseMode === enabled) return;
+    eraseMode = enabled;
+    closeDeleteChoice();
+    if (enabled) {
+      closeOptions();
+      closeLinkMenu();
+      closeRibbonNotes();
+      if (!sheet.hidden) showSheet(false);
+      setPending(null);
+      clearSelection();
+      deleteMessage = "";
+      announce("Suppression activée. Touche une annotation pour la supprimer.");
+    } else if (!undoStack.length) deleteMessage = "";
+    renderDeletionChrome();
+    scheduleDecorations();
+  }
+
+  function renderDeleteTargets() {
+    const focused = deleteTargets.contains(document.activeElement) ? document.activeElement.dataset.deleteTarget : null;
+    deleteTargets.replaceChildren();
+    deleteTargets.hidden = !eraseMode;
+    if (!eraseMode) return;
+    const pageBounds = page.getBoundingClientRect();
+    for (const entry of annotationGeometry) {
+      const rect = entry.rectangles[0];
+      if (!rect) continue;
+      const control = button("","annotation-delete-target");
+      control.dataset.deleteTarget = entry.type + ":" + entry.id;
+      control.dataset.deleteKind = entry.type;
+      control.dataset.annotationId = entry.id;
+      control.dataset.annotationKind = entry.item.kind;
+      const description = entry.item.text || entry.item.quote || (entry.item.range ? quoteFor(entry.item.range) : "");
+      control.setAttribute("aria-label","Supprimer · " + entry.label + (description ? " · " + description.slice(0,90) : ""));
+      control.disabled = deletionBusy;
+      control.style.left = Math.max(0,rect.left - pageBounds.left - Math.max(0,44 - rect.width) / 2) + "px";
+      control.style.top = Math.max(0,rect.top - pageBounds.top - Math.max(0,44 - rect.height) / 2) + "px";
+      control.style.width = Math.max(44,Math.min(rect.width,pageBounds.width)) + "px";
+      control.style.height = Math.max(44,Math.min(rect.height,80)) + "px";
+      control.addEventListener("click",() => removeAnnotation(entry,true));
+      deleteTargets.append(control);
+      if (focused === control.dataset.deleteTarget) control.focus({preventScroll:true});
+    }
+  }
+
+  function deletionOperation(entry) {
+    const operation = {type:entry.type,key:entry.key,pageKey:current.key,position:current.position,
+      revision:book.documentRevision || "",label:entry.label,item:structuredClone(entry.item),related:[]};
+    if (entry.type === "annotation" || entry.type === "placement") {
+      const collection = entry.type === "annotation" ? state.annotations : state.placement;
+      operation.index = collection.findIndex(item => item.id === entry.id);
+      if (operation.index < 0) return null;
+      operation.item = structuredClone(collection[operation.index]);
+      if (entry.type === "annotation") operation.related = state.annotations.filter(item => item.highlightId === entry.id)
+        .map(item => ({id:item.id,highlightId:item.highlightId}));
+    }
+    return operation;
+  }
+
+  function changeDeletedAnnotation(operation,restore) {
+    const {type,key,item} = operation;
+    if (type === "bookmark") {
+      bookmarkOverrides.set(key,restore);
+      if (current?.key === key) state.bookmarked = restore;
+      return {bookmarkMap:{[key]:restore ? true : null}};
+    }
+    if (type === "chapter-note") {
+      persisted[key] = {...persisted[key],note:restore ? structuredClone(item) : null};
+    } else {
+      const entry = current?.key === key ? state : persisted[key];
+      if (!entry) return null;
+      const collectionName = type === "placement" ? "placement" : "annotations";
+      const collection = entry[collectionName] ||= [];
+      const index = collection.findIndex(candidate => candidate.id === item.id);
+      if (restore) {
+        if (index < 0) collection.splice(Math.min(operation.index,collection.length),0,structuredClone(item));
+        for (const link of operation.related) {
+          const linked = entry.annotations?.find(candidate => candidate.id === link.id);
+          if (linked && !linked.highlightId) linked.highlightId = link.highlightId;
+        }
+      } else {
+        if (index >= 0) collection.splice(index,1);
+        for (const link of operation.related) {
+          const linked = entry.annotations?.find(candidate => candidate.id === link.id);
+          if (linked?.highlightId === item.id) linked.highlightId = null;
+        }
+      }
+      if (current?.key === key) snapshotPage();
+    }
+    return {readerAnnotations:{[key]:persisted[key]}};
+  }
+
+  function refreshAfterDeletion() {
+    if (current) {
+      if (activeTag && !state.annotations.some(item => item.id === activeTag.id)) activeTag = null;
+      renderRibbon();
+      renderText();
+      renderFooter();
+      renderPageAnnotations();
+      if (!sheet.hidden && view === "saved") renderSaved();
+    }
+    renderDeletionChrome();
+  }
+
+  async function removeAnnotation(entry,keyboard = false) {
+    if (!eraseMode || deletionBusy || !current) return;
+    const operation = deletionOperation(entry);
+    if (!operation) return;
+    snapshotPage();
+    deletionBusy = true;
+    closeDeleteChoice();
+    closeLinkMenu();
+    closeRibbonNotes();
+    const payload = changeDeletedAnnotation(operation,false);
+    if (!payload) { deletionBusy = false; return; }
+    undoStack.push(operation);
+    deleteMessage = operation.label + " supprimé.";
+    refreshAfterDeletion();
+    const saved = await enqueue(payload,{quiet:true});
+    if (signal.aborted) { deletionBusy = false; return; }
+    if (!saved) {
+      changeDeletedAnnotation(operation,true);
+      const index = undoStack.indexOf(operation);
+      if (index >= 0) undoStack.splice(index,1);
+      deleteMessage = "Suppression non enregistrée. L’annotation a été restaurée.";
+    }
+    if (operation.type === "bookmark") bookmarkOverrides.delete(operation.key);
+    deletionBusy = false;
+    if (signal.aborted) return;
+    refreshAfterDeletion();
+    announce(deleteMessage);
+    if (keyboard) (saved ? undoButton : deleteTool).focus({preventScroll:true});
+  }
+
+  async function undoDeletion() {
+    const operation = undoStack.at(-1);
+    if (!operation || deletionBusy) return;
+    if (operation.revision !== (book.documentRevision || "")) {
+      announce("Cette annotation appartient à une autre version du document.");
+      return;
+    }
+    deletionBusy = true;
+    closeDeleteChoice();
+    closeLinkMenu();
+    closeRibbonNotes();
+    const payload = changeDeletedAnnotation(operation,true);
+    if (!payload) { deletionBusy = false; return; }
+    deleteMessage = operation.label + " restauré.";
+    refreshAfterDeletion();
+    const saved = await enqueue(payload,{quiet:true});
+    if (signal.aborted) { deletionBusy = false; return; }
+    if (saved) {
+      undoStack.pop();
+    } else {
+      changeDeletedAnnotation(operation,false);
+      deleteMessage = "Restauration non enregistrée. Tu peux réessayer avec Annuler.";
+    }
+    if (operation.type === "bookmark") bookmarkOverrides.delete(operation.key);
+    if (saved && current?.key !== operation.pageKey && !signal.aborted) {
+      try { await navigate(operation.position); }
+      catch { deleteMessage = operation.label + " restauré. Reviens à la page d’origine pour le retrouver."; }
+    }
+    deletionBusy = false;
+    if (signal.aborted) return;
+    refreshAfterDeletion();
+    announce(deleteMessage);
+    if (saved && operation.item.range && current?.key === operation.pageKey) {
+      textRange(operation.item.range)?.startContainer.parentElement?.scrollIntoView({block:"nearest"});
+    }
+  }
+
+  function chooseDeletion(x,y) {
+    if (deletionBusy) return;
+    renderDecorations();
+    const candidates = annotationGeometry.map(entry => ({entry,distance:Math.min(...entry.rectangles.map(rect =>
+      Math.hypot(Math.max(rect.left - x,0,x - rect.right),Math.max(rect.top - y,0,y - rect.bottom))))}))
+      .filter(result => result.distance <= 12).sort((a,b) => a.distance - b.distance);
+    const closest = candidates[0]?.distance;
+    const selected = candidates.filter(result => result.distance <= (closest === 0 ? 0 : closest + 3)).map(result => result.entry);
+    closeDeleteChoice();
+    if (!selected.length) return;
+    if (selected.length === 1) { removeAnnotation(selected[0]); return; }
+    for (const entry of selected) {
+      const description = entry.item.text || (entry.item.range ? quoteFor(entry.item.range) : "");
+      const choice = button(entry.label + (description ? " · " + description.slice(0,48) : ""),"delete-choice-button");
+      choice.addEventListener("click",() => removeAnnotation(entry));
+      deleteChoice.append(choice);
+    }
+    deleteChoice.hidden = false;
+    const bounds = page.getBoundingClientRect();
+    deleteChoice.style.left = Math.max(8,Math.min(x - bounds.left - 20,bounds.width - deleteChoice.offsetWidth - 8)) + "px";
+    deleteChoice.style.top = Math.max(8,Math.min(y - bounds.top + 6,bounds.height - deleteChoice.offsetHeight - 8)) + "px";
+    deleteChoice.firstElementChild?.focus({preventScroll:true});
+    announce("Plusieurs annotations se trouvent ici. Choisis celle à supprimer.");
+  }
+
+  function eraseSurface(target) {
+    return target instanceof Element && !target.closest("[data-delete-choice],[data-delete-target]") &&
+      (page.contains(target) || one("[data-page-foot]").contains(target));
+  }
+  deleteTool.addEventListener("focus",() => {
+    for (const tool of toolButtons.values()) tool.tabIndex = -1;
+    deleteTool.tabIndex = 0;
+  });
+  deleteTool.addEventListener("click",() => { if (current) setEraseMode(!eraseMode); });
+  undoButton.addEventListener("click",async event => {
+    const keyboard = event.detail === 0;
+    await undoDeletion();
+    if (keyboard && !signal.aborted && undoButton.hidden) deleteTool.focus({preventScroll:true});
+  });
+  reader.addEventListener("pointerdown",event => {
+    if (!eraseMode || !eraseSurface(event.target) || event.button !== 0 || event.isPrimary === false) return;
+    deleteGesture = {id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+    event.stopImmediatePropagation();
+  },{capture:true,signal});
+  reader.addEventListener("pointermove",event => {
+    if (deleteGesture?.id === event.pointerId && Math.hypot(event.clientX - deleteGesture.x,event.clientY - deleteGesture.y) > 9) deleteGesture.moved = true;
+  },{capture:true,signal});
+  reader.addEventListener("pointerup",event => {
+    if (!eraseMode || deleteGesture?.id !== event.pointerId) return;
+    const moved = deleteGesture.moved;
+    deleteGesture = null;
+    event.stopImmediatePropagation();
+    if (!moved) { event.preventDefault(); chooseDeletion(event.clientX,event.clientY); }
+  },{capture:true,signal});
+  reader.addEventListener("pointercancel",() => { deleteGesture = null; },{capture:true,signal});
+  reader.addEventListener("click",event => {
+    if (!eraseMode || !eraseSurface(event.target)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!event.detail) {
+      const bounds = event.target.getBoundingClientRect();
+      chooseDeletion(bounds.left + bounds.width / 2,bounds.top + bounds.height / 2);
+    }
+  },{capture:true,signal});
+  reader.addEventListener("keydown",event => {
+    if (event.key !== "Escape" || !eraseMode) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!deleteChoice.hidden) closeDeleteChoice();
+    else setEraseMode(false);
+    deleteTool.focus({preventScroll:true});
+  },{capture:true,signal});
 
   function target() {
     return editor.querySelector('input[name="edp-all-target"]:checked')?.value || "";
@@ -1512,12 +2044,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   tagName.addEventListener("input",refreshEditor);
   editor.addEventListener("submit",event => {
     event.preventDefault();
-    if (save.disabled) return;
+    if (save.disabled || deletionBusy || eraseMode) return;
     const value = tagName.value.trim();
     if (editedAnnotation) editedAnnotation.text = value;
     else {
       const range = target() === "passage" ? selectedRange : null;
-      state.annotations.push({kind:"tag",slug:currentEditor,text:value,range});
+      state.annotations.push({id:newId(),kind:"tag",slug:currentEditor,text:value,range});
       recordUse(currentEditor);
     }
     persistPage();
@@ -1530,13 +2062,14 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
 
   function renderPageAnnotations() {
     const container = one("[data-page-annotations]");
-    const notes = state.annotations.filter(item => item.kind === "note" && item.highlightId);
+    const notes = state.annotations.filter(item => item.kind === "note" && item.range);
     container.hidden = !notes.length;
     container.replaceChildren(...notes.map(item => {
       const control = button("","plain-button");
+      control.dataset.annotationId = item.id;
       control.append(art(item.slug),span("","Note"));
       control.addEventListener("click",() => {
-        const mark = state.annotations.find(annotation => annotation.id === item.highlightId);
+        const mark = state.annotations.find(annotation => annotation.id === item.highlightId) || item;
         if (mark) {
           showLinkMenu(mark);
           openLinkEntry(linkActions.find(action => action.kind === "note"));
@@ -1548,8 +2081,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
 
   function annotationName(item) {
     const lineNames = {simple:"Soulignement",double:"Soulignement double",dotted:"Soulignement pointillé"};
-    const labels = {symbol:"Symbole",highlight:"Surlignage",underline:lineNames[item.line || "simple"]};
-    return labels[item.kind] || (item.repereId ? "Repère personnalisé" : toolLabels.get(item.slug || item.owner));
+    const labels = {symbol:"Symbole",highlight:"Surlignage",underline:lineNames[item.line || "simple"],bracket:"Crochet",circle:"Contour",bookmark:"Marque-page"};
+    return labels[item.kind] || (item.repereId ? "Repère personnalisé" : toolLabels.get(item.slug || item.owner)) || "Annotation";
   }
 
   function renderSaved() {
@@ -1587,7 +2120,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
         if (signal.aborted || page.position !== current?.position) return;
         const id = item?.highlightId || item?.id;
         const mark = state.annotations.find(candidate => candidate.id === id);
-        if (mark) {
+        if (mark?.range) {
           const anchor = reading.querySelector('[data-linked-marks~="' + CSS.escape(String(id)) + '"]');
           anchor?.scrollIntoView?.({block:"center"});
           showLinkMenu(mark);
@@ -1623,6 +2156,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     const x = tagTrack.scrollLeft;
     tagTrack.replaceChildren(...tags.map(item => {
       const chip = button("","tag-chip");
+      chip.dataset.annotationId = item.id;
       const label = span("");
       label.append(art(item.slug),span("one-line",repereDescription(item)));
       chip.append(label);
@@ -1707,28 +2241,65 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (event.key === "Escape") showSheet(false);
   });
 
-  function enqueue(changes) {
+  function enqueue(changes,{quiet = false} = {}) {
     const payload = JSON.parse(JSON.stringify(changes));
-    writeQueue = writeQueue.then(async () => {
-      const saved = await saveBook(payload);
-      if (signal.aborted) return;
-      if (!saved) announce("L’enregistrement n’a pas abouti. Vérifie la connexion et réessaie.");
-      else if (payload.bookmarkMap) onBookmark();
+    const shared = readerAnnotationWriteQueues.get(book.id) || {revision:book.documentRevision || "",confirmed:{}};
+    const maps = ["readerAnnotations","readerReperes","bookmarkMap"].filter(name => payload[name]);
+    const operation = writeQueue.catch(() => {}).then(async () => {
+      const before = Object.fromEntries(maps.map(name => [name,Object.fromEntries(Object.keys(payload[name])
+        .map(key => [key,JSON.stringify(book[name]?.[key])]))]));
+      let saved = false;
+      try { saved = Boolean(await saveBook(payload)); }
+      catch { saved = false; }
+      // onSave updates this book even when disposal makes saveBook return false.
+      // Retain confirmed values for a reader mounted with a separate book object.
+      for (const name of maps) for (const key of Object.keys(payload[name])) {
+        if (saved || before[name][key] !== JSON.stringify(book[name]?.[key])) {
+          (shared.confirmed[name] ||= {})[key] = {
+            present:Object.hasOwn(book[name] || {},key),value:structuredClone(book[name]?.[key])
+          };
+        }
+      }
+      if (signal.aborted) return null;
+      if (!saved && !quiet) announce("L’enregistrement n’a pas abouti. Vérifie la connexion et réessaie.");
+      else if (saved && payload.bookmarkMap) onBookmark();
+      return saved;
     });
+    writeQueue = operation.then(() => {},() => {});
+    const settled = writeQueue;
+    shared.promise = settled;
+    readerAnnotationWriteQueues.set(book.id,shared);
+    settled.then(() => {
+      if (readerAnnotationWriteQueues.get(book.id) === shared && shared.promise === settled) readerAnnotationWriteQueues.delete(book.id);
+    });
+    return operation;
   }
 
   function persistPage(extra = {}) {
-    const annotations = state.annotations.map(item => item.range ? {...item,quote:quoteFor(item.range)} : item);
-    persisted[current.key] = {position:current.position,label:current.label,annotations,placement:state.placement,documentRevision:book.documentRevision || ""};
-    enqueue({...extra,readerAnnotations:{[current.key]:persisted[current.key]}});
+    if (!current) return Promise.resolve(false);
+    snapshotPage();
+    return enqueue({...extra,readerAnnotations:{[current.key]:persisted[current.key]}});
   }
 
   function saveProfile() {
-    profile = {pinned:[...pinnedIds],highlight:lastHighlight,underline:lastUnderline,line:underlineLine,usage:Object.fromEntries(useCount)};
+    profile = {pinned:[...pinnedIds],highlight:lastHighlight,underline:lastUnderline,bracket:lastBracket,line:underlineLine,usage:Object.fromEntries(useCount)};
     storage.putReaderProfile?.(profile).catch(() => {});
   }
 
   async function initialize() {
+    const previous = readerAnnotationWriteQueues.get(book.id);
+    await (previous?.promise || writeQueue);
+    if (signal.aborted) return;
+    if (previous?.revision === (book.documentRevision || "")) {
+      for (const [name,entries] of Object.entries(previous.confirmed)) {
+        const merged = {...book[name]};
+        for (const [key,confirmed] of Object.entries(entries)) {
+          if (confirmed.present) merged[key] = structuredClone(confirmed.value);
+          else delete merged[key];
+        }
+        book[name] = merged;
+      }
+    }
     profile = await storage.getReaderProfile?.().catch(() => null) || {};
     if (signal.aborted) return;
     if (Array.isArray(profile.pinned)) {
@@ -1737,18 +2308,25 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     }
     if (colorButtons.has(profile.highlight)) lastHighlight = profile.highlight;
     if (colorButtons.has(profile.underline)) lastUnderline = profile.underline;
+    if (colorButtons.has(profile.bracket)) lastBracket = profile.bracket;
     if (lineChoices.some(item => item.dataset.line === profile.line)) underlineLine = profile.line;
     for (const [id,count] of Object.entries(profile.usage || {})) if (toolButtons.has(id) && Number.isSafeInteger(count)) useCount.set(id,count);
     ranked = [...pinnedIds,...startingOrder.filter(id => !pinnedIds.has(id))
       .sort((a,b) => (useCount.get(b) || 0) - (useCount.get(a) || 0))];
     arrangeRail(0);
     persisted = structuredClone(Object.fromEntries(Object.entries(book.readerAnnotations || {})
-      .filter(([,entry]) => entry.documentRevision === (book.documentRevision || ""))));
-    repereCatalog = Object.values(book.readerReperes || {});
+      .filter(([,entry]) => entry && typeof entry === "object" && entry.documentRevision === (book.documentRevision || ""))));
+    Object.values(persisted).forEach(ensureAnnotationIds);
+    repereCatalog = Object.values(book.readerReperes || {}).filter(Boolean);
   }
 
   function clearPage() {
     current = null;
+    closeDeleteChoice();
+    annotationGeometry = [];
+    annotationDrawing.replaceChildren();
+    deleteTargets.replaceChildren();
+    renderDeletionChrome();
     closeOptions();
     closeRibbonNotes();
     closeLinkMenu();
@@ -1773,8 +2351,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     current = descriptor;
     activeTag = null;
     const saved = persisted[current.key] || {};
-    state = {annotations:structuredClone(saved.annotations || []),placement:structuredClone(saved.placement || []),
-      bookmarked:Boolean(book.bookmarkMap?.[current.key])};
+    state = ensureAnnotationIds({annotations:structuredClone(saved.annotations || []),placement:structuredClone(saved.placement || []),
+      bookmarked:bookmarkValue(current.key)});
     reading.replaceChildren(fragment);
     const walker = document.createTreeWalker(reading, NodeFilter.SHOW_TEXT);
     const nodes = [];
@@ -1790,7 +2368,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     offsets = [0];
     for (const text of sectionTexts) offsets.push(offsets.at(-1)+text.length);
     current.selectable = Boolean(sectionTexts.join("").trim());
-    for (const id of ["surligner","souligner","entourer-le-texte"]) {
+    for (const id of textTools.keys()) {
       const button = toolButtons.get(id);
       button.setAttribute("aria-disabled",String(!current.selectable));
       button.setAttribute("data-tooltip",current.selectable ? toolLabels.get(id) : "Texte non sélectionnable");
@@ -1801,6 +2379,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     renderText();
     renderFooter();
     renderPageAnnotations();
+    renderDeletionChrome();
     refreshIcons();
     return sectionTexts.join("").trim().split(/\s+/).filter(Boolean).length;
   }
@@ -1813,12 +2392,21 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     positionMarginReperes();
     positionLinkMenu();
     positionSymbolPanel();
+    scheduleDecorations();
   }
+  const contentResize = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleDecorations) : null;
+  contentResize?.observe(page);
+  contentResize?.observe(reading);
+  const themeObserver = new MutationObserver(() => { refreshHighlightSettings(); scheduleDecorations(); });
+  themeObserver.observe(app,{attributes:true,attributeFilter:["data-theme"]});
   window.addEventListener("resize",resize,{signal});
   document.fonts?.ready.then(resize);
   signal.addEventListener("abort",() => {
     clearTimeout(holdTimer);
     clearTimeout(selectionTimer);
+    if (decorationFrame) cancelAnimationFrame(decorationFrame);
+    contentResize?.disconnect();
+    themeObserver.disconnect();
   },{once:true});
   reader.addEventListener("keydown",event => {
     if (event.key !== "Escape") return;

@@ -26,8 +26,8 @@
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<link rel="stylesheet" href="./reader.css?v=2">
-<script defer src="./reader.js?v=2"></script>
+<link rel="stylesheet" href="./reader.css?v=3">
+<script defer src="./reader.js?v=3"></script>
 <script defer src="./book-detail.js?v=7"></script>
 <script defer src="./app.js?v=29"></script>
 </head>
@@ -501,6 +501,12 @@
               <div class="tag-detail" data-tag-detail hidden><span data-tag-context></span><button type="button" class="plain-button cursor-interaction" data-edit-tag>Modifier</button></div>
             </div>
           </div>
+          <div class="delete-status" data-delete-status hidden>
+            <span data-delete-message role="status" aria-live="polite"></span>
+            <button type="button" class="delete-undo cursor-interaction" data-delete-undo aria-label="Annuler la suppression" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg><span>Annuler</span>
+            </button>
+          </div>
           <div class="reader-progress" aria-label="Progression de lecture">
             <button type="button" class="cursor-interaction" data-reader-chrome aria-expanded="false"><span data-reader-progress></span></button>
           </div>
@@ -604,14 +610,14 @@
             <div class="highlight-colors" role="group" aria-label="Couleurs de surlignage" data-highlight-colors></div>
             <span class="visually-hidden" data-color-status role="status"></span>
             <div class="underline-styles" data-underline-styles role="group" aria-label="Type de trait" hidden>
-              <button type="button" class="ink-option cursor-interaction" data-line="simple" aria-pressed="true">
-                <span>Simple</span><span class="marked-underline underline-ink marked-simple" aria-hidden="true">Aa</span>
+              <button type="button" class="ink-option highlight-swatch cursor-interaction" data-line="simple" aria-label="Soulignement simple" aria-pressed="true">
+                <span class="marked-underline underline-ink marked-simple" aria-hidden="true">Aa</span>
               </button>
-              <button type="button" class="ink-option cursor-interaction" data-line="double" aria-pressed="false">
-                <span>Double</span><span class="marked-underline underline-ink marked-double" aria-hidden="true">Aa</span>
+              <button type="button" class="ink-option highlight-swatch cursor-interaction" data-line="double" aria-label="Soulignement double" aria-pressed="false">
+                <span class="marked-underline underline-ink marked-double" aria-hidden="true">Aa</span>
               </button>
-              <button type="button" class="ink-option cursor-interaction" data-line="dotted" aria-pressed="false">
-                <span>Pointillé</span><span class="marked-underline underline-ink marked-dotted" aria-hidden="true">Aa</span>
+              <button type="button" class="ink-option highlight-swatch cursor-interaction" data-line="dotted" aria-label="Soulignement pointillé" aria-pressed="false">
+                <span class="marked-underline underline-ink marked-dotted" aria-hidden="true">Aa</span>
               </button>
             </div>
           </div>
