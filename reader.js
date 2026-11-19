@@ -294,6 +294,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     optionsY = trigger.getBoundingClientRect().top - bounds.top;
     options.hidden = false;
     replacement.hidden = true;
+    options.removeAttribute("data-can-drag-pin");
     pinStatus.textContent = "";
     layout.setAttribute("data-pin-open","");
     trigger.setAttribute("data-options-open","");
@@ -337,12 +338,49 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       pinnedIds.delete(configuring);
     }
     replacement.hidden = true;
+    options.removeAttribute("data-can-drag-pin");
     arrangeRail();
     updatePin();
     positionOptions();
     saveProfile();
     pinStatus.textContent = added ? "Raccourci épinglé." : "Raccourci désépinglé.";
   }
+
+  const pinDrag = one(".pin-identity");
+  let movingPin = null;
+
+  function pinTarget(x,y) {
+    const target = document.elementFromPoint(x,y)?.closest(".rail-pinned [data-tool]");
+    return target && pinned.contains(target) ? target : null;
+  }
+
+  function finishPinDrag(event,commit) {
+    if (movingPin !== event.pointerId) return;
+    movingPin = null;
+    pinned.querySelector("[data-pin-drop]")?.removeAttribute("data-pin-drop");
+    options.removeAttribute("data-pin-dragging");
+    if (!commit) return;
+    const target = pinTarget(event.clientX,event.clientY);
+    if (target && configuring && !pinnedIds.has(configuring)) {
+      togglePin(target.dataset.tool);
+      pinToggle.focus({preventScroll:true});
+    }
+  }
+
+  pinDrag.addEventListener("pointerdown",event => {
+    if (replacement.hidden || event.button !== 0 || movingPin !== null) return;
+    movingPin = event.pointerId;
+    pinDrag.setPointerCapture?.(event.pointerId);
+    options.setAttribute("data-pin-dragging","");
+  });
+  pinDrag.addEventListener("pointermove",event => {
+    if (movingPin !== event.pointerId) return;
+    const target = pinTarget(event.clientX,event.clientY);
+    for (const item of pinned.children) item.toggleAttribute("data-pin-drop",item === target);
+  });
+  pinDrag.addEventListener("pointerup",event => finishPinDrag(event,true));
+  pinDrag.addEventListener("pointercancel",event => finishPinDrag(event,false));
+  pinDrag.addEventListener("lostpointercapture",event => finishPinDrag(event,false));
 
   pinToggle.addEventListener("click",() => {
     if (pinnedIds.has(configuring) || pinnedIds.size < 4) {
@@ -351,6 +389,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     }
     if (!replacement.hidden) {
       replacement.hidden = true;
+      options.removeAttribute("data-can-drag-pin");
       positionOptions();
       return;
     }
@@ -369,6 +408,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     });
     pinChoices.replaceChildren(...choices);
     replacement.hidden = false;
+    options.setAttribute("data-can-drag-pin","");
     positionOptions();
     choices[0]?.focus({preventScroll:true});
   });

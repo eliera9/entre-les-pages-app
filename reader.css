@@ -541,3 +541,7 @@
 #bibliotheque-app .reading-edp .textLayer span {color:transparent}
 #bibliotheque-app .reading-edp .textLayer .marked-highlight {background:color-mix(in srgb,var(--mark-color) 40%,transparent)}
 #bibliotheque-app .reading-edp .textLayer .marked-simple {text-decoration-skip-ink:none}
+
+#bibliotheque-app .reading-edp [data-can-drag-pin] .pin-identity {cursor:grab;touch-action:none;user-select:none}
+#bibliotheque-app .reading-edp [data-pin-dragging] .pin-identity {cursor:grabbing}
+#bibliotheque-app .reading-edp .tool-rail [data-pin-drop]::before {background:var(--tile);outline:1px solid var(--accent)}
