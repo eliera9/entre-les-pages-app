@@ -153,6 +153,88 @@ async function adaptEpubIllustration(image) {
   await image.decode();
 }
 
+// Locate continuous-tone illustrations on a small preview so their colours and internal whites stay intact.
+function pdfPaperRegions(canvas) {
+  const probe=document.createElement('canvas');
+  const scale=Math.min(1,320/Math.max(canvas.width,canvas.height));
+  const w=probe.width=Math.max(1,Math.round(canvas.width*scale));
+  const h=probe.height=Math.max(1,Math.round(canvas.height*scale));
+  const ctx=probe.getContext('2d',{willReadFrequently:true});
+  if (!ctx) return null;
+  ctx.drawImage(canvas,0,0,w,h);
+  const pixels=ctx.getImageData(0,0,w,h).data;
+  const marks=new Uint8Array(w*h), art=new Uint8Array(w*h);
+  const edgeLevels=[];
+  for (let i=0;i<marks.length;i++) {
+    const p=i*4, low=Math.min(pixels[p],pixels[p+1],pixels[p+2]), high=Math.max(pixels[p],pixels[p+1],pixels[p+2]);
+    marks[i]=low<228 || high-low>18;
+    if (i<w || i>=w*(h-1) || i%w===0 || i%w===w-1) edgeLevels.push(low);
+  }
+  edgeLevels.sort((a,b)=>a-b);
+  if (edgeLevels[Math.floor(edgeLevels.length*.45)]<228) return null;
+  const paper=Math.min(253,edgeLevels[Math.floor(edgeLevels.length*.75)]);
+  const queue=new Int32Array(w*h);
+  for (let start=0;start<marks.length;start++) {
+    if (!marks[start]) continue;
+    let end=1, tones=0, colour=0, x0=w,x1=0,y0=h,y1=0;
+    marks[start]=0;queue[0]=start;
+    for (let n=0;n<end;n++) {
+      const i=queue[n], x=i%w,y=Math.floor(i/w),p=i*4;
+      x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);
+      const low=Math.min(pixels[p],pixels[p+1],pixels[p+2]),high=Math.max(pixels[p],pixels[p+1],pixels[p+2]);
+      if (high-low>18) colour++;
+      if (low>36 && high<212) tones++;
+      for (let ny=Math.max(0,y-1);ny<=Math.min(h-1,y+1);ny++) {
+        for (let nx=Math.max(0,x-1);nx<=Math.min(w-1,x+1);nx++) {
+          const j=ny*w+nx;
+          if (marks[j]) {marks[j]=0;queue[end++]=j;}
+        }
+      }
+    }
+    const width=x1-x0+1,height=y1-y0+1, area=width*height;
+    if (width<8 || height<8 || (colour<area*.09 && tones<area*.40)) continue;
+    for (let y=y0;y<=y1;y++) art.fill(1,y*w+x0,y*w+x1+1);
+  }
+  return {w,h,art,paper};
+}
+
+// Keep the PDF page coordinates and text selection layer. Only the identifiable paper and neutral ink are themed.
+function applyPdfPaper(canvas,container) {
+  const region=pdfPaperRegions(canvas);
+  if (!region) return;
+  const ctx=canvas.getContext('2d');
+  const ink=document.createElement('canvas');
+  ink.width=canvas.width;ink.height=canvas.height;
+  const inkCtx=ink.getContext('2d');
+  if (!ctx || !inkCtx) return;
+  const original=ctx.getImageData(0,0,canvas.width,canvas.height);
+  const pixels=original.data, mask=inkCtx.createImageData(canvas.width,canvas.height);
+  const inkPixels=mask.data, columns=new Uint16Array(canvas.width);
+  for (let x=0;x<columns.length;x++) columns[x]=Math.floor(x*region.w/columns.length);
+  let hasInk=false;
+  for (let y=0;y<canvas.height;y++) {
+    const row=Math.floor(y*region.h/canvas.height)*region.w;
+    for (let x=0;x<canvas.width;x++) {
+      const p=4*(y*canvas.width+x);
+      if (region.art[row+columns[x]]) continue;
+      const r=pixels[p],g=pixels[p+1],b=pixels[p+2];
+      if (Math.max(r,g,b)-Math.min(r,g,b)>18) continue;
+      const alpha=Math.round(pixels[p+3]*Math.max(0,1-(r*.2126+g*.7152+b*.0722)/region.paper));
+      pixels[p+3]=0;
+      if (!alpha) continue;
+      inkPixels[p]=73;inkPixels[p+1]=58;inkPixels[p+2]=59;inkPixels[p+3]=alpha;
+      hasInk=true;
+    }
+  }
+  if (hasInk) inkCtx.putImageData(mask,0,0);
+  ctx.putImageData(original,0,0);
+  if (hasInk) {
+    ink.className='pdf-ink';
+    ink.setAttribute('aria-hidden','true');
+    container.append(ink);
+  }
+}
+
 function formatRemainingReadingTime(minutes) {
   const hours=Math.floor(minutes/60), remainder=minutes%60;
   if (!hours) return remainder+' min';

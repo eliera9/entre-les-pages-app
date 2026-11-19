@@ -727,7 +727,8 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 #bibliotheque-app .reading-edp .edition-sheet[data-edition-center] {position:relative;top:var(--edition-inset,0px)}
 #bibliotheque-app .reading-edp .page[data-page-kind="matter"] .edition-sheet p {text-align:inherit}
 #bibliotheque-app .reading-edp .edition-sheet img {border:0;background:transparent;box-shadow:none}
-#bibliotheque-app[data-theme="dark"] .reading-edp .edition-sheet img[data-edition-ink] {filter:brightness(0) invert(78%) sepia(9%) saturate(363%) hue-rotate(238deg)}
+#bibliotheque-app .reading-edp .pdf-page canvas.pdf-ink {position:absolute;inset:0;pointer-events:none}
+#bibliotheque-app[data-theme="dark"] .reading-edp :is(.edition-sheet img[data-edition-ink],.pdf-ink) {filter:brightness(0) invert(78%) sepia(9%) saturate(363%) hue-rotate(238deg)}
 #bibliotheque-app .reading-edp .reader-exit {display:none}
 #bibliotheque-app .reading-edp[data-immersive] .reader-progress {
   grid-template-columns:var(--reader-rail) minmax(0,1fr) var(--reader-rail);padding-inline:0;gap:4px

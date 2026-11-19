@@ -420,7 +420,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const viewport = page.getViewport({scale: size / Math.max(bounds.width, bounds.height)});
     if (Math.min(viewport.width, viewport.height) < 1 || !Number.isFinite(viewport.width + viewport.height)) throw Error('Cette page a des dimensions invalides.');
     const canvas = createCanvas(Math.round(viewport.width), Math.round(viewport.height));
-    const context = canvas.getContext('2d', {alpha: false});
+    const context = canvas.getContext('2d', {alpha: Boolean(TextLayer), willReadFrequently: Boolean(TextLayer)});
     const task = page.render({canvas, canvasContext: context, viewport, background: '#FFFFFF'});
     trackRender(task);
     await task.promise;
@@ -429,6 +429,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     result.className = 'pdf-page';
     result.style.setProperty('--pdf-ratio',String(canvas.width / canvas.height));
     result.append(canvas);
+    try { applyPdfPaper(canvas,result); } catch { /* Keep the original raster if this device cannot allocate the theme layers. */ }
     try {
       const text = await page.getTextContent();
       if (!text.items.some(item => item.str?.trim())) return result;
