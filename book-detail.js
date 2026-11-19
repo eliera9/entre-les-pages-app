@@ -621,7 +621,8 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     window.scrollTo({top:0, behavior:'instant'});
     readerDetails.hidden = true;
     readerBack.setAttribute('aria-label', openedDirectly ? 'Revenir à la bibliothèque' : 'Revenir à la fiche');
-    focus(viewport);
+    reader.tabIndex = -1;
+    focus(reader);
     try {
       if (book.format === 'Papier' && !book.fileFingerprint) throw Error('Ce livre papier n’a pas de fichier à ouvrir.');
       await Promise.all([initializingAnnotations,savePosition]);

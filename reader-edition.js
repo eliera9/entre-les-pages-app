@@ -79,7 +79,9 @@ function createEpubEditionStyles(readCss) {
           target.dataset.editionOpeningSpace=value;
           continue;
         }
-        target.style.setProperty(prop,value);
+        if (prop === 'font-size' && /^(p|h[1-6])$/.test(source.localName) && /[0-9](?:%|em|rem|px|pt)$/.test(value)) {
+          target.style.fontSize='max(var(--reader-label-size),'+value+')';
+        } else target.style.setProperty(prop,value);
       }
     };
   };

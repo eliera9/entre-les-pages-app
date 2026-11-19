@@ -742,3 +742,5 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 #bibliotheque-app .reading-edp .reader-settings span {margin-right:5px}
 #bibliotheque-app .reading-edp .reader-settings button {min-height:44px;min-width:48px;border:0;padding:4px 8px;color:inherit;background:transparent;font:inherit}
 #bibliotheque-app .reading-edp .reader-settings button[aria-pressed="true"] {text-decoration:underline;text-underline-offset:4px;color:var(--accent)}
+
+#bibliotheque-app .reading-edp:focus {outline:0}
