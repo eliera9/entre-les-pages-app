@@ -245,6 +245,8 @@ function createReadingStorage(excludedBooks) {
     removeSelection: (selection, requestId) => write('removeSelection', [selection, requestId]),
     createFolder: (...args) => write('createFolder', args),
     putPreferences: preferences => remoteOnly ? Promise.resolve() : device.putPreferences(preferences),
+    getReaderProfile: () => device?.loadMetadata('reader-profile') || Promise.resolve(null),
+    putReaderProfile: value => device?.putMetadata('reader-profile',value) || Promise.resolve(),
     getDocument,
     subscribe(listener) {
       listeners.add(listener);

@@ -188,6 +188,9 @@ function createLibraryStorage(databaseName = 'app-lecture', sync = false) {
             updated.bookmarkMap = {...lookup.result.bookmarkMap, ...changes.bookmarkMap};
             for (const key of Object.keys(updated.bookmarkMap)) if (!updated.bookmarkMap[key]) delete updated.bookmarkMap[key];
           }
+          for (const key of ['readerAnnotations', 'readerReperes']) {
+            if (changes[key]) updated[key] = {...lookup.result[key], ...changes[key]};
+          }
           store.put(updated);
           if (sync) record(tx, {requestId, type: 'patch', id, value: {...changes, updatedAt: updated.updatedAt}});
         };

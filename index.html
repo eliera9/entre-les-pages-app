@@ -18,16 +18,18 @@
 <script defer src="./vendor/supabase-2.119.1.js"></script>
 <script defer src="./compte.js"></script>
 <script defer src="./bibliotheque-supabase.js"></script>
-<script defer src="./storage.js?v=6"></script>
-<script defer src="./library-sync.js?v=2"></script>
+<script defer src="./storage.js?v=7"></script>
+<script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
 <link rel="stylesheet" href="./add-book.css?v=10">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<script defer src="./book-detail.js?v=6"></script>
-<script defer src="./app.js?v=28"></script>
+<link rel="stylesheet" href="./reader.css?v=1">
+<script defer src="./reader.js?v=1"></script>
+<script defer src="./book-detail.js?v=7"></script>
+<script defer src="./app.js?v=29"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -454,23 +456,183 @@
           <h1 id="book-reading-sheet-title"></h1>
           <p data-note-book></p>
         </section>
-        <section class="book-reader" data-book-reader aria-labelledby="ep-reading-title" hidden>
-          <header class="toolbar book-reader-toolbar">
-            <button class="round cursor-interaction" type="button" data-close-reader aria-label="Revenir à la fiche"><span class="ep-reader-back" aria-hidden="true"></span></button>
-            <span data-reading-book></span>
-          </header>
-          <article class="book-reader-page" aria-live="polite">
-            <h2 id="ep-reading-title"></h2><div data-reader-content></div>
-            <div data-bookmark-controls hidden>
-              <button class="plain" data-bookmark type="button" aria-pressed="false">Marquer cette position</button>
-              <select data-bookmarks aria-label="Aller à un marque-page"><option value="">Mes marque-pages</option></select>
+        <section class="reading-edp" data-book-reader aria-label="Liseuse" hidden>
+    <div class="reader" aria-label="Liseuse" data-reader-surface>
+      <header class="book-bar">
+        <button class="icon-button cursor-interaction" type="button" data-close-reader aria-label="Revenir à la fiche"><span class="chevron" aria-hidden="true"></span></button>
+        <div><span class="book-title" data-book-title></span><span class="chapter-title" data-chapter-title></span></div>
+        <button class="icon-button annotation-button cursor-interaction" type="button" data-fiche aria-label="Fiche" data-tooltip="Fiche" aria-expanded="false" aria-controls="edp-reader-fiche">
+          <span class="line-art annotation-icon" data-art="annotations" aria-hidden="true"></span>
+        </button>
+      </header>
+      <div class="reader-layout">
+        <div class="reading-column">
+          <article class="page" data-page>
+            <button type="button" class="ribbon-open cursor-interaction" data-ribbon-open aria-expanded="false"
+              aria-controls="edp-notes-panneau-ruban" aria-label="Ouvrir les notes du marque-page" hidden>
+              <span class="head-ribbon" data-bookmark aria-hidden="true" hidden></span>
+              <span class="ribbon-note-mark" data-ribbon-note-mark aria-hidden="true" hidden></span>
+            </button>
+            <div id="edp-notes-panneau-ruban" class="ribbon-notes" data-ribbon-panel role="group" aria-label="Notes du marque-page" hidden>
+              <div class="ribbon-choices" data-ribbon-choices>
+                <button type="button" class="cursor-interaction" data-ribbon-note="note-de-page" aria-label="Note de page">Page</button>
+                <button type="button" class="cursor-interaction" data-ribbon-note="note-de-chapitre" aria-label="Note de chapitre">Chapitre</button>
+              </div>
+              <form class="link-entry ribbon-entry" data-ribbon-entry hidden>
+                <button type="button" class="entry-control cursor-interaction" data-ribbon-back aria-label="Retour au choix Page ou Chapitre">
+                  <span class="chevron" aria-hidden="true"></span>
+                </button>
+                <textarea rows="1" data-ribbon-text aria-label="Texte de la note"></textarea>
+                <button type="submit" class="entry-control cursor-interaction" data-ribbon-save aria-label="Enregistrer la note" disabled>
+                  <span class="entry-check" aria-hidden="true"></span>
+                </button>
+              </form>
             </div>
-            <nav aria-label="Pagination" data-reader-pages hidden>
-              <button class="plain" data-reader-prev type="button">Précédent</button>
-              <button class="plain" data-reader-next type="button">Suivant</button>
-            </nav>
-            <button class="plain cursor-interaction" data-reader-details type="button" hidden>Voir la fiche</button>
+            <div class="reading" data-reading data-reader-content></div>
+            <button class="plain-button cursor-interaction" type="button" data-reader-details hidden>Voir la fiche du livre</button>
+            <div class="page-annotations" data-page-annotations hidden></div>
+            <p class="page-meaning" data-page-meaning role="status" hidden></p>
+            <div class="free-symbols" data-free-symbols></div>
+            <aside class="margin-reperes" data-margin-reperes-layer aria-label="Repères en marge" hidden></aside>
           </article>
+          <div class="page-foot" data-page-foot hidden>
+            <div class="tags-foot" data-tags-foot hidden>
+              <div class="swipe-line tag-track" data-tags role="group" aria-label="Étiquettes de la page"></div>
+              <div class="tag-detail" data-tag-detail hidden><span data-tag-context></span><button type="button" class="plain-button cursor-interaction" data-edit-tag>Modifier</button></div>
+            </div>
+          </div>
+          <div class="reader-progress" aria-label="Progression de lecture">
+            <button type="button" class="cursor-interaction" data-reader-chrome aria-expanded="false"><span data-reader-progress></span></button>
+          </div>
+          <nav class="reader-pages" aria-label="Pagination" data-reader-pages hidden>
+            <button class="icon-button cursor-interaction" data-reader-prev type="button" aria-label="Précédent"><span class="chevron" aria-hidden="true"></span></button>
+            <select data-bookmarks aria-label="Aller à un marque-page"><option value="">Mes marque-pages</option></select>
+            <button class="icon-button cursor-interaction" data-reader-next type="button" aria-label="Suivant"><span class="chevron right" aria-hidden="true"></span></button>
+          </nav>
+          <span class="visually-hidden" data-status role="status"></span>
+          <section id="edp-reader-sheet" class="sheet" aria-label="Outils d’annotation" hidden>
+            <div class="grip-row"><button class="grip cursor-interaction" type="button" data-close aria-label="Fermer le volet"><span aria-hidden="true"></span></button></div>
+            <div class="symbol-view" data-view="symbol" hidden>
+              <div class="symbol-tabs" role="tablist" aria-label="Catégories de symboles" data-symbol-tabs>
+                <button type="button" id="edp-symboles-onglet-reactions" class="cursor-interaction" role="tab"
+                  aria-controls="edp-symboles-reactions" aria-selected="true" data-symbol-tab="reactions">Réactions</button>
+                <button type="button" id="edp-symboles-onglet-lecture" class="cursor-interaction" role="tab"
+                  aria-controls="edp-symboles-lecture" aria-selected="false" data-symbol-tab="lecture">Lecture</button>
+              </div>
+              <div id="edp-symboles-reactions" class="symbol-grid" data-symbol-grid="reactions"
+                role="tabpanel" aria-labelledby="edp-symboles-onglet-reactions"></div>
+              <div id="edp-symboles-lecture" class="symbol-grid" data-symbol-grid="lecture"
+                role="tabpanel" aria-labelledby="edp-symboles-onglet-lecture" hidden></div>
+              <p class="sheet-feedback" data-meaning role="status" hidden></p>
+            </div>
+            <form class="editor" data-view="editor" hidden>
+              <header class="subhead"><button type="button" class="icon-button back-button cursor-interaction" data-back aria-label="Retour aux outils"><span class="chevron" aria-hidden="true"></span></button><span data-editor-title></span></header>
+              <div class="attach" data-attachment hidden role="group" aria-label="Rattacher à">
+                <span>Rattacher à</span>
+                <label><input type="radio" name="edp-all-target" value="page"> Page</label>
+                <label><input type="radio" name="edp-all-target" value="passage"> Passage</label>
+              </div>
+              <div class="anchor" data-anchor aria-live="polite" hidden><span data-anchor-label></span><q data-anchor-quote hidden></q></div>
+              <label class="tag-entry" data-tag-entry hidden><span data-tag-label>Nom de l’étiquette</span> <input type="text" data-tag-name placeholder="Ex. Indice"></label>
+              <button type="submit" class="save-button cursor-interaction" data-save>Enregistrer</button>
+            </form>
+            <section class="saved-view" id="edp-reader-fiche" aria-label="Annotations enregistrées" data-view="saved" hidden>
+              <h2 class="saved-title">Annotations enregistrées</h2>
+              <div class="saved-tabs" role="group" aria-label="Afficher dans la fiche">
+                <button type="button" data-saved-filter="all" aria-pressed="true">Toutes</button>
+                <button type="button" data-saved-filter="citation" aria-pressed="false">Citations</button>
+                <button type="button" data-saved-filter="favorite" aria-pressed="false">Favoris</button>
+              </div>
+              <p class="saved-empty" data-saved-empty>Aucune annotation dans ce livre.</p>
+              <ul class="saved-list" data-saved-list hidden></ul>
+            </section>
+            <p class="sheet-feedback" data-tool-hint role="status" hidden></p>
+          </section>
+        </div>
+        <div class="link-actions" data-link-actions aria-label="Associer au surlignage" role="group" hidden>
+          <div class="link-shortcuts" data-link-shortcuts>
+            <button type="button" class="link-action cursor-interaction" data-link-note aria-label="Ajouter une note" aria-expanded="false">
+              <span class="link-glyph line-art" data-art="note-de-passage" aria-hidden="true"></span><span>Note</span>
+            </button>
+            <button type="button" class="link-action cursor-interaction" data-link-repere aria-label="Ajouter un repère" aria-expanded="false">
+              <span class="link-glyph line-art" data-art="etiquette-personnalisee" aria-hidden="true"></span><span>Repère</span>
+            </button>
+            <button type="button" class="link-action cursor-interaction" data-link-favorite aria-label="Associer un passage favori">
+              <span class="link-glyph line-art" data-art="passage-favori" aria-hidden="true"></span><span>Favori</span>
+            </button>
+            <button type="button" class="link-action cursor-interaction" data-link-citation aria-label="Associer une citation">
+              <span class="link-glyph line-art" data-art="citation" aria-hidden="true"></span><span>Citation</span>
+            </button>
+          </div>
+          <form class="link-entry" data-link-entry aria-label="Saisie sur le passage" hidden>
+            <button type="button" class="entry-control cursor-interaction" data-entry-back aria-label="Retour">
+              <span class="chevron" aria-hidden="true"></span>
+            </button>
+            <textarea rows="1" data-inline-note aria-label="Texte de la note" placeholder="Écris ta note…" hidden></textarea>
+            <div class="repere-fields" data-repere-fields hidden>
+              <div class="repere-picker" data-repere-picker hidden>
+                <button type="button" class="repere-trigger cursor-interaction" data-repere-trigger
+                  aria-controls="edp-repere-options-integrees" aria-expanded="false">
+                  <span data-repere-trigger-label>Type de repère</span><span class="chevron down" aria-hidden="true"></span>
+                </button>
+                <div id="edp-repere-options-integrees" class="repere-options" data-repere-options role="group"
+                  aria-label="Types de repère" hidden></div>
+              </div>
+              <input type="text" data-repere-custom aria-label="Type personnalisé" placeholder="Précise le type" hidden>
+              <input type="text" data-repere-name aria-label="Nom du repère" placeholder="Nom du repère" hidden>
+            </div>
+            <button type="submit" class="entry-control link-save cursor-interaction" data-link-save aria-label="Enregistrer" disabled>
+              <span class="entry-check" data-entry-check aria-hidden="true"></span>
+              <span class="chevron right" data-entry-next aria-hidden="true" hidden></span>
+            </button>
+          </form>
+        </div>
+        <section class="rail-options" data-pin-options role="region" aria-label="Options du raccourci" hidden>
+          <header class="pin-heading">
+            <div class="pin-identity"><span data-pin-heading-icon></span><strong data-pin-title></strong></div>
+            <button type="button" class="pin-toggle cursor-interaction" aria-label="Épingler le raccourci" aria-pressed="true" data-pin-toggle>
+              <span class="pin-glyph" aria-hidden="true">
+                <i data-lucide="pin" class="pin-on"></i>
+              </span>
+            </button>
+            <button type="button" class="pin-close cursor-interaction" aria-label="Fermer les options" data-pin-close>
+              <span class="chevron right" aria-hidden="true"></span>
+            </button>
+          </header>
+          <div class="highlight-settings" data-highlight-settings hidden>
+            <div class="highlight-label" data-color-label><span class="color-kind">Couleur</span><span class="color-divider" aria-hidden="true"> · </span><span class="color-name" data-color-name>Rose poudré</span></div>
+            <div class="highlight-colors" role="group" aria-label="Couleurs de surlignage" data-highlight-colors></div>
+            <span class="visually-hidden" data-color-status role="status"></span>
+            <div class="underline-styles" data-underline-styles role="group" aria-label="Type de trait" hidden>
+              <button type="button" class="ink-option cursor-interaction" data-line="simple" aria-pressed="true">
+                <span>Simple</span><span class="marked-underline underline-ink marked-simple" aria-hidden="true">Aa</span>
+              </button>
+              <button type="button" class="ink-option cursor-interaction" data-line="double" aria-pressed="false">
+                <span>Double</span><span class="marked-underline underline-ink marked-double" aria-hidden="true">Aa</span>
+              </button>
+              <button type="button" class="ink-option cursor-interaction" data-line="dotted" aria-pressed="false">
+                <span>Pointillé</span><span class="marked-underline underline-ink marked-dotted" aria-hidden="true">Aa</span>
+              </button>
+            </div>
+          </div>
+          <div class="bookmark-notes" data-bookmark-notes hidden aria-label="Notes depuis Marque-page" role="group">
+            <button type="button" class="bookmark-note cursor-interaction" data-bookmark-note="note-de-page">
+              <span class="line-art" data-art="note-de-page" aria-hidden="true"></span><span>Note de page</span>
+            </button>
+            <button type="button" class="bookmark-note cursor-interaction" data-bookmark-note="note-de-chapitre">
+              <span class="line-art" data-art="note-de-chapitre" aria-hidden="true"></span><span>Note de chapitre</span>
+            </button>
+          </div>
+          <div class="pin-replace" data-pin-replace hidden>
+            <p>Remplacer une épingle</p>
+            <div class="pin-replacements" data-pin-choices></div>
+          </div>
+          <span class="visually-hidden" data-pin-status role="status"></span>
+        </section>
+        <aside class="tool-rail" data-rail role="toolbar" aria-orientation="vertical" aria-label="Outils d’annotation"></aside>
+      </div>
+      <div class="symbol-ghost" data-ghost hidden></div>
+    </div>
         </section>
       <div class="delete-layer" data-delete-layer hidden>
         <section class="account-exit delete-panel" data-delete-dialog id="delete-panel" role="dialog" aria-labelledby="book-delete-title" aria-describedby="book-delete-copy">

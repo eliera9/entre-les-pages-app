@@ -281,69 +281,157 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     pageTask?.cancel();
     pdfTask?.destroy()?.catch(() => {});
     pageTask = pdfTask = pages = null;
+    readyToRead = false;
+    clearInterval(progressTimer);
+    progressTimer = null;
+    annotations.clearPage();
+    setReaderChrome(false);
   }
-  const bookmark = q('[data-bookmark]');
   const marks = q('[data-bookmarks]');
+  const chrome = q('[data-reader-chrome]');
+  let progressTimer;
+  let pageWords = 0;
+  let readyToRead = false;
+  let readingStarted = 0;
+  const readCounts = new Map();
   const unit = () => pages.label === 'Page' ? 'page' : 'chapter';
+  const positionKey = () => unit() + '-' + (index + 1);
+  const annotations = mountReaderAnnotations({
+    root:reader,app:root,book,storage,save,signal:scope.signal,refreshIcons,
+    navigate: async position => {
+      if (!pages || position < 0 || position >= pages.count || position === index) return;
+      index = position;
+      await drawPage(true);
+    },
+    onBookmark: () => refreshBookmarks(),
+  });
+  const initializingAnnotations = annotations.initialize();
+  refreshIcons();
+
   function refreshBookmarks() {
     if (!pages) return;
     const prefix = unit() + '-';
     const saved = book.bookmarkMap || {};
-    const marked = Boolean(saved[prefix + (index + 1)]);
-    bookmark.setAttribute('aria-pressed', String(marked));
-    bookmark.textContent = marked ? 'Retirer le marque-page' : 'Marquer cette position';
     const positions = Object.keys(saved).filter(key => saved[key] && key.startsWith(prefix))
       .map(key => Number(key.slice(prefix.length))).filter(n => Number.isInteger(n) && n >= 1 && n <= pages.count).sort((a,b) => a-b);
     marks.replaceChildren(new Option('Mes marque-pages',''), ...positions.map(n => new Option(pages.label + ' ' + n, String(n))));
     marks.disabled = !positions.length;
   }
-  on(bookmark,'click',async () => {
+  function setReaderChrome(open) {
+    chrome.setAttribute('aria-expanded',String(open));
+    q('[data-reader-pages]').hidden = !open || !readyToRead;
+  }
+  function updateProgress() {
     if (!pages) return;
-    bookmark.disabled = true;
-    const key = unit() + '-' + (index + 1);
-    try { await save({bookmarkMap:{[key]:book.bookmarkMap?.[key] ? null : true}}); refreshBookmarks(); }
-    finally { bookmark.disabled = false; }
-  });
+    const remaining = pages.count - index - 1;
+    const averageWords = [...readCounts.values()].reduce((sum,words) => sum + words,0) / (readCounts.size || 1);
+    const sampleWords = averageWords || (unit() === 'page' ? 250 : 900);
+    const elapsed = document.visibilityState === 'hidden' ? 0 : Math.max(0,Date.now() - readingStarted) / 60000;
+    const minutes = Math.max(0,Math.ceil(remaining * sampleWords / 220 + Math.max(0,(pageWords || sampleWords)/220 - elapsed)));
+    const time = minutes >= 60 ? Math.floor(minutes/60) + ' h ' + String(minutes%60).padStart(2,'0') + ' min' : minutes + ' min';
+    const percent = Math.round((index+1)/pages.count*100);
+    setText('[data-reader-progress]', pages.label + ' ' + (index+1) + ' / ' + pages.count + ' · ' + percent + ' % · ' + time + ' restantes');
+    chrome.hidden = false;
+  }
+  on(chrome,'click',() => setReaderChrome(chrome.getAttribute('aria-expanded') === 'false'));
   on(marks,'change',() => { if (pages && marks.value) { index = Number(marks.value)-1; void drawPage(true); } });
+  const turn = delta => {
+    if (!pages || !readyToRead || index+delta < 0 || index+delta >= pages.count) return;
+    index += delta;
+    void drawPage(true);
+  };
+  on(reader, 'keydown', event => {
+    if (event.defaultPrevented || event.target.matches('input,select,textarea,button') || window.getSelection()?.toString()) return;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      turn(event.key === 'ArrowLeft' ? -1 : 1);
+    }
+  });
+  let swipe;
+  on(q('[data-reader-content]'),'touchstart',event => {
+    const point = event.touches.length === 1 && event.touches[0];
+    swipe = point ? {x:point.clientX,y:point.clientY,at:Date.now()} : null;
+  });
+  on(q('[data-reader-content]'),'touchend',event => {
+    if (!swipe || window.getSelection()?.toString()) return;
+    const point=event.changedTouches[0];
+    const dx=point.clientX-swipe.x,dy=point.clientY-swipe.y;
+    if (Date.now()-swipe.at < 650 && Math.abs(dx)>75 && Math.abs(dx)>Math.abs(dy)*2) turn(dx<0 ? 1 : -1);
+    swipe=null;
+  });
   async function drawPage(record = false) {
     const version = ++renderSequence;
+    readyToRead = false;
+    readerDetails.hidden = true;
     const section = pages;
     const current = index;
     const content = q('[data-reader-content]');
     const prev = q('[data-reader-prev]'), next = q('[data-reader-next]');
-    q('[data-reader-pages]').hidden = section.count < 2;
-    prev.disabled = current === 0;
-    next.disabled = current + 1 >= section.count;
-    setText('#ep-reading-title', section.label + ' ' + (current + 1) + ' / ' + section.count);
+    prev.disabled = true;
+    next.disabled = true;
     try {
       pageTask?.cancel();
       const result = await section.read(current);
       if (renderSequence !== version) return;
-      content.replaceChildren(result);
-      q('[data-bookmark-controls]').hidden = false;
+      const label = section.label + ' ' + (current + 1);
+      const chapter = unit() === 'chapter' ? {
+        key:'note-chapter-' + (current+1),position:current,label:section.chapterTitles[current] || 'Chapitre ' + (current+1)
+      } : section.outline?.find(item => current >= item.position);
+      setText('[data-chapter-title]', chapter?.label || label);
+      pageWords = annotations.loadPage(result,{key:positionKey(),position:current,count:section.count,label,chapter,unitLabel:section.label});
+      if (pageWords) readCounts.set(current,pageWords);
+      readingStarted = Date.now();
+      readyToRead = true;
+      updateProgress();
+      if (!progressTimer) progressTimer=window.setInterval(updateProgress,30000);
+      prev.disabled = current === 0;
+      next.disabled = current + 1 >= section.count;
       refreshBookmarks();
-      if (record || !book.readingPosition) {
-        await save({readingPosition:{unit:unit(),value:current+1}});
-        if (renderSequence !== version) return;
-      }
+      if (record || !book.readingPosition) void save({readingPosition:{unit:unit(),value:current+1}});
       window.scrollTo({top:0, behavior:'instant'});
-    } catch (error) { if (renderSequence === version) content.textContent = error.message; }
+    } catch (error) {
+      if (renderSequence === version) {
+        annotations.clearPage();
+        content.textContent = error.message;
+        readerDetails.hidden = false;
+      }
+    }
   }
+  async function pdfChapters(pdf) {
+    try {
+      const outline = await pdf.getOutline();
+      const chapters = [];
+      for (const item of outline?.slice(0,250) || []) {
+        const destination = typeof item.dest === 'string' ? await pdf.getDestination(item.dest) : item.dest;
+        if (!Array.isArray(destination) || destination[0] == null) continue;
+        const position = Number.isInteger(destination[0]) ? destination[0] : await pdf.getPageIndex(destination[0]);
+        if (position < 0 || position >= pdf.numPages || chapters.some(chapter => chapter.position === position)) continue;
+        chapters.push({key:'note-pdf-chapter-'+position,label:item.title.trim().slice(0,180) || 'Chapitre',position});
+      }
+      return chapters.sort((a,b) => b.position-a.position);
+    } catch { return []; }
+  }
+
   async function openReader() {
     setPopup(false); setDelete(false); stopReader();
     const session = readerSession;
     const current = () => session === readerSession && !scope.signal.aborted;
     mode = 'reader'; render();
-    setText('[data-reading-book]', book.title);
-    setText('#ep-reading-title', '');
+    setText('[data-book-title]', book.title);
+    setText('[data-chapter-title]', '');
+    setText('[data-reader-progress]', '');
+    chrome.hidden = true;
+    readCounts.clear();
     setText('[data-reader-content]', 'Ouverture du livre…');
-    q('[data-reader-pages]').hidden = q('[data-bookmark-controls]').hidden = true;
+    setReaderChrome(false);
     window.scrollTo({top:0, behavior:'instant'});
     readerDetails.hidden = true;
     readerBack.setAttribute('aria-label', openedDirectly ? 'Revenir à la bibliothèque' : 'Revenir à la fiche');
     focus(readerBack);
     try {
       if (book.format === 'Papier' && !book.fileFingerprint) throw Error('Ce livre papier n’a pas de fichier à ouvrir.');
+      await initializingAnnotations;
+      if (!current()) return;
       const file = await storage.getDocument(book.id);
       if (!current()) return;
       if (!file) throw Error('Le fichier de ce livre est introuvable sur cet appareil.');
@@ -355,7 +443,10 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
         section = {label:'Section', ...await engine.openEpub(bytes)};
       } else if (format === 'PDF') {
         const pdf = await engine.fromPdf(bytes, task => { if (current()) pdfTask = task; else task.destroy().catch(() => {}); });
-        section = {count:pdf.document.numPages, label:'Page', read:n => engine.renderPage(pdf.document, n + 1, 1600, task => {if (current()) pageTask = task; else task.cancel();})};
+        const outline = await pdfChapters(pdf.document);
+        section = {count:pdf.document.numPages, label:'Page', outline,
+          read:n => engine.renderPage(pdf.document, n + 1, 1600, task => {if (current()) pageTask = task; else task.cancel();},pdf.TextLayer)};
+
       } else throw Error('Ce format de livre est illisible.');
       if (!current()) return;
       pages = section;
@@ -387,10 +478,10 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   on(read, 'click', openReader);
   on(readerBack, 'click', closeReader);
   on(readerDetails, 'click', showBookDetails);
-  on(q('[data-reader-prev]'), 'click', () => {if (pages && index > 0) {index--; drawPage(true);}});
-  on(q('[data-reader-next]'), 'click', () => {if (pages && index + 1 < pages.count) {index++; drawPage(true);}});
+  on(q('[data-reader-prev]'), 'click', () => turn(-1));
+  on(q('[data-reader-next]'), 'click', () => turn(1));
   on(document, 'keydown', event => {
-    if (event.key !== 'Escape' || root.dataset.sidebarOpen === 'true') return;
+    if (event.defaultPrevented || event.key !== 'Escape' || root.dataset.sidebarOpen === 'true') return;
     if (!bubble.hidden) setDelete(false, true);
     else if (!popup.hidden) setPopup(false, true);
     else if (mode === 'note') backFromNote();

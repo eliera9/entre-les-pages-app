@@ -101,12 +101,15 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       .filter(item => item && /html/i.test(item.getAttribute('media-type')))
       .map(item => archivePath(opfPath, item.getAttribute('href'))).filter(Boolean);
     if (!paths.length) throw Error('Aucun chapitre lisible dans cet EPUB.');
-    return {count: paths.length, async read(index) {
+    const chapterTitles = [];
+    return {count: paths.length, chapterTitles, async read(index) {
       const data = await readEntry(archive, paths[index], 10 * MiB);
       if (!data) throw Error('Ce chapitre est introuvable.');
       const doc = readText(data);
       const body = named(doc, 'body')[0];
       if (!body) throw Error('Ce chapitre est illisible.');
+      const heading = [...body.getElementsByTagName('*')].find(node => /^h[12]$/i.test(node.localName));
+      chapterTitles[index] = heading?.textContent?.trim().slice(0,180) || '';
       const fragment = document.createDocumentFragment();
       const allowed = new Set('p div section article h1 h2 h3 h4 h5 h6 span em i strong b br hr ol ul li blockquote sup sub pre figure figcaption table tr td th tbody'.split(' '));
       async function append(source, target) {
@@ -220,7 +223,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const title = clean(metadata?.info?.Title);
     const author = clean(metadata?.info?.Author);
     const isbn = findIsbn(metadata?.metadata?.get('dc:identifier'));
-    return {type: 'PDF', document, title, author, isbn};
+    return {type: 'PDF', document, title, author, isbn, TextLayer: pdf.TextLayer};
   }
 
   function formatOf(bytes) {
@@ -295,7 +298,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     }
   }
 
-  async function renderPage(pdf, number, size, trackRender = () => {}) {
+  async function renderPage(pdf, number, size, trackRender = () => {}, TextLayer = null) {
     const page = await pdf.getPage(number);
     const bounds = page.getViewport({scale: 1});
     const viewport = page.getViewport({scale: size / Math.max(bounds.width, bounds.height)});
@@ -305,7 +308,25 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const task = page.render({canvas, canvasContext: context, viewport, background: '#FFFFFF'});
     trackRender(task);
     await task.promise;
-    return canvas;
+    if (!TextLayer) return canvas;
+    const result = document.createElement('div');
+    result.className = 'pdf-page';
+    result.append(canvas);
+    try {
+      const text = await page.getTextContent();
+      if (!text.items.some(item => item.str?.trim())) return result;
+      const layer = document.createElement('div');
+      layer.className = 'textLayer';
+      const pdfWidth = viewport.rotation % 180 ? viewport.rawDims.pageHeight : viewport.rawDims.pageWidth;
+      layer.style.setProperty('--pdf-width', pdfWidth + 'px');
+      layer.style.setProperty('--scale-round-x', '1px');
+      layer.style.setProperty('--scale-round-y', '1px');
+      result.append(layer);
+      await new TextLayer({textContentSource:text,container:layer,viewport}).render();
+    } catch {
+      result.querySelector('.textLayer')?.remove();
+    }
+    return result;
   }
 
   function cropRectangle({data, width, height}, targetWidth, targetHeight) {
