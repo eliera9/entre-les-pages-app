@@ -174,7 +174,8 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       if (!candidates.length && kind === 'body' && (explicit || !ordered.length && (heading || label))) {
         candidates.push({position,anchor:'',label:heading || label});
       }
-      sectionInfo.push({kind,plate:isPlate,label,chapters:candidates});
+      const cover = types.includes('cover') || /^(?:couverture|cover)$/iu.test(label);
+      sectionInfo.push({kind,plate:isPlate,cover,label,chapters:candidates});
       weights.push(Math.max(1,words));
     }
     const tocChapters = sectionInfo.flatMap(info => info.chapters);

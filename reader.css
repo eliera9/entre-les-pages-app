@@ -681,6 +681,10 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 #bibliotheque-app .reading-edp .page:is([data-page-kind="plate"],[data-page-kind="pdf"]) {padding:0}
 #bibliotheque-app .reading-edp .page:is([data-page-kind="plate"],[data-page-kind="matter"],[data-page-kind="pdf"]) .leaf-viewport {max-width:none}
 #bibliotheque-app .reading-edp .page[data-page-kind="plate"] {background-color:var(--page-paper,transparent)}
+#bibliotheque-app .reading-edp .page[data-page-kind="plate"]::before {
+  content:""; position:absolute; inset:0; pointer-events:none; clip-path:inset(0);
+  background:var(--cover-bleed,none) center/cover no-repeat; filter:blur(12px);
+}
 #bibliotheque-app .reading-edp .page[data-page-kind="plate"] .reading[data-reading] {
   display:block; columns:auto; position:relative; width:100%; height:100%; max-width:none; margin:0;
 }

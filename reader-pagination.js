@@ -37,7 +37,7 @@ function createReaderPagination(viewport, content, annotations) {
     viewport.dataset.leaves = String(count);
     annotations.setLeaf(start,end);
   }
-  function measure(kind,position = {}) {
+  function measure(kind,position = {},originalLayout) {
     format = kind;
     boundaries.clear();
     // Flex layout accounts for the actual header, tools, footer and safe areas.
@@ -52,6 +52,10 @@ function createReaderPagination(viewport, content, annotations) {
     if (position.last) target = count-1;
     else if (Number.isFinite(position.offset)) target = columnAt(position.offset);
     if (position.leaf && (!textLength || (position.leaf < count && boundary(position.leaf) === position.offset))) target = position.leaf;
+    // Returning to the exact layout restores its original leaf even at a line-break boundary.
+    if (originalLayout?.width === width && originalLayout.height === viewport.clientHeight && originalLayout.count === count) {
+      target = position.leaf || 0;
+    }
     show(target);
   }
   function anchor() { return format === 'chapter' ? {offset:start,leaf:number} : {}; }

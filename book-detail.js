@@ -297,6 +297,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   let motion;
   let layoutFrame;
   let latestAnchor = {};
+  let anchorLayout;
   let visibleChapters = [];
   let currentChapter;
   let savePosition = Promise.resolve();
@@ -359,8 +360,11 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   const initializingAnnotations = annotations.initialize();
   refreshIcons();
 
-  function recordPosition(record,anchor = pager.anchor()) {
-    latestAnchor = anchor;
+  function recordPosition(record,keepAnchor = false) {
+    if (!keepAnchor) {
+      latestAnchor = pager.anchor();
+      anchorLayout = {width:viewport.clientWidth,height:viewport.clientHeight,count:pager.count};
+    }
     const currentWeight = pages.weights?.[index] || 1;
     const total = pages.totalWeight;
     const done = (pages.before[index] + currentWeight * pager.done) / total;
@@ -437,8 +441,8 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     layoutFrame = requestAnimationFrame(() => {
       if (!readyToRead) return;
       motion?.cancel();
-      pager.measure(unit(),latestAnchor);
-      recordPosition(false,latestAnchor);
+      pager.measure(unit(),latestAnchor,anchorLayout);
+      recordPosition(false,true);
     });
   }
   let previousSize = '';
@@ -514,7 +518,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       visibleChapters.push({chapter,element:opening});
     }
   }
-  function extendIllustrationPaper(image) {
+  function extendIllustrationPaper(image,cover) {
     // Extend a uniform paper edge into the space left by the original aspect ratio.
     if (!image?.naturalWidth || !image.naturalHeight) return;
     const sample = document.createElement('canvas');
@@ -529,6 +533,8 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     const rgb = [0,1,2].map(i => colors.map(pixel => pixel[i]));
     if (rgb.every(channel => Math.max(...channel)-Math.min(...channel) <= 12)) {
       surface.style.setProperty('--page-paper','rgb('+rgb.map(values => Math.round(values.reduce((a,b) => a+b)/4)).join(',')+')');
+    } else if (cover) {
+      surface.style.setProperty('--cover-bleed','url("'+image.src+'")');
     }
   }
   async function drawPage(record=false,position={},direction=0) {
@@ -545,6 +551,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       const info = section.sectionInfo?.[current];
       const label = info ? (info.label || section.chapterTitles[current] || 'Page du livre') : section.label+' '+(current+1);
       surface.style.removeProperty('--page-paper');
+      surface.style.removeProperty('--cover-bleed');
       surface.dataset.pageKind = info?.plate ? 'plate' : info?.kind || 'pdf';
       const chapter = unit() === 'chapter' ? {key:'note-chapter-'+(current+1),position:current,label:info?.label || section.chapterTitles[current] || label} :
         section.outline?.find(item => current >= item.position);
@@ -572,7 +579,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
         await Promise.all([document.fonts?.ready,...Array.from(content.images || content.querySelectorAll('img'),img => img.decode?.().catch(() => {}))]);
       }
       if (renderSequence !== version) return;
-      if (info?.plate) extendIllustrationPaper(content.querySelector('img.page-plate'));
+      if (info?.plate) extendIllustrationPaper(content.querySelector('img.page-plate'),info.cover);
       chrome.hidden = false;
       pager.measure(unit(),position);
       readyToRead = true;
