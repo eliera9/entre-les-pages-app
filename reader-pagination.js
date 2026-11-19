@@ -47,6 +47,17 @@ function createReaderPagination(viewport, content, annotations) {
     stride = width + gap;
     textLength = annotations.textLength();
     viewport.style.setProperty('--leaf-width',width + 'px');
+    const sheet = content.querySelector?.('[data-edition-center]');
+    if (sheet) {
+      sheet.style.removeProperty('--edition-inset');
+      for (const node of sheet.querySelectorAll('[data-edition-opening-space]')) node.style.paddingTop='0px';
+      const boxes = sheet.getClientRects();
+      if (boxes.length === 1 && boxes[0].height < viewport.clientHeight) {
+        sheet.style.setProperty('--edition-inset',(viewport.clientHeight-boxes[0].height)/2+'px');
+      } else {
+        for (const node of sheet.querySelectorAll('[data-edition-opening-space]')) node.style.paddingTop=node.dataset.editionOpeningSpace;
+      }
+    }
     count = kind === 'chapter' ? Math.max(1,Math.round((content.scrollWidth + gap) / stride)) : 1;
     let target = 0;
     if (position.last) target = count-1;
@@ -63,7 +74,7 @@ function createReaderPagination(viewport, content, annotations) {
     get done(){return Number.isFinite(end) && textLength ? end/textLength : (number+1)/count;}};
 }
 
-function bindPageTurns(surface,signal,canTurn,turn) {
+function bindPageTurns(surface,signal,canTurn,turn,onCenter) {
   let pointer;
   const interactive = 'button,a,select,input,textarea,[contenteditable=true],[role=button],[data-linked-mark],[data-annotation-id]';
   const selected = () => Boolean(window.getSelection()?.toString());
@@ -87,5 +98,6 @@ function bindPageTurns(surface,signal,canTurn,turn) {
     const bounds = surface.getBoundingClientRect();
     const part = (event.clientX-bounds.left)/bounds.width;
     if (part <= .25 || part >= .75) turn(part <= .25 ? -1 : 1);
+    else onCenter?.();
   });
 }

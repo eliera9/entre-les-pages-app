@@ -1,4 +1,4 @@
-function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+function mountSavedBook({root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
   const scope = new AbortController();
   const on = (node, type, callback) => node.addEventListener(type, callback, {signal: scope.signal});
   host.replaceChildren(root.querySelector('[data-saved-book-template]').content.cloneNode(true));
@@ -323,8 +323,10 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   const nativeElement = () => document.fullscreenElement || document.webkitFullscreenElement;
   function immersive(enabled) {
     reader.toggleAttribute('data-immersive',enabled);
-    expand.setAttribute('aria-pressed',String(enabled));
-    const label = enabled ? 'Quitter le plein écran' : 'Activer le plein écran';
+    q('[data-reader-settings]').hidden = enabled;
+    expand.setAttribute('aria-expanded',String(!enabled));
+    for (const choice of reader.querySelectorAll('[data-reader-theme]')) choice.setAttribute('aria-pressed',String(choice.dataset.readerTheme === root.dataset.theme));
+    const label = enabled ? 'Ouvrir les paramètres de lecture' : 'Revenir à la lecture en pleine page';
     expand.setAttribute('aria-label',label);
     expand.title = label;
     if (enabled) annotations.closeForReading();
@@ -337,14 +339,25 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       if (exit) Promise.resolve(exit.call(document)).catch(() => {});
     }
   }
-  on(expand,'click',() => {
-    if (reader.hasAttribute('data-immersive')) return leaveFullscreen();
+  function enterReading() {
     immersive(true);
     const enter = reader.requestFullscreen || reader.webkitRequestFullscreen;
-    if (enter) {
+    if (enter && (!navigator.userActivation || navigator.userActivation.isActive)) {
       // iPhone and embedded contexts can keep the in-app immersive layout.
       try { Promise.resolve(enter.call(reader)).catch(() => {}); } catch { /* CSS mode is already active. */ }
     }
+  }
+  function toggleControls() {
+    if (reader.hasAttribute('data-immersive')) leaveFullscreen();
+    else enterReading();
+  }
+  on(expand,'click',toggleControls);
+  on(q('[data-reader-exit]'),'click',() => (returnToLibrary || home)());
+  on(q('[data-reader-settings]'),'click',event => {
+    const choice = event.target.closest('[data-reader-theme]');
+    if (!choice) return;
+    setReaderTheme(choice.dataset.readerTheme);
+    for (const button of reader.querySelectorAll('[data-reader-theme]')) button.setAttribute('aria-pressed',String(choice === button));
   });
   function fullscreenChanged() {
     if (nativeElement() === reader) {
@@ -397,7 +410,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
         }
       } else location = pages.chapterTitles[index] || 'Ouverture du livre';
     }
-    const label = location+' • '+percent+'% • '+minutes+' min';
+    const label = location+' • '+percent+'% • '+formatRemainingReadingTime(minutes);
     setText('[data-reader-progress]',label);
     chrome.style.setProperty('--progress',percent+'%');
     chrome.hidden = false;
@@ -427,7 +440,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     }
   }
   const canTurn = () => readyToRead && annotations.allowTurn();
-  bindPageTurns(surface,scope.signal,canTurn,turn);
+  bindPageTurns(surface,scope.signal,canTurn,turn,toggleControls);
   on(reader,'keydown',event => {
     if (event.defaultPrevented || !canTurn() || event.target.closest('input,select,textarea,button,a,[contenteditable=true]') || window.getSelection()?.toString()) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -518,25 +531,6 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       visibleChapters.push({chapter,element:opening});
     }
   }
-  function extendIllustrationPaper(image,cover) {
-    // Extend a uniform paper edge into the space left by the original aspect ratio.
-    if (!image?.naturalWidth || !image.naturalHeight) return;
-    const sample = document.createElement('canvas');
-    sample.width = sample.height = 3;
-    const ctx = sample.getContext('2d');
-    if (!ctx) return;
-    const colors = [[0,0],[1,0],[0,1],[1,1]].map(([x,y]) => {
-      ctx.drawImage(image,x*(image.naturalWidth-1),y*(image.naturalHeight-1),1,1,0,0,1,1);
-      return ctx.getImageData(0,0,1,1).data;
-    });
-    if (colors.some(pixel => pixel[3] < 250)) return;
-    const rgb = [0,1,2].map(i => colors.map(pixel => pixel[i]));
-    if (rgb.every(channel => Math.max(...channel)-Math.min(...channel) <= 12)) {
-      surface.style.setProperty('--page-paper','rgb('+rgb.map(values => Math.round(values.reduce((a,b) => a+b)/4)).join(',')+')');
-    } else if (cover) {
-      surface.style.setProperty('--cover-bleed','url("'+image.src+'")');
-    }
-  }
   async function drawPage(record=false,position={},direction=0) {
     const version = ++renderSequence;
     readyToRead = false;
@@ -550,8 +544,6 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       if (renderSequence !== version) return;
       const info = section.sectionInfo?.[current];
       const label = info ? (info.label || section.chapterTitles[current] || 'Page du livre') : section.label+' '+(current+1);
-      surface.style.removeProperty('--page-paper');
-      surface.style.removeProperty('--cover-bleed');
       surface.dataset.pageKind = info?.plate ? 'plate' : info?.kind || 'pdf';
       const chapter = unit() === 'chapter' ? {key:'note-chapter-'+(current+1),position:current,label:info?.label || section.chapterTitles[current] || label} :
         section.outline?.find(item => current >= item.position);
@@ -576,10 +568,15 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       }
       if (pageWords) readCounts.set(current,pageWords);
       if (unit() === 'chapter') {
-        await Promise.all([document.fonts?.ready,...Array.from(content.images || content.querySelectorAll('img'),img => img.decode?.().catch(() => {}))]);
+        const images = Array.from(content.querySelectorAll('img'));
+        await Promise.all([document.fonts?.ready,...images.map(async image => {
+          try {
+            await image.decode();
+            if (renderSequence === version) await adaptEpubIllustration(image);
+          } catch { /* Keep the original illustration if optional adaptation fails. */ }
+        })]);
       }
       if (renderSequence !== version) return;
-      if (info?.plate) extendIllustrationPaper(content.querySelector('img.page-plate'),info.cover);
       chrome.hidden = false;
       pager.measure(unit(),position);
       readyToRead = true;
@@ -589,7 +586,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       if (renderSequence !== version) return;
       annotations.clearPage();
       delete content.dataset.flow;
-      chrome.hidden = true;
+      chrome.hidden = false;
       content.textContent = error.message || 'Cette page est illisible.';
       readerDetails.hidden = false;
     }
@@ -614,17 +611,17 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     const session = readerSession;
     const current = () => session === readerSession && !scope.signal.aborted;
     mode = 'reader'; render();
+    enterReading();
     setText('[data-book-title]', book.title);
     setText('[data-chapter-title]', '');
     setText('[data-reader-progress]', '');
-    chrome.hidden = true;
+    chrome.hidden = false;
     readCounts.clear();
     setText('[data-reader-content]', 'Ouverture du livre…');
-    chrome.hidden = true;
     window.scrollTo({top:0, behavior:'instant'});
     readerDetails.hidden = true;
     readerBack.setAttribute('aria-label', openedDirectly ? 'Revenir à la bibliothèque' : 'Revenir à la fiche');
-    focus(readerBack);
+    focus(viewport);
     try {
       if (book.format === 'Papier' && !book.fileFingerprint) throw Error('Ce livre papier n’a pas de fichier à ouvrir.');
       await Promise.all([initializingAnnotations,savePosition]);

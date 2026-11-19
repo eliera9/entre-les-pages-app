@@ -26,10 +26,10 @@
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<link rel="stylesheet" href="./reader.css?v=6">
+<link rel="stylesheet" href="./reader.css?v=7">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-pagination.js?v=3"></script><script defer src="./book-detail.js?v=10"></script>
-<script defer src="./app.js?v=32"></script>
+<script defer src="./reader-edition.js?v=1"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=11"></script>
+<script defer src="./app.js?v=33"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -629,15 +629,23 @@
         </section>
         <aside class="tool-rail" data-rail role="toolbar" aria-orientation="vertical" aria-label="Outils d’annotation"></aside>
       </div>
+      <div class="reader-settings" data-reader-settings id="reader-settings" role="group" aria-label="Paramètres de lecture" hidden>
+        <span>Affichage</span>
+        <button type="button" data-reader-theme="light" aria-pressed="true">Clair</button>
+        <button type="button" data-reader-theme="dark" aria-pressed="false">Nuit</button>
+      </div>
       <footer class="reader-progress" data-reader-chrome hidden>
+        <button class="reader-exit" data-reader-exit type="button" aria-label="Quitter la liseuse et revenir à la bibliothèque" title="Revenir à la bibliothèque">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/></svg>
+        </button>
         <div class="progress-copy">
           <div class="progress-rule" aria-hidden="true"><i></i></div>
           <span data-reader-progress role="status" aria-live="polite"></span>
         </div>
-        <button class="reader-expand" data-reader-expand type="button" aria-label="Activer le plein écran" aria-pressed="false">
+        <button class="reader-expand" data-reader-expand type="button" aria-label="Ouvrir les paramètres de lecture" aria-expanded="false" aria-controls="reader-settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path class="enter-full" d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>
-            <path class="leave-full" d="M3 9h6V3m12 6h-6V3M3 15h6v6m12-6h-6v6"/>
+            <g class="leave-full"><path d="M3 6h7m5 0h6M3 12h2m5 0h11M3 18h10m5 0h3"/><circle cx="12.5" cy="6" r="2.3"/><circle cx="7.5" cy="12" r="2.3"/><circle cx="15.5" cy="18" r="2.3"/></g>
           </svg>
         </button>
       </footer>

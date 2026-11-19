@@ -680,11 +680,6 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 #bibliotheque-app .reading-edp .reading[data-flow="chapter"] {font-size:var(--reader-body-size); height:var(--leaf-height,100%); align-content:start}
 #bibliotheque-app .reading-edp .page:is([data-page-kind="plate"],[data-page-kind="pdf"]) {padding:0}
 #bibliotheque-app .reading-edp .page:is([data-page-kind="plate"],[data-page-kind="matter"],[data-page-kind="pdf"]) .leaf-viewport {max-width:none}
-#bibliotheque-app .reading-edp .page[data-page-kind="plate"] {background-color:var(--page-paper,transparent)}
-#bibliotheque-app .reading-edp .page[data-page-kind="plate"]::before {
-  content:""; position:absolute; inset:0; pointer-events:none; clip-path:inset(0);
-  background:var(--cover-bleed,none) center/cover no-repeat; filter:blur(12px);
-}
 #bibliotheque-app .reading-edp .page[data-page-kind="plate"] .reading[data-reading] {
   display:block; columns:auto; position:relative; width:100%; height:100%; max-width:none; margin:0;
 }
@@ -728,3 +723,22 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
   #bibliotheque-app .reading-edp .reader-expand svg {width:25px; height:25px}
   #bibliotheque-app .reading-edp .progress-rule {height:3px}
 }
+
+#bibliotheque-app .reading-edp .edition-sheet[data-edition-center] {position:relative;top:var(--edition-inset,0px)}
+#bibliotheque-app .reading-edp .page[data-page-kind="matter"] .edition-sheet p {text-align:inherit}
+#bibliotheque-app .reading-edp .edition-sheet img {border:0;background:transparent;box-shadow:none}
+#bibliotheque-app[data-theme="dark"] .reading-edp .edition-sheet img[data-edition-ink] {filter:brightness(0) invert(78%) sepia(9%) saturate(363%) hue-rotate(238deg)}
+#bibliotheque-app .reading-edp .reader-exit {display:none}
+#bibliotheque-app .reading-edp[data-immersive] .reader-progress {
+  grid-template-columns:var(--reader-rail) minmax(0,1fr) var(--reader-rail);padding-inline:0;gap:4px
+}
+#bibliotheque-app .reading-edp[data-immersive] .reader-exit {
+  display:grid;place-items:center;width:100%;height:var(--reader-tool-height);min-height:44px;
+  padding:0;border:0;background:transparent;color:var(--accent);cursor:pointer
+}
+#bibliotheque-app .reading-edp .reader-exit svg {width:var(--reader-icon);height:var(--reader-icon)}
+#bibliotheque-app .reading-edp .reader-exit:focus-visible {outline:2px solid var(--accent);outline-offset:-4px}
+#bibliotheque-app .reading-edp .reader-settings {display:flex;flex:none;align-items:center;justify-content:center;gap:6px;border-top:1px solid var(--edge);color:var(--chapter);font:400 var(--reader-label-size)/1.2 var(--serif)}
+#bibliotheque-app .reading-edp .reader-settings span {margin-right:5px}
+#bibliotheque-app .reading-edp .reader-settings button {min-height:44px;min-width:48px;border:0;padding:4px 8px;color:inherit;background:transparent;font:inherit}
+#bibliotheque-app .reading-edp .reader-settings button[aria-pressed="true"] {text-decoration:underline;text-underline-offset:4px;color:var(--accent)}

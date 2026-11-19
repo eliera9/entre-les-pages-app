@@ -175,7 +175,11 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
         candidates.push({position,anchor:'',label:heading || label});
       }
       const cover = types.includes('cover') || /^(?:couverture|cover)$/iu.test(label);
-      sectionInfo.push({kind,plate:isPlate,cover,label,chapters:candidates});
+      const center = kind === 'matter' && !isPlate && !types.includes('toc') &&
+        (types.some(type => ['frontmatter','preamble','copyright-page','dedication','titlepage'].includes(type)) ||
+         /^(?:copyright|biographie|l['’]autrice|dédicace|page de titre)$/iu.test(label)) &&
+        !/^(?:sommaire|table des matières|contents|table of contents)$/iu.test(label);
+      sectionInfo.push({kind,plate:isPlate,cover,center,label,chapters:candidates});
       weights.push(Math.max(1,words));
     }
     const tocChapters = sectionInfo.flatMap(info => info.chapters);
@@ -184,6 +188,12 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       chapter.printedNumber=clean(chapter.label).match(chapterPrefix)?.[1] || String(i+1);
     });
     const language = named(opf,'language')[0]?.textContent?.trim();
+    const editionStyles = createEpubEditionStyles(async (path,ref,cache,parse) => {
+      const file = archivePath(path,ref);
+      if (!file) return [];
+      if (!cache.has(file)) cache.set(file,readEntry(archive,file,512*1024).then(bytes => bytes ? parse(utf8.decode(bytes)) : []).catch(() => []));
+      return cache.get(file);
+    });
     return {count:paths.length,chapterTitles,weights,tocChapters,sectionInfo,language,async read(index) {
       const data = await readEntry(archive, paths[index], 10 * MiB);
       if (!data) throw Error('Ce chapitre est introuvable.');
@@ -193,6 +203,13 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       const heading = [...body.getElementsByTagName('*')].find(node => /^h[12]$/i.test(node.localName));
       chapterTitles[index] = heading?.textContent?.trim().slice(0,180) || titles.get(paths[index]) || named(doc,'title')[0]?.textContent?.trim().slice(0,180) || '';
       const fragment = document.createDocumentFragment();
+      const info = sectionInfo[index];
+      const applyEdition = await editionStyles(doc,paths[index],info);
+      const frame = document.createElement('div');
+      frame.className='edition-sheet';
+      if (info.center) frame.dataset.editionCenter='';
+      if (info.kind === 'matter' && !info.plate) applyEdition(body,frame);
+      fragment.append(frame);
       const allowed = new Set('p div section article h1 h2 h3 h4 h5 h6 span em i strong b br hr ol ul li blockquote sup sub pre figure figcaption table tr td th tbody'.split(' '));
       async function append(source, target) {
         for (const child of source.childNodes) {
@@ -215,6 +232,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
                 reader.onerror = () => reject(reader.error);
                 reader.readAsDataURL(new Blob([image], {type: spec.mime}));
               });
+              applyEdition(child,node);
               target.append(node);
             }
             continue;
@@ -229,6 +247,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
             try { next.dataset.epubTarget = decodeURIComponent(ref.split('#')[1] || ''); } catch { next.dataset.epubTarget = ''; }
           }
           if (next !== target) {
+            applyEdition(child,next);
             if (child === heading) next.dataset.chapterHeading = '';
             const sourceId = child.getAttribute('id') || child.getAttribute('name');
             if (sourceId) next.dataset.epubId = sourceId;
@@ -237,7 +256,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
           await append(child, next);
         }
       }
-      await append(body, fragment);
+      await append(body, frame);
       return fragment;
     }};
   }
@@ -2562,6 +2581,7 @@ async function activateLibrary(root) {
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
         startInNote: openReadingSheet,
         returnToLibrary: fromLibrary ? returnFromSecondary : null,
+        setReaderTheme(theme) {setTheme(theme);savePreferences().catch(showStorageError);},
         onError: showStorageError,
         onSave(updated) { Object.assign(book, updated); refreshBookLists(); },
         onRemove() {
