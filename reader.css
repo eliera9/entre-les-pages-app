@@ -604,3 +604,40 @@
   color:inherit; border:0; border-radius:4px; font:400 13px/1.3 var(--ui);
 }
 #bibliotheque-app .reading-edp .delete-choice button:hover { background:var(--tile); }
+
+@font-face { font-family:"Alegreya Lecture"; src:url("./fonts/alegreya.woff") format("woff"); font-weight:400; font-display:swap; }
+@font-face { font-family:"Playfair Lecture"; src:url("./fonts/playfair.woff") format("woff"); font-weight:400; font-display:swap; }
+#bibliotheque-app .reading-edp .page {
+  padding:8px 17px 4px 21px; min-width:0; min-height:0; touch-action:pan-y pinch-zoom;
+}
+#bibliotheque-app .reading-edp .leaf-viewport {
+  --leaf-height:max(138px,calc(100svh - 104px - env(safe-area-inset-bottom,0px)));
+  max-width:440px; margin-inline:auto; overflow:hidden; position:relative;
+}
+#bibliotheque-app .reading-edp .leaf-viewport:focus:not(:focus-visible) {outline:0}
+#bibliotheque-app .reading-edp .reading[data-flow="chapter"] {
+  font:400 15px/1.55 "Alegreya Lecture",Georgia,serif; color:#493a3b;
+  height:var(--leaf-height); max-width:none; column-width:var(--leaf-width,100vw);
+  column-fill:auto; column-gap:32px; text-align:justify; text-indent:0;
+  hyphens:auto; -webkit-hyphens:auto; overflow-wrap:break-word;
+}
+#bibliotheque-app[data-theme="dark"] .reading-edp .reading[data-flow="chapter"] {color:#b19bb8}
+#bibliotheque-app .reading-edp .reading[data-flow="chapter"] p {font:inherit; color:inherit; text-align:justify; margin:0 0 9px; text-indent:0; widows:2; orphans:2}
+#bibliotheque-app .reading-edp .reading[data-flow="chapter"] :is(img,svg) {max-height:var(--leaf-height); max-width:100%; object-fit:contain; break-inside:avoid}
+#bibliotheque-app .reading-edp .reading[data-flow="chapter"] figure {margin:0; break-inside:avoid}
+#bibliotheque-app .reading-edp .reading[data-flow="chapter"] :is(table,pre) {max-width:100%; white-space:pre-wrap; overflow-wrap:anywhere}
+#bibliotheque-app .reading-edp .leaf-heading {padding-top:4px; margin:0 0 8px; text-align:center; break-inside:avoid; break-after:avoid}
+#bibliotheque-app .reading-edp .leaf-number {display:flex; justify-content:center; align-items:center; gap:8px; font:400 13px/1.25 "Alegreya Lecture",Georgia,serif; color:var(--chapter)}
+#bibliotheque-app .reading-edp .leaf-number::before,#bibliotheque-app .reading-edp .leaf-number::after {content:""; width:24px; height:1px; background:color-mix(in srgb,var(--chapter) 45%,var(--edge))}
+#bibliotheque-app .reading-edp .leaf-number i {font:inherit}
+#bibliotheque-app .reading-edp .leaf-number i::before,#bibliotheque-app .reading-edp .leaf-title[data-caption]::before {content:attr(data-caption)}
+#bibliotheque-app .reading-edp .leaf-heading .leaf-title {font:400 21px/1.2 "Playfair Lecture",Georgia,serif; margin:4px 0 0; color:var(--title); text-align:center; text-transform:none}
+#bibliotheque-app .reading-edp .reading[data-flow="page"] .pdf-page {max-width:min(100%,calc(var(--leaf-height) * var(--pdf-ratio)));margin-inline:auto}
+#bibliotheque-app .reading-edp .reader-progress {box-sizing:border-box; display:grid; justify-content:stretch; align-content:start; gap:2px;
+  min-height:0; width:min(calc(100% - 20px),440px); margin-inline:auto; padding:3px 5px 6px; text-align:center; color:var(--chapter); font:400 12px/1.3 var(--serif); font-variant-numeric:tabular-nums}
+#bibliotheque-app .reading-edp .progress-rule {height:2px; margin-inline:2px; border-radius:2px; background:var(--edge); overflow:hidden}
+#bibliotheque-app .reading-edp .progress-rule i {display:block; height:100%; width:var(--progress,0%); background:var(--accent)}
+
+#bibliotheque-app .reading-edp .reader-layout {min-height:var(--reading-space,calc(100svh - 90px))}
+#bibliotheque-app .reading-edp .tool-rail {max-height:var(--reading-space,calc(100svh - 90px))}
+#bibliotheque-app .reading-edp .leaf-heading .number-only {font:400 13px/1.25 "Alegreya Lecture",Georgia,serif; color:var(--chapter); margin:0}

@@ -102,14 +102,52 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       .map(item => archivePath(opfPath, item.getAttribute('href'))).filter(Boolean);
     if (!paths.length) throw Error('Aucun chapitre lisible dans cet EPUB.');
     const chapterTitles = [];
-    return {count: paths.length, chapterTitles, async read(index) {
+    const manifest = [...items.values()];
+    const nav = manifest.find(item => item.getAttribute('properties')?.split(/\s+/).includes('nav'));
+    const ncx = manifest.find(item => item.getAttribute('media-type') === 'application/x-dtbncx+xml');
+    const titles = new Map();
+    const chapters = [];
+    const seenDestinations = new Set();
+    for (const item of [nav,ncx].filter(Boolean)) {
+      try {
+        const path = archivePath(opfPath,item.getAttribute('href'));
+        const data = await readEntry(archive,path,2 * MiB);
+        if (!data) continue;
+        const toc = readText(data);
+        const menu = named(toc,'nav').find(el => /(?:^|\s)toc(?:\s|$)/.test(el.getAttribute('epub:type') || '') || el.getAttribute('role') === 'doc-toc');
+        const entries = menu ? named(menu,'a') : named(toc,'navPoint');
+        for (const entry of entries) {
+          const ref = entry.getAttribute('href') || named(entry,'content')[0]?.getAttribute('src');
+          const target = archivePath(path,ref);
+          const title = (entry.localName === 'a' ? entry : named(entry,'navLabel')[0])?.textContent?.trim();
+          const position = paths.indexOf(target);
+          if (!title || position < 0) continue;
+          let anchor = '';
+          try { anchor = decodeURIComponent(ref.split('#')[1] || ''); } catch { continue; }
+          const key = position+'#'+anchor;
+          if (seenDestinations.has(key)) continue;
+          seenDestinations.add(key);
+          const label = title.slice(0,180);
+          if (!titles.has(target)) titles.set(target,label);
+          chapters.push({position,anchor,label});
+        }
+        if (chapters.length) break;
+      } catch { /* A damaged optional table of contents does not prevent reading the spine. */ }
+    }
+    const weights = paths.map(path => Math.max(1,archive.file(path)?._data?.uncompressedSize || 1));
+    const ordered = chapters.sort((a,b) => a.position-b.position);
+    const numbered = ordered.filter(chapter => !/^(?:couverture|cover|title page|page de titre|copyright|table des matières|table of contents|sommaire|mentions légales)$/i.test(chapter.label.trim()));
+    const tocChapters = numbered.length ? numbered : ordered;
+    tocChapters.forEach((chapter,i) => { chapter.number=i+1; });
+    const language = named(opf,'language')[0]?.textContent?.trim();
+    return {count: paths.length, chapterTitles, weights, tocChapters, language, async read(index) {
       const data = await readEntry(archive, paths[index], 10 * MiB);
       if (!data) throw Error('Ce chapitre est introuvable.');
       const doc = readText(data);
       const body = named(doc, 'body')[0];
       if (!body) throw Error('Ce chapitre est illisible.');
       const heading = [...body.getElementsByTagName('*')].find(node => /^h[12]$/i.test(node.localName));
-      chapterTitles[index] = heading?.textContent?.trim().slice(0,180) || '';
+      chapterTitles[index] = heading?.textContent?.trim().slice(0,180) || titles.get(paths[index]) || named(doc,'title')[0]?.textContent?.trim().slice(0,180) || '';
       const fragment = document.createDocumentFragment();
       const allowed = new Set('p div section article h1 h2 h3 h4 h5 h6 span em i strong b br hr ol ul li blockquote sup sub pre figure figcaption table tr td th tbody'.split(' '));
       async function append(source, target) {
@@ -135,8 +173,21 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
             }
             continue;
           }
-          const next = allowed.has(tag) ? document.createElement(tag) : target;
-          if (next !== target) target.append(next);
+          const ref = tag === 'a' && child.getAttribute('href');
+          const dest = ref && archivePath(paths[index],ref);
+          const next = allowed.has(tag) || (dest && paths.includes(dest)) ? document.createElement(tag) :
+            child.getAttribute('id') || child.getAttribute('name') ? document.createElement('span') : target;
+          if (tag === 'a' && next !== target) {
+            next.href = '#';
+            next.dataset.epubSection = String(paths.indexOf(dest));
+            try { next.dataset.epubTarget = decodeURIComponent(ref.split('#')[1] || ''); } catch { next.dataset.epubTarget = ''; }
+          }
+          if (next !== target) {
+            if (child === heading) next.dataset.chapterHeading = '';
+            const sourceId = child.getAttribute('id') || child.getAttribute('name');
+            if (sourceId) next.dataset.epubId = sourceId;
+            target.append(next);
+          }
           await append(child, next);
         }
       }
@@ -311,6 +362,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     if (!TextLayer) return canvas;
     const result = document.createElement('div');
     result.className = 'pdf-page';
+    result.style.setProperty('--pdf-ratio',String(canvas.width / canvas.height));
     result.append(canvas);
     try {
       const text = await page.getTextContent();

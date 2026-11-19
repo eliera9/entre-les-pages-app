@@ -26,10 +26,10 @@
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<link rel="stylesheet" href="./reader.css?v=3">
-<script defer src="./reader.js?v=3"></script>
-<script defer src="./book-detail.js?v=7"></script>
-<script defer src="./app.js?v=29"></script>
+<link rel="stylesheet" href="./reader.css?v=4">
+<script defer src="./reader.js?v=4"></script>
+<script defer src="./reader-pagination.js"></script><script defer src="./book-detail.js?v=8"></script>
+<script defer src="./app.js?v=30"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -488,7 +488,7 @@
                 </button>
               </form>
             </div>
-            <div class="reading" data-reading data-reader-content></div>
+            <div class="leaf-viewport" data-reader-viewport tabindex="0" aria-label="Page de lecture"><div class="reading" data-reading data-reader-content></div></div>
             <button class="plain-button cursor-interaction" type="button" data-reader-details hidden>Voir la fiche du livre</button>
             <div class="page-annotations" data-page-annotations hidden></div>
             <p class="page-meaning" data-page-meaning role="status" hidden></p>
@@ -507,14 +507,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg><span>Annuler</span>
             </button>
           </div>
-          <div class="reader-progress" aria-label="Progression de lecture">
-            <button type="button" class="cursor-interaction" data-reader-chrome aria-expanded="false"><span data-reader-progress></span></button>
+          <div class="reader-progress" data-reader-chrome hidden>
+            <div class="progress-rule" aria-hidden="true"><i></i></div>
+            <span data-reader-progress role="status" aria-live="polite"></span>
           </div>
-          <nav class="reader-pages" aria-label="Pagination" data-reader-pages hidden>
-            <button class="icon-button cursor-interaction" data-reader-prev type="button" aria-label="Précédent"><span class="chevron" aria-hidden="true"></span></button>
-            <select data-bookmarks aria-label="Aller à un marque-page"><option value="">Mes marque-pages</option></select>
-            <button class="icon-button cursor-interaction" data-reader-next type="button" aria-label="Suivant"><span class="chevron right" aria-hidden="true"></span></button>
-          </nav>
           <span class="visually-hidden" data-status role="status"></span>
           <section id="edp-reader-sheet" class="sheet" aria-label="Outils d’annotation" hidden>
             <div class="grip-row"><button class="grip cursor-interaction" type="button" data-close aria-label="Fermer le volet"><span aria-hidden="true"></span></button></div>

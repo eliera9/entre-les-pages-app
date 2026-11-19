@@ -282,119 +282,239 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     pdfTask?.destroy()?.catch(() => {});
     pageTask = pdfTask = pages = null;
     readyToRead = false;
-    clearInterval(progressTimer);
-    progressTimer = null;
+    motion?.cancel();
+    cancelAnimationFrame(layoutFrame);
+    delete content.dataset.flow;
     annotations.clearPage();
-    setReaderChrome(false);
+    chrome.hidden = true;
   }
-  const marks = q('[data-bookmarks]');
   const chrome = q('[data-reader-chrome]');
-  let progressTimer;
-  let pageWords = 0;
+  const content = q('[data-reader-content]');
+  const viewport = q('[data-reader-viewport]');
+  const surface = q('[data-page]');
   let readyToRead = false;
-  let readingStarted = 0;
+  let motion;
+  let layoutFrame;
+  let latestAnchor = {};
+  let visibleChapters = [];
+  let currentChapter;
+  let savePosition = Promise.resolve();
   const readCounts = new Map();
   const unit = () => pages.label === 'Page' ? 'page' : 'chapter';
-  const positionKey = () => unit() + '-' + (index + 1);
   const annotations = mountReaderAnnotations({
     root:reader,app:root,book,storage,save,signal:scope.signal,refreshIcons,
-    navigate: async position => {
-      if (!pages || position < 0 || position >= pages.count || position === index) return;
-      index = position;
-      await drawPage(true);
+    navigate:async (position,offset=0) => {
+      if (!pages || position < 0 || position >= pages.count) return;
+      if (position !== index) {
+        index = position;
+        await drawPage(true,{offset});
+      } else if (unit() === 'chapter') {
+        pager.measure(unit(),{offset});
+        recordPosition(true);
+      }
     },
-    onBookmark: () => refreshBookmarks(),
+    onBookmark:() => {}
   });
+  const pager = createReaderPagination(viewport,content,annotations);
   const initializingAnnotations = annotations.initialize();
   refreshIcons();
 
-  function refreshBookmarks() {
-    if (!pages) return;
-    const prefix = unit() + '-';
-    const saved = book.bookmarkMap || {};
-    const positions = Object.keys(saved).filter(key => saved[key] && key.startsWith(prefix))
-      .map(key => Number(key.slice(prefix.length))).filter(n => Number.isInteger(n) && n >= 1 && n <= pages.count).sort((a,b) => a-b);
-    marks.replaceChildren(new Option('Mes marque-pages',''), ...positions.map(n => new Option(pages.label + ' ' + n, String(n))));
-    marks.disabled = !positions.length;
-  }
-  function setReaderChrome(open) {
-    chrome.setAttribute('aria-expanded',String(open));
-    q('[data-reader-pages]').hidden = !open || !readyToRead;
-  }
-  function updateProgress() {
-    if (!pages) return;
-    const remaining = pages.count - index - 1;
-    const averageWords = [...readCounts.values()].reduce((sum,words) => sum + words,0) / (readCounts.size || 1);
-    const sampleWords = averageWords || (unit() === 'page' ? 250 : 900);
-    const elapsed = document.visibilityState === 'hidden' ? 0 : Math.max(0,Date.now() - readingStarted) / 60000;
-    const minutes = Math.max(0,Math.ceil(remaining * sampleWords / 220 + Math.max(0,(pageWords || sampleWords)/220 - elapsed)));
-    const time = minutes >= 60 ? Math.floor(minutes/60) + ' h ' + String(minutes%60).padStart(2,'0') + ' min' : minutes + ' min';
-    const percent = Math.round((index+1)/pages.count*100);
-    setText('[data-reader-progress]', pages.label + ' ' + (index+1) + ' / ' + pages.count + ' · ' + percent + ' % · ' + time + ' restantes');
+  function recordPosition(record) {
+    latestAnchor = pager.anchor();
+    const currentWeight = pages.weights?.[index] || 1;
+    const total = pages.totalWeight;
+    const done = (pages.before[index] + currentWeight * pager.done) / total;
+    const last = index === pages.count-1 && pager.number === pager.count-1;
+    const percent = last ? 100 : Math.min(99,Math.max(0,Math.round(done*100)));
+    let sampledWeight = 0, sampledWords = 0;
+    for (const [i,words] of readCounts) {
+      sampledWeight += pages.weights?.[i] || 1;
+      sampledWords += words;
+    }
+    const wordsPerWeight = sampledWords ? sampledWords/sampledWeight : unit() === 'page' ? 250 : .14;
+    const minutes = last ? 0 : Math.max(1,Math.ceil((1-done)*total*wordsPerWeight/220));
+    let location = pages.label+' '+(index+1)+'/'+pages.count;
+    if (unit() === 'chapter' && pages.tocChapters?.length) {
+      const left = viewport.getBoundingClientRect().left;
+      const candidate = visibleChapters.filter(item => item.element.getBoundingClientRect().left < left+viewport.clientWidth-1).at(-1);
+      const chapter = candidate?.chapter || pages.tocChapters.filter(item => item.position < index).at(-1);
+      if (chapter) {
+        location = 'Chapitre '+chapter.number+'/'+pages.tocChapters.length;
+        if (chapter !== currentChapter) {
+          const first = pages.tocChapters.find(item => item.position === chapter.position);
+          const key = 'note-chapter-'+(chapter.position+1)+(chapter === first ? '' : '@'+chapter.number);
+          annotations.setChapter({key,position:chapter.position,label:chapter.label,offset:candidate?.offset || 0});
+          setText('[data-chapter-title]',chapter.label);
+          currentChapter = chapter;
+        }
+      } else location = pages.chapterTitles[index] || 'Ouverture du livre';
+    }
+    const label = location+' • '+percent+'% • '+minutes+' min';
+    setText('[data-reader-progress]',label);
+    chrome.style.setProperty('--progress',percent+'%');
     chrome.hidden = false;
+    if (record) {
+      const readingPosition = {unit:unit(),value:index+1,...latestAnchor};
+      savePosition = savePosition.then(() => save({readingPosition}));
+    }
   }
-  on(chrome,'click',() => setReaderChrome(chrome.getAttribute('aria-expanded') === 'false'));
-  on(marks,'change',() => { if (pages && marks.value) { index = Number(marks.value)-1; void drawPage(true); } });
-  const turn = delta => {
-    if (!pages || !readyToRead || index+delta < 0 || index+delta >= pages.count) return;
-    index += delta;
-    void drawPage(true);
-  };
-  on(reader, 'keydown', event => {
-    if (event.defaultPrevented || event.target.matches('input,select,textarea,button') || window.getSelection()?.toString()) return;
+  function slide(delta) {
+    motion?.cancel();
+    if (!delta || !content.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const distance = (viewport.clientWidth+32)*Math.sign(delta);
+    motion = content.animate([{transform:'translateX('+distance+'px)'},{transform:'translateX(0)'}],{duration:310,easing:'ease-out'});
+    motion.onfinish = () => annotations.resize();
+  }
+  function turn(delta) {
+    if (!pages || !readyToRead) return;
+    motion?.cancel();
+    const dest = pager.number + delta;
+    if (dest >= 0 && dest < pager.count) {
+      pager.show(dest);
+      recordPosition(true);
+      slide(delta);
+    } else if (index+delta >= 0 && index+delta < pages.count) {
+      index += delta;
+      void drawPage(true,{last:delta<0},delta);
+    }
+  }
+  const canTurn = () => readyToRead && annotations.allowTurn();
+  bindPageTurns(surface,scope.signal,canTurn,turn);
+  on(reader,'keydown',event => {
+    if (event.defaultPrevented || !canTurn() || event.target.closest('input,select,textarea,button,a,[contenteditable=true]') || window.getSelection()?.toString()) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault();
       turn(event.key === 'ArrowLeft' ? -1 : 1);
     }
   });
-  let swipe;
-  on(q('[data-reader-content]'),'touchstart',event => {
-    const point = event.touches.length === 1 && event.touches[0];
-    swipe = point ? {x:point.clientX,y:point.clientY,at:Date.now()} : null;
+  function resizePages() {
+    cancelAnimationFrame(layoutFrame);
+    if (!readyToRead) return;
+    layoutFrame = requestAnimationFrame(() => {
+      if (!readyToRead) return;
+      motion?.cancel();
+      pager.measure(unit(),latestAnchor);
+      recordPosition(false);
+    });
+  }
+  let previousSize = '';
+  const observer = new ResizeObserver(() => {
+    const size = viewport.clientWidth + '/' + viewport.clientHeight;
+    if (size !== previousSize) {previousSize = size; resizePages();}
   });
-  on(q('[data-reader-content]'),'touchend',event => {
-    if (!swipe || window.getSelection()?.toString()) return;
-    const point=event.changedTouches[0];
-    const dx=point.clientX-swipe.x,dy=point.clientY-swipe.y;
-    if (Date.now()-swipe.at < 650 && Math.abs(dx)>75 && Math.abs(dx)>Math.abs(dy)*2) turn(dx<0 ? 1 : -1);
-    swipe=null;
+  observer.observe(viewport);
+  on(window,'resize',resizePages);
+  scope.signal.addEventListener('abort',() => {observer.disconnect();cancelAnimationFrame(layoutFrame);},{once:true});
+  on(content,'click',async event => {
+    const link = event.target.closest('[data-epub-section]');
+    if (!link || !pages) return;
+    event.preventDefault();
+    const target = link.dataset.epubTarget;
+    const section = Number(link.dataset.epubSection);
+    if (section !== index) {index = section;await drawPage(true);}
+    if (!readyToRead) return;
+    const node = target && content.querySelector('[data-epub-id="'+CSS.escape(target)+'"]');
+    if (node) {
+      const left = node.getClientRects()[0]?.left ?? viewport.getBoundingClientRect().left;
+      const number = Math.floor((left-viewport.getBoundingClientRect().left+viewport.scrollLeft+1)/(viewport.clientWidth+32));
+      pager.show(number);
+    } else pager.show(0);
+    recordPosition(true);
   });
-  async function drawPage(record = false) {
+  function presentHeading(fragment,label,title,anchor) {
+    const heading = anchor?.matches('h1,h2,h3,h4,h5,h6') ? anchor :
+      anchor?.querySelector('h1,h2,h3,h4,h5,h6') || (!anchor ? fragment.querySelector('[data-chapter-heading]') : null);
+    const header = document.createElement('div');
+    header.className = 'leaf-heading';
+    if (heading || anchor) (heading || anchor).before(header);
+    else fragment.prepend(header);
+    if (heading?.textContent.trim().toLocaleLowerCase() === label.toLocaleLowerCase()) {
+      heading.classList.add('leaf-number','number-only');
+      header.append(heading);
+      if (title && title.toLocaleLowerCase() !== label.toLocaleLowerCase()) {
+        const subtitle = document.createElement('div');
+        subtitle.className = 'leaf-title';
+        subtitle.dataset.caption = title;
+        header.append(subtitle);
+      }
+      return header;
+    }
+    const number = document.createElement('span');
+    number.className = 'leaf-number';
+    const digit = document.createElement('i');
+    digit.dataset.caption = label;
+    number.append(digit);
+    header.append(number);
+    if (heading) {
+      heading.classList.add('leaf-title');
+      header.append(heading);
+    } else if (title && title !== label) {
+      const fallback = document.createElement('div');
+      fallback.className = 'leaf-title';
+      fallback.dataset.caption = title;
+      header.append(fallback);
+    }
+    return header;
+  }
+  function prepareOpenings(fragment,section,current,label) {
+    visibleChapters = [];
+    currentChapter = null;
+    if (!section.tocChapters.length) {
+      presentHeading(fragment,label,section.chapterTitles[current]);
+      return;
+    }
+    const entries = section.tocChapters.filter(item => item.position === current);
+    for (const chapter of entries) {
+      const anchor = chapter.anchor ? fragment.querySelector('[data-epub-id="'+CSS.escape(chapter.anchor)+'"]') : null;
+      if (chapter.anchor && !anchor && visibleChapters.length) continue;
+      const opening = presentHeading(fragment,'Chapitre '+chapter.number,chapter.label,anchor);
+      if (visibleChapters.length) opening.style.breakBefore = 'column';
+      visibleChapters.push({chapter,element:opening});
+    }
+  }
+  async function drawPage(record=false,position={},direction=0) {
     const version = ++renderSequence;
     readyToRead = false;
+    motion?.cancel();
     readerDetails.hidden = true;
     const section = pages;
     const current = index;
-    const content = q('[data-reader-content]');
-    const prev = q('[data-reader-prev]'), next = q('[data-reader-next]');
-    prev.disabled = true;
-    next.disabled = true;
     try {
       pageTask?.cancel();
       const result = await section.read(current);
       if (renderSequence !== version) return;
-      const label = section.label + ' ' + (current + 1);
-      const chapter = unit() === 'chapter' ? {
-        key:'note-chapter-' + (current+1),position:current,label:section.chapterTitles[current] || 'Chapitre ' + (current+1)
-      } : section.outline?.find(item => current >= item.position);
-      setText('[data-chapter-title]', chapter?.label || label);
-      pageWords = annotations.loadPage(result,{key:positionKey(),position:current,count:section.count,label,chapter,unitLabel:section.label});
-      if (pageWords) readCounts.set(current,pageWords);
-      readingStarted = Date.now();
-      readyToRead = true;
-      updateProgress();
-      if (!progressTimer) progressTimer=window.setInterval(updateProgress,30000);
-      prev.disabled = current === 0;
-      next.disabled = current + 1 >= section.count;
-      refreshBookmarks();
-      if (record || !book.readingPosition) void save({readingPosition:{unit:unit(),value:current+1}});
-      window.scrollTo({top:0, behavior:'instant'});
-    } catch (error) {
-      if (renderSequence === version) {
-        annotations.clearPage();
-        content.textContent = error.message;
-        readerDetails.hidden = false;
+      const label = section.label+' '+(current+1);
+      const chapter = unit() === 'chapter' ? {key:'note-chapter-'+(current+1),position:current,label:section.chapterTitles[current] || label} :
+        section.outline?.find(item => current >= item.position);
+      content.dataset.flow = unit();
+      content.lang = section.language || document.documentElement.lang || 'fr';
+      viewport.scrollLeft = 0;
+      if (unit() === 'chapter') prepareOpenings(result,section,current,label);
+      setText('[data-chapter-title]',chapter?.label || label);
+      const pageWords = annotations.loadPage(result,{key:unit()+'-'+(current+1),position:current,count:section.count,label,chapter,unitLabel:section.label});
+      for (const item of visibleChapters) {
+        if (unit() !== 'chapter') break;
+        const prefix = document.createRange();
+        prefix.selectNodeContents(content);
+        prefix.setEndBefore(item.element);
+        item.offset = prefix.toString().length;
       }
+      if (pageWords) readCounts.set(current,pageWords);
+      if (unit() === 'chapter') {
+        await Promise.all([document.fonts?.ready,...Array.from(content.images || content.querySelectorAll('img'),img => img.decode?.().catch(() => {}))]);
+      }
+      if (renderSequence !== version) return;
+      pager.measure(unit(),position);
+      readyToRead = true;
+      recordPosition(record || !book.readingPosition);
+      slide(direction);
+    } catch (error) {
+      if (renderSequence !== version) return;
+      annotations.clearPage();
+      delete content.dataset.flow;
+      chrome.hidden = true;
+      content.textContent = error.message || 'Cette page est illisible.';
+      readerDetails.hidden = false;
     }
   }
   async function pdfChapters(pdf) {
@@ -423,14 +543,14 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     chrome.hidden = true;
     readCounts.clear();
     setText('[data-reader-content]', 'Ouverture du livre…');
-    setReaderChrome(false);
+    chrome.hidden = true;
     window.scrollTo({top:0, behavior:'instant'});
     readerDetails.hidden = true;
     readerBack.setAttribute('aria-label', openedDirectly ? 'Revenir à la bibliothèque' : 'Revenir à la fiche');
     focus(readerBack);
     try {
       if (book.format === 'Papier' && !book.fileFingerprint) throw Error('Ce livre papier n’a pas de fichier à ouvrir.');
-      await initializingAnnotations;
+      await Promise.all([initializingAnnotations,savePosition]);
       if (!current()) return;
       const file = await storage.getDocument(book.id);
       if (!current()) return;
@@ -440,7 +560,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       const format = engine.formatOf(bytes);
       let section;
       if (format === 'EPUB') {
-        section = {label:'Section', ...await engine.openEpub(bytes)};
+        section = {label:'Chapitre', ...await engine.openEpub(bytes)};
       } else if (format === 'PDF') {
         const pdf = await engine.fromPdf(bytes, task => { if (current()) pdfTask = task; else task.destroy().catch(() => {}); });
         const outline = await pdfChapters(pdf.document);
@@ -449,14 +569,20 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
 
       } else throw Error('Ce format de livre est illisible.');
       if (!current()) return;
+      section.before = [];
+      section.totalWeight = 0;
+      for (let n=0;n<section.count;n++) {
+        section.before.push(section.totalWeight);
+        section.totalWeight += section.weights?.[n] || 1;
+      }
       pages = section;
       const position = book.readingPosition;
       const start = position && position.unit === (format === 'PDF' ? 'page' : 'chapter') ? Number(position.value) - 1 : 0;
       index = Math.max(0, Math.min(section.count - 1, Math.floor(start) || 0));
-      await drawPage();
+      await drawPage(false,position?.unit === unit() ? position : {});
     } catch (error) {
       if (!current()) return;
-      setText('[data-reader-content]', error.message);
+      setText('[data-reader-content]', error.name === 'PasswordException' ? 'Ce PDF demande un mot de passe. Ouvre une copie déverrouillée pour le lire ici.' : error.message);
       readerDetails.hidden = false;
     }
   }
@@ -478,8 +604,6 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   on(read, 'click', openReader);
   on(readerBack, 'click', closeReader);
   on(readerDetails, 'click', showBookDetails);
-  on(q('[data-reader-prev]'), 'click', () => turn(-1));
-  on(q('[data-reader-next]'), 'click', () => turn(1));
   on(document, 'keydown', event => {
     if (event.defaultPrevented || event.key !== 'Escape' || root.dataset.sidebarOpen === 'true') return;
     if (!bubble.hidden) setDelete(false, true);

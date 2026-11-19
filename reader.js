@@ -55,9 +55,57 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   const panelViews = new Map([["etiquette-personnalisee","editor"],["symbole","symbol"]]);
   function pageLabel() { return current?.label || ""; }
   function chapterLabel() { return current?.chapter?.label || ""; }
+  let leafStart = 0, leafEnd = Infinity;
+  function onLeaf(item) {
+    return item.range ? item.range.end > leafStart && item.range.start < leafEnd :
+      (item.offset || 0) >= leafStart && (item.offset || 0) < leafEnd;
+  }
+  function bookmarkKey() {
+    if (!current || (leafStart === 0 && bookmarkValue(current.key))) return current?.key;
+    const prefix = current.key + '@';
+    const saved = Object.keys(book.bookmarkMap || {}).find(key => key.startsWith(prefix) &&
+      bookmarkValue(key) && onLeaf({offset:Number(key.slice(prefix.length))}));
+    return saved || (leafStart ? prefix + leafStart : current.key);
+  }
+  function setLeaf(start,end) {
+    if (!current) return;
+    leafStart = start; leafEnd = end;
+    state.bookmarked = bookmarkValue(bookmarkKey());
+    renderRibbon();
+    renderText();
+    renderFooter();
+    renderPageAnnotations();
+    resize();
+  }
+  function characterRect(offset) {
+    if (!sections.length || offset < 0) return null;
+    let low = 0, high = sections.length - 1;
+    while (low < high) {
+      const mid = Math.floor((low+high)/2);
+      if (offsets[mid+1] <= offset) low = mid+1;
+      else high = mid;
+    }
+    const range = document.createRange();
+    for (let i=low; i<sections.length; i++) {
+      const walker = document.createTreeWalker(sections[i].slot,NodeFilter.SHOW_TEXT,{
+        acceptNode(node) {return node.parentElement.closest('[data-reading-decoration]') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;}
+      });
+      let base = offsets[i];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const at = Math.max(0,offset-base);
+        base += node.length;
+        if (at >= node.length) continue;
+        range.setStart(node,at); range.setEnd(node,at+1);
+        const rect = range.getClientRects()[0];
+        if (rect) return rect;
+      }
+    }
+    return null;
+  }
   function bookmarkNoteFor(slug) {
     return slug === "note-de-chapitre" ? current?.chapter && persisted[current.chapter.key]?.note :
-      state.annotations.find(item => item.slug === slug);
+      state.annotations.find(item => item.slug === slug && onLeaf(item));
   }
   const assist = one("[data-tool-hint]");
   const status = one("[data-status]");
@@ -566,7 +614,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function ribbonDraftKey(slug) {
-    return slug === "note-de-chapitre" ? current.chapter?.key : current.key;
+    return slug === "note-de-chapitre" ? current.chapter?.key : bookmarkKey();
   }
 
   function refreshRibbonEntry() {
@@ -607,12 +655,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (slug === "note-de-chapitre") {
       const key = current.chapter.key;
       const note = {kind:"note",slug,text,id:bookmarkNoteFor(slug)?.id || newId()};
-      persisted[key] = {...persisted[key],note,label:current.chapter.label,position:current.chapter.position,documentRevision:book.documentRevision || ""};
+      persisted[key] = {...persisted[key],note,label:current.chapter.label,position:current.chapter.position,offset:current.chapter.offset || 0,documentRevision:book.documentRevision || ""};
       enqueue({readerAnnotations:{[key]:persisted[key]}});
     } else {
       const existing = bookmarkNoteFor(slug);
       if (existing) existing.text = text;
-      else state.annotations.push({kind:"note",slug,text,id:newId()});
+      else state.annotations.push({kind:"note",slug,text,id:newId(),offset:leafStart});
       persistPage();
     }
     recordUse("marque-page");
@@ -726,10 +774,12 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (view !== "reading") setView("reading");
     if (slug === "marque-page") {
       setPending(null);
+      const key = bookmarkKey();
       state.bookmarked = !state.bookmarked;
       renderRibbon();
       if (state.bookmarked) recordUse(slug);
-      enqueue({bookmarkMap:{[current.key]:state.bookmarked ? true : null}});
+      bookmarkOverrides.set(key,state.bookmarked);
+      enqueue({bookmarkMap:{[key]:state.bookmarked ? true : null}}).then(() => bookmarkOverrides.delete(key));
       announce(state.bookmarked ? pageLabel() + " marquée." : "Marque-page retiré.");
     } else if (slug === "souligner") {
       armUnderline();
@@ -1347,7 +1397,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       if (index >= 0) collection.splice(index,1);
     }
     if (range) state.annotations.push({id:origin?.id || newId(),kind:"symbol",glyph,range});
-    else state.placement.push({id:origin?.id || newId(),glyph,x:(clientX - bounds.left)/bounds.width,y:(clientY - bounds.top)/bounds.height});
+    else state.placement.push({id:origin?.id || newId(),glyph,offset:leafStart,x:(clientX - bounds.left)/bounds.width,y:(clientY - bounds.top)/bounds.height});
     clearSelection();
     persistPage();
     renderText();
@@ -1507,7 +1557,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       slot.replaceChildren(fragment);
     });
     const layer = one("[data-free-symbols]");
-    layer.replaceChildren(...state.placement.map(item => {
+    layer.replaceChildren(...state.placement.filter(onLeaf).map(item => {
       const marker = makeSymbol(item.glyph,"free-symbol",item);
       marker.style.left = (item.x * 100) + "%";
       marker.style.top = (item.y * 100) + "%";
@@ -1542,7 +1592,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function renderMarginReperes() {
-    const markers = state.annotations.filter(item => item.kind === "tag" && item.range && item.repereId)
+    const markers = state.annotations.filter(onLeaf).filter(item => item.kind === "tag" && item.range && item.repereId)
       .map(item => ({item,repere:findRepere(item.repereId)})).filter(({repere}) => repere);
     page.toggleAttribute("data-with-margin-reperes",Boolean(markers.length));
     marginReperes.hidden = !markers.length;
@@ -1688,6 +1738,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     annotationDrawing.setAttribute("width",bounds.width);
     annotationDrawing.setAttribute("height",bounds.height);
     annotationDrawing.setAttribute("viewBox",`0 0 ${bounds.width} ${bounds.height}`);
+    const viewport = reading.closest('[data-reader-viewport]')?.getBoundingClientRect() || bounds;
+    const inViewport = rect => rect.right > viewport.left && rect.left < viewport.right;
     const inkGroups = new Map();
     for (const part of reading.querySelectorAll("[data-underline-id]")) {
       const group = inkGroups.get(part.dataset.underlineId) || {parts:[],style:part.dataset.underlineStyle};
@@ -1697,7 +1749,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     for (const [id,{parts,style}] of inkGroups) {
       const mark = state.annotations.find(item => item.id === id);
       if (!mark) continue;
-      const rectangles = mergeRectangles(parts.flatMap(part => [...part.getClientRects()]));
+      const rectangles = mergeRectangles(parts.flatMap(part => [...part.getClientRects()]).filter(inViewport));
       if (!rectangles.length) continue;
       const group = vector("g",{"data-annotation-id":id,"data-annotation-kind":"underline"});
       group.style.color = mark.color || "var(--line-default)";
@@ -1711,9 +1763,10 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       geometry.push({type,item,id:item.id,key,label:annotationName(item),rectangles});
     }
     for (const item of state.annotations) {
-      let rectangles = item.range ? rangeRectangles(item.range) : [];
+      if (!onLeaf(item)) continue;
+      let rectangles = item.range ? rangeRectangles(item.range).filter(inViewport) : [];
       if (item.kind === "bracket" && rectangles.length) {
-        const textBounds = reading.getBoundingClientRect();
+        const textBounds = viewport;
         const x = Math.max(6,textBounds.left - bounds.left - 10);
         const top = Math.min(...rectangles.map(rect => rect.top)) - bounds.top - 2;
         const bottom = Math.max(...rectangles.map(rect => rect.bottom)) - bounds.top + 2;
@@ -1736,7 +1789,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       const symbol = [...one("[data-free-symbols]").children].find(element => element.dataset.annotationId === item.id);
       if (symbol) register("placement",{...item,kind:"symbol"},[...symbol.getClientRects()]);
     }
-    if (state.bookmarked) register("bookmark",{id:"bookmark:" + current.key,kind:"bookmark"},[...ribbonOpen.getClientRects()]);
+    if (state.bookmarked) register("bookmark",{id:"bookmark:" + bookmarkKey(),kind:"bookmark"},[...ribbonOpen.getClientRects()],bookmarkKey());
     const chapterNote = current.chapter && persisted[current.chapter.key]?.note;
     if (chapterNote) register("chapter-note",chapterNote,[...ribbonOpen.getClientRects()],current.chapter.key);
     annotationGeometry = geometry;
@@ -1808,7 +1861,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   }
 
   function deletionOperation(entry) {
-    const operation = {type:entry.type,key:entry.key,pageKey:current.key,position:current.position,
+    const operation = {type:entry.type,key:entry.key,pageKey:current.key,position:current.position,offset:leafStart,
       revision:book.documentRevision || "",label:entry.label,item:structuredClone(entry.item),related:[]};
     if (entry.type === "annotation" || entry.type === "placement") {
       const collection = entry.type === "annotation" ? state.annotations : state.placement;
@@ -1825,7 +1878,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     const {type,key,item} = operation;
     if (type === "bookmark") {
       bookmarkOverrides.set(key,restore);
-      if (current?.key === key) state.bookmarked = restore;
+      if (current && (current.key === key || key.startsWith(current.key+"@"))) state.bookmarked = restore;
       return {bookmarkMap:{[key]:restore ? true : null}};
     }
     if (type === "chapter-note") {
@@ -1920,8 +1973,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       deleteMessage = "Restauration non enregistrée. Tu peux réessayer avec Annuler.";
     }
     if (operation.type === "bookmark") bookmarkOverrides.delete(operation.key);
-    if (saved && current?.key !== operation.pageKey && !signal.aborted) {
-      try { await navigate(operation.position); }
+    if (saved && (current?.key !== operation.pageKey || !onLeaf(operation.item.range ? operation.item : {offset:operation.offset})) && !signal.aborted) {
+      try { await navigate(operation.position,operation.item.range?.start ?? operation.offset); }
       catch { deleteMessage = operation.label + " restauré. Reviens à la page d’origine pour le retrouver."; }
     }
     deletionBusy = false;
@@ -2049,7 +2102,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (editedAnnotation) editedAnnotation.text = value;
     else {
       const range = target() === "passage" ? selectedRange : null;
-      state.annotations.push({id:newId(),kind:"tag",slug:currentEditor,text:value,range});
+      state.annotations.push({id:newId(),kind:"tag",slug:currentEditor,text:value,range,offset:leafStart});
       recordUse(currentEditor);
     }
     persistPage();
@@ -2062,7 +2115,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
 
   function renderPageAnnotations() {
     const container = one("[data-page-annotations]");
-    const notes = state.annotations.filter(item => item.kind === "note" && item.range);
+    const notes = state.annotations.filter(onLeaf).filter(item => item.kind === "note" && item.range);
     container.hidden = !notes.length;
     container.replaceChildren(...notes.map(item => {
       const control = button("","plain-button");
@@ -2090,10 +2143,11 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     const savedPages = new Map(Object.entries(persisted));
     for (const key of Object.keys(book.bookmarkMap || {})) {
       if (!key.startsWith(current.key.split("-")[0] + "-") || !book.bookmarkMap[key]) continue;
-      const number = Number(key.slice(key.indexOf("-")+1));
+      const [unitNumber,at] = key.slice(key.indexOf("-")+1).split("@");
+      const number = Number(unitNumber);
       if (number < 1 || number > current.count) continue;
       const page = persisted[key] || {label:current.unitLabel + " " + number,position:number-1};
-      rows.push({icon:"marque-page",label:"Marque-page",copy:page.label,page});
+      rows.push({icon:"marque-page",label:"Marque-page",copy:page.label,page:{...page,offset:Number(at)||0}});
     }
     for (const page of savedPages.values()) {
       for (const item of [...(page.annotations || []),...(page.note ? [page.note] : []),...(page.placement || []).map(item => ({...item,kind:"symbol"}))]) {
@@ -2116,7 +2170,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       action.append(title,span("",copy));
       action.addEventListener("click", async () => {
         showSheet(false);
-        if (page.position !== current.position) await navigate(page.position);
+        await navigate(page.position,item?.range?.start ?? item?.offset ?? page.offset ?? 0);
         if (signal.aborted || page.position !== current?.position) return;
         const id = item?.highlightId || item?.id;
         const mark = state.annotations.find(candidate => candidate.id === id);
@@ -2138,7 +2192,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   });
 
   function footerTags() {
-    return state.annotations.filter(item => item.kind === "tag" && !item.repereId);
+    return state.annotations.filter(onLeaf).filter(item => item.kind === "tag" && !item.repereId);
   }
 
   function showTag(item) {
@@ -2349,6 +2403,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   function loadPage(fragment,descriptor) {
     clearPage();
     current = descriptor;
+    leafStart = 0; leafEnd = Infinity;
     activeTag = null;
     const saved = persisted[current.key] || {};
     state = ensureAnnotationIds({annotations:structuredClone(saved.annotations || []),placement:structuredClone(saved.placement || []),
@@ -2420,6 +2475,8 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     }
   },{capture:true});
   clearPage();
-  return {initialize,loadPage,clearPage,resize};
+  return {initialize,loadPage,clearPage,resize,setLeaf,characterRect,
+    setChapter:chapter => { if (current) {current.chapter=chapter;renderRibbon();} },textLength:() => offsets.at(-1),
+    allowTurn:() => !pending && !eraseMode && sheet.hidden && options.hidden && linkMenu.hidden && ribbonPanel.hidden};
 
 }
