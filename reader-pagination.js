@@ -40,10 +40,8 @@ function createReaderPagination(viewport, content, annotations) {
   function measure(kind,position = {}) {
     format = kind;
     boundaries.clear();
-    const top = Math.max(0,viewport.getBoundingClientRect().top + window.scrollY);
-    const available = Math.max(138,Math.floor(window.innerHeight - top - 38));
-    viewport.style.setProperty('--leaf-height','max(138px,calc('+available+'px - env(safe-area-inset-bottom,0px)))');
-    viewport.closest('.reader-layout').style.setProperty('--reading-space',(available+30)+'px');
+    // Flex layout accounts for the actual header, tools, footer and safe areas.
+    viewport.style.setProperty('--leaf-height',Math.max(1,viewport.clientHeight)+'px');
     const width = viewport.clientWidth;
     if (!width) return;
     stride = width + gap;

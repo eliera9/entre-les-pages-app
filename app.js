@@ -94,7 +94,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     return {archive, opf, opfPath};
   }
 
-  async function openEpub(bytes) {
+  async function openEpub(bytes,cancelled = () => false) {
     const {archive, opf, opfPath} = await epubPackage(bytes);
     const items = new Map(named(opf, 'item').map(node => [node.getAttribute('id'), node]));
     const paths = named(opf, 'itemref').map(ref => items.get(ref.getAttribute('idref')))
@@ -134,13 +134,56 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
         if (chapters.length) break;
       } catch { /* A damaged optional table of contents does not prevent reading the spine. */ }
     }
-    const weights = paths.map(path => Math.max(1,archive.file(path)?._data?.uncompressedSize || 1));
+    // The spine orders documents. A title page, map or appendix can be in both the spine
+    // and the table of contents without being a chapter of the novel.
+    const sectionInfo = [];
     const ordered = chapters.sort((a,b) => a.position-b.position);
-    const numbered = ordered.filter(chapter => !/^(?:couverture|cover|title page|page de titre|copyright|table des matières|table of contents|sommaire|mentions légales)$/i.test(chapter.label.trim()));
-    const tocChapters = numbered.length ? numbered : ordered;
-    tocChapters.forEach((chapter,i) => { chapter.number=i+1; });
+    const clean = value => String(value || '').replace(/\s+/gu,' ').trim();
+    const normal = value => clean(value).normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
+    const bookTitle = normal(named(opf,'metadata')[0] && named(named(opf,'metadata')[0],'title')[0]?.textContent);
+    const chapterPrefix = /^(?:chapitre|chapter|cap[ií]tulo|capitolo|kapitel)\s+([0-9]+(?:[a-z])?|[ivxlcdm]+)(?=$|[\s.:–—-])/iu;
+    const namedMatter = /^(?:couverture|cover|titre|page de titre|title page|titre original|copyright|mentions l[eé]gales|d[eé]dicace|dedication|sommaire|table des mati[eè]res|contents|table of contents|carte|map|cartes|l['’]aut(?:eur|rice)|about the author|biographie|prologue|[eé]pilogue|remerciements|acknowledg(?:e)?ments|appendice|appendix|avant-propos|pr[eé]face|postface|notes|glossaire|glossary)$/iu;
+    const typeTokens = el => clean(el?.getAttributeNS('http://www.idpf.org/2007/ops','type') || el?.getAttribute('epub:type')).split(' ');
+    const weights = [];
+    for (const [position,path] of paths.entries()) {
+      if (cancelled()) throw new DOMException('Lecture fermée.','AbortError');
+      const inToc = ordered.filter(entry => entry.position === position);
+      let body, heading, title, words=0, types=[];
+      try {
+        const data = await readEntry(archive,path,10*MiB);
+        if (data) {
+          const doc = readText(data);
+          body = named(doc,'body')[0];
+          if (body) {
+            heading = clean(body.querySelector('h1,h2')?.textContent);
+            title = clean(named(doc,'title')[0]?.textContent);
+            const primary = body.querySelector('section,article,nav');
+            types = [...typeTokens(body),...typeTokens(primary)];
+            words = clean(body.textContent).match(/[\p{L}\p{N}]+(?:[’'-][\p{L}\p{N}]+)*/gu)?.length || 0;
+          }
+        }
+      } catch { /* Report a missing or damaged section when the reader opens it. */ }
+      const label = clean(inToc[0]?.label || heading || (normal(title) !== bookTitle && title) || '');
+      const semanticMatter = types.some(t => /^(?:cover|frontmatter|backmatter|preamble|titlepage|copyright-page|dedication|toc|appendix|acknowledgments|colophon|prologue|epilogue|preface|part)$/.test(t));
+      const explicit = types.includes('chapter') || chapterPrefix.test(label);
+      const isMatter = !explicit && (semanticMatter || namedMatter.test(label));
+      const entries = inToc.filter(entry => !namedMatter.test(clean(entry.label)));
+      const isPlate = !!body && words === 0 && [...body.getElementsByTagName('*')].filter(el => ['img','image'].includes(el.localName)).length === 1;
+      const kind = isMatter || isPlate && !explicit && !entries.length ? 'matter' : 'body';
+      const candidates = kind === 'body' ? entries : [];
+      if (!candidates.length && kind === 'body' && (explicit || !ordered.length && (heading || label))) {
+        candidates.push({position,anchor:'',label:heading || label});
+      }
+      sectionInfo.push({kind,plate:isPlate,label,chapters:candidates});
+      weights.push(Math.max(1,words));
+    }
+    const tocChapters = sectionInfo.flatMap(info => info.chapters);
+    tocChapters.forEach((chapter,i) => {
+      chapter.number=i+1;
+      chapter.printedNumber=clean(chapter.label).match(chapterPrefix)?.[1] || String(i+1);
+    });
     const language = named(opf,'language')[0]?.textContent?.trim();
-    return {count: paths.length, chapterTitles, weights, tocChapters, language, async read(index) {
+    return {count:paths.length,chapterTitles,weights,tocChapters,sectionInfo,language,async read(index) {
       const data = await readEntry(archive, paths[index], 10 * MiB);
       if (!data) throw Error('Ce chapitre est introuvable.');
       const doc = readText(data);
@@ -163,6 +206,8 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
             if (spec) {
               const node = document.createElement('img');
               node.alt = child.getAttribute('alt') || '';
+              node.width = spec.width;
+              node.height = spec.height;
               node.src = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);

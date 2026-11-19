@@ -2476,6 +2476,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
   },{capture:true});
   clearPage();
   return {initialize,loadPage,clearPage,resize,setLeaf,characterRect,
+    closeForReading:() => {setEraseMode(false);setPending(null);closeOptions();closeLinkMenu();closeRibbonNotes();showSheet(false);clearSelection();},
     setChapter:chapter => { if (current) {current.chapter=chapter;renderRibbon();} },textLength:() => offsets.at(-1),
     allowTurn:() => !pending && !eraseMode && sheet.hidden && options.hidden && linkMenu.hidden && ribbonPanel.hidden};
 

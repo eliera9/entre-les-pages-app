@@ -26,10 +26,10 @@
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<link rel="stylesheet" href="./reader.css?v=4">
-<script defer src="./reader.js?v=4"></script>
-<script defer src="./reader-pagination.js"></script><script defer src="./book-detail.js?v=8"></script>
-<script defer src="./app.js?v=30"></script>
+<link rel="stylesheet" href="./reader.css?v=5">
+<script defer src="./reader.js?v=5"></script>
+<script defer src="./reader-pagination.js?v=2"></script><script defer src="./book-detail.js?v=9"></script>
+<script defer src="./app.js?v=31"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -507,10 +507,6 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg><span>Annuler</span>
             </button>
           </div>
-          <div class="reader-progress" data-reader-chrome hidden>
-            <div class="progress-rule" aria-hidden="true"><i></i></div>
-            <span data-reader-progress role="status" aria-live="polite"></span>
-          </div>
           <span class="visually-hidden" data-status role="status"></span>
           <section id="edp-reader-sheet" class="sheet" aria-label="Outils d’annotation" hidden>
             <div class="grip-row"><button class="grip cursor-interaction" type="button" data-close aria-label="Fermer le volet"><span aria-hidden="true"></span></button></div>
@@ -633,6 +629,18 @@
         </section>
         <aside class="tool-rail" data-rail role="toolbar" aria-orientation="vertical" aria-label="Outils d’annotation"></aside>
       </div>
+      <footer class="reader-progress" data-reader-chrome hidden>
+        <div class="progress-copy">
+          <div class="progress-rule" aria-hidden="true"><i></i></div>
+          <span data-reader-progress role="status" aria-live="polite"></span>
+        </div>
+        <button class="reader-expand" data-reader-expand type="button" aria-label="Activer le plein écran" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path class="enter-full" d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>
+            <path class="leave-full" d="M3 9h6V3m12 6h-6V3M3 15h6v6m12-6h-6v6"/>
+          </svg>
+        </button>
+      </footer>
       <div class="symbol-ghost" data-ghost hidden></div>
     </div>
         </section>

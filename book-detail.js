@@ -285,6 +285,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     motion?.cancel();
     cancelAnimationFrame(layoutFrame);
     delete content.dataset.flow;
+    if (reader.hasAttribute('data-immersive') || nativeElement() === reader) leaveFullscreen();
     annotations.clearPage();
     chrome.hidden = true;
   }
@@ -316,11 +317,50 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     onBookmark:() => {}
   });
   const pager = createReaderPagination(viewport,content,annotations);
+  const expand = q('[data-reader-expand]');
+  let nativeFull = false;
+  const nativeElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  function immersive(enabled) {
+    reader.toggleAttribute('data-immersive',enabled);
+    expand.setAttribute('aria-pressed',String(enabled));
+    const label = enabled ? 'Quitter le plein écran' : 'Activer le plein écran';
+    expand.setAttribute('aria-label',label);
+    expand.title = label;
+    if (enabled) annotations.closeForReading();
+    resizePages();
+  }
+  function leaveFullscreen() {
+    immersive(false);
+    if (nativeElement() === reader) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) Promise.resolve(exit.call(document)).catch(() => {});
+    }
+  }
+  on(expand,'click',() => {
+    if (reader.hasAttribute('data-immersive')) return leaveFullscreen();
+    immersive(true);
+    const enter = reader.requestFullscreen || reader.webkitRequestFullscreen;
+    if (enter) {
+      // iPhone and embedded contexts can keep the in-app immersive layout.
+      try { Promise.resolve(enter.call(reader)).catch(() => {}); } catch { /* CSS mode is already active. */ }
+    }
+  });
+  function fullscreenChanged() {
+    if (nativeElement() === reader) {
+      nativeFull = true;
+      if (!reader.hasAttribute('data-immersive') || reader.hidden) leaveFullscreen();
+    } else if (nativeFull) {
+      nativeFull = false;
+      immersive(false);
+    }
+  }
+  on(document,'fullscreenchange',fullscreenChanged);
+  on(document,'webkitfullscreenchange',fullscreenChanged);
   const initializingAnnotations = annotations.initialize();
   refreshIcons();
 
-  function recordPosition(record) {
-    latestAnchor = pager.anchor();
+  function recordPosition(record,anchor = pager.anchor()) {
+    latestAnchor = anchor;
     const currentWeight = pages.weights?.[index] || 1;
     const total = pages.totalWeight;
     const done = (pages.before[index] + currentWeight * pager.done) / total;
@@ -332,14 +372,18 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       sampledWords += words;
     }
     const wordsPerWeight = sampledWords ? sampledWords/sampledWeight : unit() === 'page' ? 250 : .14;
-    const minutes = last ? 0 : Math.max(1,Math.ceil((1-done)*total*wordsPerWeight/220));
+    const remainingWords = unit() === 'chapter' ? (1-done)*total : (1-done)*total*wordsPerWeight;
+    const minutes = last ? 0 : Math.max(1,Math.ceil(remainingWords/220));
     let location = pages.label+' '+(index+1)+'/'+pages.count;
-    if (unit() === 'chapter' && pages.tocChapters?.length) {
+    const info = pages.sectionInfo?.[index];
+    if (info?.kind === 'matter' || (info && !pages.tocChapters.length)) {
+      location = info.label || 'Page du livre';
+    } else if (unit() === 'chapter' && pages.tocChapters?.length) {
       const left = viewport.getBoundingClientRect().left;
       const candidate = visibleChapters.filter(item => item.element.getBoundingClientRect().left < left+viewport.clientWidth-1).at(-1);
       const chapter = candidate?.chapter || pages.tocChapters.filter(item => item.position < index).at(-1);
       if (chapter) {
-        location = 'Chapitre '+chapter.number+'/'+pages.tocChapters.length;
+        location = 'Chapitre '+chapter.printedNumber+'/'+pages.tocChapters.length;
         if (chapter !== currentChapter) {
           const first = pages.tocChapters.find(item => item.position === chapter.position);
           const key = 'note-chapter-'+(chapter.position+1)+(chapter === first ? '' : '@'+chapter.number);
@@ -394,7 +438,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       if (!readyToRead) return;
       motion?.cancel();
       pager.measure(unit(),latestAnchor);
-      recordPosition(false);
+      recordPosition(false,latestAnchor);
     });
   }
   let previousSize = '';
@@ -428,10 +472,11 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
     header.className = 'leaf-heading';
     if (heading || anchor) (heading || anchor).before(header);
     else fragment.prepend(header);
-    if (heading?.textContent.trim().toLocaleLowerCase() === label.toLocaleLowerCase()) {
+    const normalize = text => String(text || '').replace(/\s+/gu,' ').trim().toLocaleLowerCase();
+    if (heading && normalize(heading.textContent) === normalize(label)) {
       heading.classList.add('leaf-number','number-only');
       header.append(heading);
-      if (title && title.toLocaleLowerCase() !== label.toLocaleLowerCase()) {
+      if (title && normalize(title) !== normalize(label)) {
         const subtitle = document.createElement('div');
         subtitle.className = 'leaf-title';
         subtitle.dataset.caption = title;
@@ -459,17 +504,31 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   function prepareOpenings(fragment,section,current,label) {
     visibleChapters = [];
     currentChapter = null;
-    if (!section.tocChapters.length) {
-      presentHeading(fragment,label,section.chapterTitles[current]);
-      return;
-    }
+    if (section.sectionInfo[current].kind === 'matter' || !section.tocChapters.length) return;
     const entries = section.tocChapters.filter(item => item.position === current);
     for (const chapter of entries) {
       const anchor = chapter.anchor ? fragment.querySelector('[data-epub-id="'+CSS.escape(chapter.anchor)+'"]') : null;
       if (chapter.anchor && !anchor && visibleChapters.length) continue;
-      const opening = presentHeading(fragment,'Chapitre '+chapter.number,chapter.label,anchor);
+      const opening = presentHeading(fragment,'Chapitre '+chapter.printedNumber,chapter.label,anchor);
       if (visibleChapters.length) opening.style.breakBefore = 'column';
       visibleChapters.push({chapter,element:opening});
+    }
+  }
+  function extendIllustrationPaper(image) {
+    // Extend a uniform paper edge into the space left by the original aspect ratio.
+    if (!image?.naturalWidth || !image.naturalHeight) return;
+    const sample = document.createElement('canvas');
+    sample.width = sample.height = 3;
+    const ctx = sample.getContext('2d');
+    if (!ctx) return;
+    const colors = [[0,0],[1,0],[0,1],[1,1]].map(([x,y]) => {
+      ctx.drawImage(image,x*(image.naturalWidth-1),y*(image.naturalHeight-1),1,1,0,0,1,1);
+      return ctx.getImageData(0,0,1,1).data;
+    });
+    if (colors.some(pixel => pixel[3] < 250)) return;
+    const rgb = [0,1,2].map(i => colors.map(pixel => pixel[i]));
+    if (rgb.every(channel => Math.max(...channel)-Math.min(...channel) <= 12)) {
+      surface.style.setProperty('--page-paper','rgb('+rgb.map(values => Math.round(values.reduce((a,b) => a+b)/4)).join(',')+')');
     }
   }
   async function drawPage(record=false,position={},direction=0) {
@@ -483,13 +542,22 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       pageTask?.cancel();
       const result = await section.read(current);
       if (renderSequence !== version) return;
-      const label = section.label+' '+(current+1);
-      const chapter = unit() === 'chapter' ? {key:'note-chapter-'+(current+1),position:current,label:section.chapterTitles[current] || label} :
+      const info = section.sectionInfo?.[current];
+      const label = info ? (info.label || section.chapterTitles[current] || 'Page du livre') : section.label+' '+(current+1);
+      surface.style.removeProperty('--page-paper');
+      surface.dataset.pageKind = info?.plate ? 'plate' : info?.kind || 'pdf';
+      const chapter = unit() === 'chapter' ? {key:'note-chapter-'+(current+1),position:current,label:info?.label || section.chapterTitles[current] || label} :
         section.outline?.find(item => current >= item.position);
       content.dataset.flow = unit();
       content.lang = section.language || document.documentElement.lang || 'fr';
       viewport.scrollLeft = 0;
-      if (unit() === 'chapter') prepareOpenings(result,section,current,label);
+      if (unit() === 'chapter') {
+        prepareOpenings(result,section,current,label);
+        if (info.plate) {
+          const img = result.querySelector('img');
+          if (img) {img.classList.add('page-plate'); if (!img.alt) img.alt = label;}
+        }
+      }
       setText('[data-chapter-title]',chapter?.label || label);
       const pageWords = annotations.loadPage(result,{key:unit()+'-'+(current+1),position:current,count:section.count,label,chapter,unitLabel:section.label});
       for (const item of visibleChapters) {
@@ -504,6 +572,8 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
         await Promise.all([document.fonts?.ready,...Array.from(content.images || content.querySelectorAll('img'),img => img.decode?.().catch(() => {}))]);
       }
       if (renderSequence !== version) return;
+      if (info?.plate) extendIllustrationPaper(content.querySelector('img.page-plate'));
+      chrome.hidden = false;
       pager.measure(unit(),position);
       readyToRead = true;
       recordPosition(record || !book.readingPosition);
@@ -560,7 +630,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
       const format = engine.formatOf(bytes);
       let section;
       if (format === 'EPUB') {
-        section = {label:'Chapitre', ...await engine.openEpub(bytes)};
+        section = {label:'Chapitre', ...await engine.openEpub(bytes,() => !current())};
       } else if (format === 'PDF') {
         const pdf = await engine.fromPdf(bytes, task => { if (current()) pdfTask = task; else task.destroy().catch(() => {}); });
         const outline = await pdfChapters(pdf.document);
@@ -606,6 +676,7 @@ function mountSavedBook({root, host, book, storage, engine, bookTagOptions, refr
   on(readerDetails, 'click', showBookDetails);
   on(document, 'keydown', event => {
     if (event.defaultPrevented || event.key !== 'Escape' || root.dataset.sidebarOpen === 'true') return;
+    if (mode === 'reader' && reader.hasAttribute('data-immersive')) {event.preventDefault();leaveFullscreen();return;}
     if (!bubble.hidden) setDelete(false, true);
     else if (!popup.hidden) setPopup(false, true);
     else if (mode === 'note') backFromNote();
