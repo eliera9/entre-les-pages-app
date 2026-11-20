@@ -264,13 +264,13 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     const direction = opening ? 1 : -1;
     const start = getComputedStyle(face).transform;
     switcher.setAttribute('data-turning', '');
-    const out = face.animate([{transform:start},{transform:'rotateY(' + 90 * direction + 'deg)'}], {duration:230,easing:'ease-in',fill:'forwards'});
+    const out = face.animate([{transform:start},{transform:'perspective(1400px) rotateY(' + 90 * direction + 'deg)'}], {duration:230,easing:'ease-in',fill:'forwards'});
     try {
       await out.finished;
       if (scope.signal.aborted || switcher.hidden || root.dataset.sidebarOpen === 'true') return;
       change();
       out.cancel();
-      if (!reduced.matches) await face.animate([{transform:'rotateY(' + -90 * direction + 'deg)'},{transform:'rotateY(0deg)'}], {duration:230,easing:'ease-out'}).finished;
+      if (!reduced.matches) await face.animate([{transform:'perspective(1400px) rotateY(' + -90 * direction + 'deg)'},{transform:'perspective(1400px) rotateY(0deg)'}], {duration:230,easing:'ease-out'}).finished;
     } catch (error) { if (error.name !== 'AbortError') throw error; }
     finally {out.cancel(); switcher.removeAttribute('data-turning');}
   });
@@ -289,7 +289,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     motion?.cancel();
     cancelAnimationFrame(layoutFrame);
     delete content.dataset.flow;
-    if (reader.hasAttribute('data-immersive') || nativeElement() === reader) leaveFullscreen();
+    if (reader.hasAttribute('data-immersive')) leaveFullscreen();
     annotations.clearPage();
     chrome.hidden = true;
   }
@@ -346,7 +346,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   on(railToggle,'click',event => {
     if (railDragged && event.detail) {railDragged = false;return;}
     const open = !reader.hasAttribute('data-rail-open');
-    if (open && reader.hasAttribute('data-immersive')) leaveFullscreen();
+
     setRail(open);
   });
 
@@ -359,7 +359,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     if (Math.abs(drag) < 28) return;
     event.preventDefault();
     railDragged = true;
-    if (drag < 0 && reader.hasAttribute('data-immersive')) leaveFullscreen();
+
     setRail(drag < 0);
   });
 
@@ -369,7 +369,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       const breaks = pages.sectionInfo?.[position]?.pageBreaks || [];
       const chapter = pages.outline?.find(item => position >= item.position);
       return (breaks.length ? breaks : [{}]).map(entry => ({
-        position, anchor:entry.id, number:entry.number, label:entry.number ? 'Page '+entry.number : label,
+        position, anchor:entry.id, number:entry.number || (!pages.sectionInfo ? String(position+1) : ''), label:entry.number ? 'Page '+entry.number : label,
         group:pages.sectionInfo ? label : chapter?.label || (pages.outline?.length ? 'Ouverture du livre' : ''),
       }));
     }).flat();
@@ -383,7 +383,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     for (let i=first;i<previewPages.length && previewPages[i].position===index;i++) {
       const id = previewPages[i].anchor;
       const marker = id && content.querySelector('[data-epub-id="'+CSS.escape(id)+'"]');
-      if (!marker || marker.getBoundingClientRect().left < edge) current=i;
+      if (marker && marker.getBoundingClientRect().left < edge - 1) current=i;
     }
     return current;
   }
@@ -395,38 +395,111 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     card.setAttribute('aria-current','true');
     slider.value = String(number);
     slider.setAttribute('aria-valuetext',previewPages[number].label);
-    if (align) card.scrollIntoView({block:'nearest',inline:'center'});
+    const row = previewPages[number];
+    const identity = [book.title,explorerMode === 'grid' ? book.author : row.label].filter(Boolean);
+    setText('[data-preview-subtitle]',identity.join(' · '));
+    const position = 100 * number / Math.max(1,previewPages.length-1);
+    chrome.style.setProperty('--curseur',position+'%');
+    chrome.style.setProperty('--progress',position+'%');
+    const fraction = pages.printedTotal ? Number(row.number || 0)/pages.printedTotal : number/Math.max(1,previewPages.length-1);
+    setText('[data-reader-percent]',Math.round(fraction*100)+' %');
+    setText('[data-reader-progress]',row.number ? row.label+' · '+row.group : row.label);
+    if (align && explorerMode === 'grid') {
+      const group = card.closest('.groupe-feuilles'), heading = group.querySelector('.rubrique');
+      const top = grid.getBoundingClientRect().top;
+      const rowStart = heading && card.getBoundingClientRect().top-group.querySelector('button').getBoundingClientRect().top < 2;
+      const previous = group.previousElementSibling;
+      if (rowStart && previous?.querySelectorAll('button').length === 1 && previous.offsetHeight+card.offsetHeight+72 < grid.clientHeight)
+        grid.scrollTop += previous.getBoundingClientRect().top - top - 12;
+      else if (rowStart) grid.scrollTop += heading.getBoundingClientRect().top - top - 12;
+      else grid.scrollTop += card.getBoundingClientRect().top - top - (grid.clientHeight-card.offsetHeight)/2;
+    } else if (align) grid.scrollLeft += card.getBoundingClientRect().left-grid.getBoundingClientRect().left+(card.offsetWidth-grid.clientWidth)/2;
   }
 
+  const previewReads = new Map();
+  function markerIn(fragment,id) {
+    return id && fragment.querySelector('[data-epub-id="'+CSS.escape(id)+'"]');
+  }
+  // Preserve the text sequence used by existing bookmarks and annotations when
+  // a publisher's page boundary falls inside a paragraph.
+  function splitPrintedLeaves(fragment,info) {
+    const breaks = info.pageBreaks || [];
+    if (info.kind !== 'body' || breaks.length < 2) return;
+    const frame = fragment.querySelector('.edition-sheet');
+    if (!frame) return;
+    const starts = breaks.slice(1).map(entry => markerIn(frame,entry.id)).filter(Boolean);
+    const leaves = [];
+    for (const boundary of starts) {
+      const section = document.createElement('div');
+      section.className = 'printed-leaf';
+      const range = document.createRange();
+      range.selectNodeContents(frame);
+      range.setEndBefore(boundary);
+      section.append(range.extractContents());
+      leaves.push(section);
+    }
+    const final = document.createElement('div');
+    final.className = 'printed-leaf';
+    final.append(...Array.from(frame.childNodes));
+    frame.replaceChildren(...leaves,final);
+  }
   function thumbnail(button,section,generation) {
-    const row = previewPages[Number(button.dataset.previewIndex)];
+    const number = Number(button.dataset.previewIndex), row = previewPages[number];
     if (!row || button.dataset.loaded) return;
     button.dataset.loaded = 'true';
     const picture = button.firstElementChild;
-    Promise.resolve(section.preview ? section.preview(row.position) : section.read(row.position)).then(async fragment => {
+    const paper = document.createElement('div');
+    paper.className = 'fac-simile';
+    picture.append(paper);
+    if (!section.sectionInfo) {
+      paper.classList.add('illust');
+      section.preview(row.position).then(fragment => {
+        if (generation === thumbnailGeneration) paper.append(fragment);
+      }).catch(() => {});
+      return;
+    }
+    // Share the sanitized chapter between visible thumbnails, bounded by section.
+    let pending = previewReads.get(row.position);
+    if (!pending) {
+      pending = section.read(row.position);
+      previewReads.set(row.position,pending);
+      if (previewReads.size > 4) previewReads.delete(previewReads.keys().next().value);
+    }
+    pending.then(async fragment => {
       if (generation !== thumbnailGeneration || !button.isConnected) return;
-      if (!section.sectionInfo) {
-        picture.append(fragment.querySelector('.pdf-page') || fragment);
-        return;
+      const info = section.sectionInfo[row.position];
+      const range = document.createRange();
+      range.selectNodeContents(fragment);
+      const start = markerIn(fragment,row.anchor);
+      const next = previewPages[number+1];
+      const end = next?.position===row.position && markerIn(fragment,next.anchor);
+      if (start && row.anchor !== info.pageBreaks?.[0]?.id) range.setStartAfter(start);
+      if (end) range.setEndBefore(end);
+      const sample = range.cloneContents();
+      if (info.plate) {
+        paper.classList.add('illust');
+        const img = sample.querySelector('img');
+        if (img) paper.append(img);
+      } else {
+        if (info.center) paper.classList.add('feuille-centree');
+        for (const link of sample.querySelectorAll('a')) link.replaceWith(...Array.from(link.childNodes));
+        const blocks = sample.querySelectorAll('h1,h2,h3,h4,h5,h6,p');
+        if (info.kind === 'body' && blocks.length && !sample.querySelector('img,ul,ol,table')) {
+          for (const block of blocks) {
+            if (!block.textContent.trim()) continue;
+            if (block.matches('h1,h2,h3,h4,h5,h6')) block.classList.add('titre-folio');
+            paper.append(block);
+          }
+        } else paper.append(sample);
       }
-      const image = fragment.querySelector('img');
-      if (section.sectionInfo[row.position]?.plate && image) {
-        try { await image.decode(); await adaptEpubIllustration(image); } catch { /* Keep the original plate. */ }
-        if (generation === thumbnailGeneration) picture.append(image);
-        return;
+      for (const img of paper.querySelectorAll('img')) {
+        try {await img.decode(); if (generation===thumbnailGeneration && !info.cover) await adaptEpubIllustration(img);} catch {}
       }
-      const anchor = row.anchor && fragment.querySelector('[data-epub-id="'+CSS.escape(row.anchor)+'"]');
-      if (anchor) {
-        const range = document.createRange();
-        range.selectNodeContents(fragment);
-        range.setStartAfter(anchor);
-        picture.textContent = range.toString().trim().slice(0,650);
-      } else picture.textContent = fragment.textContent.trim().slice(0,650);
     }).catch(() => {});
   }
 
   function openExplorer(view,selected) {
-    if (!readyToRead || finished || !previewPages.length) return;
+    if (!readyToRead || !previewPages.length) return;
     annotations.closeForReading();
     explorerMode = view;
     explorer.hidden = false;
@@ -435,7 +508,17 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     rail.inert = true;
     galleryButton.setAttribute('aria-expanded','true');
     q('[data-reader-explorer-title]').textContent = view === 'grid' ? 'Toutes les pages' : 'Feuilleter';
-    switchView.textContent = view === 'grid' ? 'Carrousel' : 'Toutes les pages';
+    const origin = currentPreview();
+    const original = previewPages[origin];
+    grid.className = view === 'grid' ? 'mosaique' : 'bandeau-pages';
+    reader.querySelector('.livre').dataset.explore = view;
+    switchView.hidden = false;
+    switchView.setAttribute('aria-label',view === 'grid' ? 'Afficher le carrousel' : 'Toutes les pages');
+    switchView.firstElementChild.innerHTML = view === 'grid' ? '<i data-lucide="gallery-horizontal-end"></i>' : '<i data-lucide="layout-grid"></i>';
+    refreshIcons();
+    setText('[data-resume-label]',original.number ? 'Revenir à la page '+original.number : 'Reprendre ma lecture · '+original.label);
+    q('[data-reader-exit]').setAttribute('aria-label','Revenir à ma lecture');
+    galleryButton.setAttribute('aria-label',view === 'grid' ? 'Fermer la grille des pages' : 'Toutes les pages');
     thumbnailObserver?.disconnect();
     const generation = ++thumbnailGeneration, section = pages;
     const group = document.createDocumentFragment();
@@ -444,25 +527,29 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       if (view === 'grid' && (!rowGroup || heading !== item.group)) {
         heading = item.group;
         const section = document.createElement('section');
+        section.className = 'groupe-feuilles';
         if (heading) {
           const title = document.createElement('h3');
+          title.className = 'rubrique';
           title.textContent = heading;
           section.append(title);
         }
         rowGroup = document.createElement('div');
-        rowGroup.className = 'reader-thumb-group';
+        rowGroup.className = 'rangees';
         section.append(rowGroup); group.append(section);
       }
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'reader-thumbnail cursor-interaction';
+      button.className = 'apercu-page cursor-interaction';
       button.dataset.previewIndex = String(number);
       button.setAttribute('aria-label','Ouvrir '+item.label);
       const sample = document.createElement('span');
-      sample.className = 'reader-thumb-page';
+      sample.className = 'mini-contenu';
       sample.setAttribute('aria-hidden','true');
       const caption = document.createElement('span');
-      caption.textContent = item.label;
+      if (number === origin) button.dataset.origine = '';
+      caption.className = 'numero-page';
+      caption.textContent = item.number || (pages.sectionInfo && view === 'grid' ? 'Non paginée' : item.label);
       button.append(sample,caption);
       (view === 'grid' ? rowGroup : group).append(button);
     }
@@ -480,8 +567,10 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     slider.max = String(previewPages.length-1);
     const number = selected ?? currentPreview();
     showPreviewPosition(number,true);
-    const card = grid.querySelector('[data-preview-index="'+number+'"]');
-    if (card) thumbnail(card,section,generation);
+    for (let i=Math.max(0,number-3);i<Math.min(previewPages.length,number+4);i++) {
+      const card=grid.querySelector('[data-preview-index="'+i+'"]');
+      if (card) thumbnail(card,section,generation);
+    }
   }
 
   function closeExplorer() {
@@ -492,10 +581,17 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     explorer.hidden = true;
     grid.replaceChildren();
     delete reader.dataset.explorer;
+    delete reader.querySelector('.livre').dataset.explore;
+    q('.retour-position .repere-retour')?.remove();
+    delete q('.retour-position').dataset.sens;
+    previewReads.clear();
+    switchView.hidden = true;
+    galleryButton.setAttribute('aria-label','Toutes les pages');
+    q('[data-reader-exit]').setAttribute('aria-label','Retour à la bibliothèque');
     viewport.inert = false;
     rail.inert = !reader.hasAttribute('data-rail-open');
     galleryButton.setAttribute('aria-expanded','false');
-    if (pages && readyToRead) showProgressSlider();
+    if (pages && readyToRead) recordPosition(false,true);
   }
   function showProgressSlider() {
     slider.max = String(Math.max(0,previewPages.length-1));
@@ -507,6 +603,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   });
   on(switchView,'click',() => openExplorer(explorerMode === 'grid' ? 'carousel' : 'grid',Number(slider.value)));
   on(q('[data-reader-resume]'),'click',() => {closeExplorer();focus(viewport);});
+  on(slider,'pointerdown',() => {if (explorerMode !== 'carousel') openExplorer('carousel',Number(slider.value));});
   on(slider,'click',() => { if (!explorerMode) openExplorer('carousel'); });
   on(slider,'input',() => {
     const number = Number(slider.value);
@@ -515,6 +612,19 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   });
   let carouselFrame;
   on(grid,'scroll',() => {
+    if (explorerMode === 'grid') {
+      const dock=q('.retour-position'), origin=grid.querySelector('[data-origine]');
+      if (!origin) return;
+      const frame=grid.getBoundingClientRect(), box=origin.getBoundingClientRect();
+      const side=box.bottom<frame.top-3 ? 'haut' : box.top>frame.bottom+3 ? 'bas' : '';
+      if (!side) {delete dock.dataset.sens;return;}
+      dock.dataset.sens=side;
+      if (!dock.querySelector('.repere-retour') && origin.firstElementChild.childElementCount) {
+        const miniature=origin.firstElementChild.cloneNode(true);
+        miniature.classList.add('repere-retour');dock.querySelector('button').prepend(miniature);
+      }
+      return;
+    }
     if (explorerMode !== 'carousel' || carouselFrame) return;
     carouselFrame = requestAnimationFrame(() => {
       carouselFrame = undefined;
@@ -532,6 +642,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     const entry = previewPages[Number(button.dataset.previewIndex)];
     if (!entry) return;
     closeExplorer();
+    if (finished) showLastLeaf();
     if (index !== entry.position) {index = entry.position;await drawPage(false);}
     if (!readyToRead) return;
     const marker = entry.anchor && content.querySelector('[data-epub-id="'+CSS.escape(entry.anchor)+'"]');
@@ -552,16 +663,16 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     const cover = q('[data-reader-end-cover]');
     cover.hidden = !book.coverData;
     if (book.coverData) cover.src = book.coverData;
-    setText('[data-reader-end-title]',book.title);
+    setText('[data-reader-end-title]',[book.title,book.author].filter(Boolean).join(' · '));
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     reader.setAttribute('data-finished','');
     endPage.hidden = false;
     if (!reduced && viewport.animate) {
-      motion = viewport.animate([{transform:'rotateY(0deg)'},{transform:'rotateY(-93deg)'}],
-        {duration:720,easing:'cubic-bezier(.43,0,.25,1)'});
+      motion = viewport.animate([{transform:'perspective(1400px) rotateY(0deg)'},{transform:'perspective(1400px) rotateY(-93deg)'}],
+        {duration:850,easing:'cubic-bezier(.43,0,.25,1)'});
       motion.onfinish = () => {if (finished) viewport.hidden = true;};
     } else viewport.hidden = true;
-    focus(q('[data-reader-end-return]'));
+    focus(endPage);
   }
   function showLastLeaf() {
     finished = false;
@@ -570,60 +681,14 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     viewport.hidden = false;
     resizePages();
   }
-  on(q('[data-reader-end-return]'),'click',() => (returnToLibrary || home)());
+  bindPageTurns(endPage,scope.signal,() => finished,turn,() => openExplorer('carousel'));
 
-  const expand = q('[data-reader-expand]');
-  let nativeFull = false;
-  const nativeElement = () => document.fullscreenElement || document.webkitFullscreenElement;
-  function immersive(enabled) {
-    reader.toggleAttribute('data-immersive',enabled);
-    q('[data-reader-settings]').hidden = enabled;
-    expand.setAttribute('aria-expanded',String(!enabled));
-    for (const choice of reader.querySelectorAll('[data-reader-theme]')) choice.setAttribute('aria-pressed',String(choice.dataset.readerTheme === root.dataset.theme));
-    const label = enabled ? 'Ouvrir les paramètres de lecture' : 'Revenir à la lecture en pleine page';
-    expand.setAttribute('aria-label',label);
-    expand.title = label;
-    if (enabled) setRail(false);
-    resizePages();
-  }
-  function leaveFullscreen() {
-    immersive(false);
-    if (nativeElement() === reader) {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) Promise.resolve(exit.call(document)).catch(() => {});
-    }
-  }
-  function enterReading() {
-    immersive(true);
-    const enter = reader.requestFullscreen || reader.webkitRequestFullscreen;
-    if (enter && (!navigator.userActivation || navigator.userActivation.isActive)) {
-      // iPhone and embedded contexts can keep the in-app immersive layout.
-      try { Promise.resolve(enter.call(reader)).catch(() => {}); } catch { /* CSS mode is already active. */ }
-    }
-  }
-  function toggleControls() {
-    if (reader.hasAttribute('data-immersive')) leaveFullscreen();
-    else enterReading();
-  }
-  on(expand,'click',() => {if (explorerMode) closeExplorer();toggleControls();});
-  on(q('[data-reader-exit]'),'click',() => (returnToLibrary || home)());
-  on(q('[data-reader-settings]'),'click',event => {
-    const choice = event.target.closest('[data-reader-theme]');
-    if (!choice) return;
-    setReaderTheme(choice.dataset.readerTheme);
-    for (const button of reader.querySelectorAll('[data-reader-theme]')) button.setAttribute('aria-pressed',String(choice === button));
+  function enterReading() { reader.setAttribute('data-immersive',''); }
+  function leaveFullscreen() { reader.removeAttribute('data-immersive'); }
+  on(q('[data-reader-exit]'),'click',() => {
+    if (explorerMode) {closeExplorer();focus(viewport);}
+    else (returnToLibrary || home)();
   });
-  function fullscreenChanged() {
-    if (nativeElement() === reader) {
-      nativeFull = true;
-      if (!reader.hasAttribute('data-immersive') || reader.hidden) leaveFullscreen();
-    } else if (nativeFull) {
-      nativeFull = false;
-      immersive(false);
-    }
-  }
-  on(document,'fullscreenchange',fullscreenChanged);
-  on(document,'webkitfullscreenchange',fullscreenChanged);
   const initializingAnnotations = annotations.initialize();
   refreshIcons();
 
@@ -665,13 +730,14 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       } else location = pages.chapterTitles[index] || 'Ouverture du livre';
     }
     const leaf = previewPages[currentPreview()];
-    const numbered = pages.printedTotal && leaf?.number;
-    const progressLocation = numbered && info?.kind !== 'matter' ? leaf.number+' / '+pages.printedTotal : unit() === 'page' ? (index+1)+' / '+pages.count : location;
+    const numbered = pages.printedTotal && /^\d+$/.test(leaf?.number);
+    const progressLocation = numbered ? leaf.number+' / '+pages.printedTotal : unit() === 'page' ? (index+1)+' / '+pages.count : location;
     const label = progressLocation+' · '+formatRemainingReadingTime(minutes);
-    setText('[data-reader-percent]',percent+' %');
+    const shownPercent = numbered ? Math.round(100*Number(leaf.number)/pages.printedTotal) : percent;
+    setText('[data-reader-percent]',shownPercent+' %');
     if (!explorerMode) showProgressSlider();
     setText('[data-reader-progress]',label);
-    chrome.style.setProperty('--progress',percent+'%');
+    chrome.style.setProperty('--progress',shownPercent+'%');
     chrome.hidden = false;
     if (record) {
       const readingPosition = {unit:unit(),value:index+1,...latestAnchor};
@@ -681,8 +747,8 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   function slide(delta) {
     motion?.cancel();
     if (!delta || !content.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const distance = Math.min(32,viewport.clientWidth*.07)*Math.sign(delta);
-    motion = viewport.animate([{transform:'translateX('+distance+'px)'},{transform:'translateX(0)'}],{duration:310,easing:'ease-out'});
+    const distance = 16*Math.sign(delta);
+    motion = viewport.animate([{transform:'translateX('+distance+'px)'},{transform:'translateX(0)'}],{duration:180});
     motion.onfinish = () => annotations.resize();
   }
   function turn(delta) {
@@ -700,7 +766,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     } else if (delta>0) finishBook();
   }
   const canTurn = () => !explorerMode && readyToRead && annotations.allowTurn();
-  bindPageTurns(surface,scope.signal,canTurn,turn,toggleControls);
+  bindPageTurns(surface,scope.signal,canTurn,turn,() => openExplorer('carousel'));
   on(reader,'keydown',event => {
     if (event.defaultPrevented || !canTurn() || event.target.closest('input,select,textarea,button,a,[contenteditable=true]') || window.getSelection()?.toString()) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -811,7 +877,15 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       content.lang = section.language || document.documentElement.lang || 'fr';
       viewport.scrollLeft = 0;
       if (unit() === 'chapter') {
+        if (info.kind === 'body') {
+          const textNodes = document.createTreeWalker(result,NodeFilter.SHOW_TEXT);
+          while (textNodes.nextNode()) {
+            const node = textNodes.currentNode;
+            node.data = node.data.replace(/(\p{L})\u00a0(?=\p{L})/gu,'$1 ');
+          }
+        }
         prepareOpenings(result,section,current,label);
+        splitPrintedLeaves(result,info);
         if (info.plate) {
           const img = result.querySelector('img');
           if (img) {img.classList.add('page-plate'); if (!img.alt) img.alt = label;}
@@ -832,7 +906,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
         await Promise.all([document.fonts?.ready,...images.map(async image => {
           try {
             await image.decode();
-            if (renderSequence === version) await adaptEpubIllustration(image);
+            if (renderSequence === version && !info?.cover) await adaptEpubIllustration(image);
           } catch { /* Keep the original illustration if optional adaptation fails. */ }
         })]);
       }
@@ -913,6 +987,16 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       }
       pages = section;
       previewPages = pagesForExplorer();
+      const track = q('[data-track-marks]');
+      track.replaceChildren();
+      for (let i=1;i<previewPages.length;i++) {
+        if (!previewPages[i].group || previewPages[i].group===previewPages[i-1].group) continue;
+        const mark=document.createElement('i');
+        mark.className='trait-chap';
+        if (pages.printedTotal && (!previewPages[i].number || !pages.sectionInfo?.[previewPages[i].position]?.chapters?.length)) continue;
+        mark.style.left=(pages.printedTotal ? 100*Number(previewPages[i].number)/pages.printedTotal : 100*i/Math.max(1,previewPages.length-1))+'%';
+        track.append(mark);
+      }
       const position = book.readingPosition;
       const start = position && position.unit === (format === 'PDF' ? 'page' : 'chapter') ? Number(position.value) - 1 : 0;
       index = Math.max(0, Math.min(section.count - 1, Math.floor(start) || 0));
@@ -944,7 +1028,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   on(document, 'keydown', event => {
     if (event.defaultPrevented || event.key !== 'Escape' || root.dataset.sidebarOpen === 'true') return;
     if (mode === 'reader' && explorerMode) {event.preventDefault();closeExplorer();focus(galleryButton);return;}
-    if (mode === 'reader' && reader.hasAttribute('data-immersive')) {event.preventDefault();leaveFullscreen();return;}
+    if (mode === 'reader' && reader.hasAttribute('data-immersive')) {event.preventDefault();closeReader();return;}
     if (!bubble.hidden) setDelete(false, true);
     else if (!popup.hidden) setPopup(false, true);
     else if (mode === 'note') backFromNote();

@@ -72,7 +72,8 @@ function createEpubEditionStyles(readCss) {
         if (info.plate) continue;
         if (info.kind !== 'matter') {
           // Keep intentional alignment and italic/bold inside the reader's validated novel typography.
-          if (!['text-align','font-style','font-weight','font-variant','vertical-align'].includes(prop)) continue;
+          if (prop === 'font-size' && source.localName === 'span' && value.endsWith('%') && parseFloat(value) >= 200 && source.textContent.trim().length === 1) {target.style.fontSize=value;target.style.lineHeight='.92';continue;}
+          if (!['text-align','font-style','font-weight','font-variant','vertical-align','text-indent'].includes(prop)) continue;
           if (source.matches('h1,h2,h3,h4,h5,h6')) continue;
         }
         if (info.center && /^(padding|margin)-top$/.test(prop) && value.endsWith('%') && parseFloat(value)>=20) {

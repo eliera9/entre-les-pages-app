@@ -26,10 +26,10 @@
 <script defer src="./book-tags.js?v=2"></script>
 <script defer src="./add-book.js?v=10"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
-<link rel="stylesheet" href="./reader.css?v=139">
+<link rel="stylesheet" href="./reader.css?v=140">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=139"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=139"></script>
-<script defer src="./app.js?v=139"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=140"></script>
+<script defer src="./app.js?v=140"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -457,29 +457,16 @@
           <p data-note-book></p>
         </section>
         <section class="reading-edp" data-book-reader aria-label="Liseuse" hidden>
-    <div class="reader" aria-label="Liseuse" data-reader-surface>
-      <header class="book-bar">
-        <button hidden class="icon-button cursor-interaction" type="button" data-close-reader aria-label="Revenir à la fiche"><span class="chevron" aria-hidden="true"></span></button>
-        <button class="reader-exit" data-reader-exit type="button" aria-label="Quitter la liseuse et revenir à la bibliothèque" title="Revenir à la bibliothèque">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/></svg>
-        </button>
-        <div><span class="book-title" data-book-title></span><span class="chapter-title" data-chapter-title></span></div>
-        <div class="reader-top-actions">
-        <button class="reader-expand" data-reader-expand type="button" aria-label="Ouvrir les paramètres de lecture" aria-expanded="false" aria-controls="reader-settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path class="enter-full" d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>
-            <g class="leave-full"><path d="M3 6h7m5 0h6M3 12h2m5 0h11M3 18h10m5 0h3"/><circle cx="12.5" cy="6" r="2.3"/><circle cx="7.5" cy="12" r="2.3"/><circle cx="15.5" cy="18" r="2.3"/></g>
-          </svg>
-        </button>
-
-        <button class="icon-button cursor-interaction reader-gallery" type="button" data-reader-gallery aria-label="Toutes les pages" aria-controls="reader-explorer" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
-        </button>
-        <button class="icon-button annotation-button cursor-interaction" type="button" data-fiche aria-label="Fiche des annotations" data-tooltip="Fiche des annotations" aria-expanded="false" aria-controls="edp-reader-fiche">
-          <span class="line-art annotation-icon" data-art="annotations" aria-hidden="true"></span>
-        </button>
+    <div class="reader livre" aria-label="Liseuse" data-reader-surface>
+      <nav class="commandes-lecture" aria-label="Commandes de lecture">
+        <button hidden data-close-reader type="button"></button>
+        <button type="button" class="pastille quitter" data-reader-exit aria-label="Retour à la bibliothèque"><span><i data-lucide="chevron-left" aria-hidden="true"></i></span></button>
+        <div hidden><span data-book-title></span><span data-chapter-title></span></div>
+        <div class="droite-lecture">
+          <button type="button" class="pastille ouvrir-pages" data-reader-gallery aria-label="Toutes les pages" aria-expanded="false" aria-controls="reader-explorer"><span><i data-lucide="layout-grid" aria-hidden="true"></i></span></button>
+          <button type="button" class="pastille" data-fiche aria-label="Fiche des annotations" aria-expanded="false" aria-controls="edp-reader-fiche"><span><span class="line-art annotation-icon" data-art="annotations" aria-hidden="true"></span></span></button>
         </div>
-      </header>
+      </nav>
       <div class="reader-layout">
         <div class="reading-column">
           <article class="page" data-page>
@@ -642,28 +629,22 @@
           </div>
           <span class="visually-hidden" data-pin-status role="status"></span>
         </section>
-        <aside class="tool-rail" id="reader-annotation-tools" data-rail inert role="toolbar" aria-orientation="vertical" aria-label="Outils d’annotation"></aside>
+        <aside class="tool-rail rail" id="reader-annotation-tools" data-rail inert role="toolbar" aria-orientation="vertical" aria-label="Outils d’annotation"></aside>
       </div>
-      <button class="reader-rail-toggle cursor-interaction" type="button" data-reader-rail-toggle aria-controls="reader-annotation-tools" aria-expanded="false" aria-label="Ouvrir les outils d’annotation"><span aria-hidden="true"></span></button>
-      <section class="reader-explorer" id="reader-explorer" data-reader-explorer aria-labelledby="reader-explorer-title" hidden>
-        <header><h2 id="reader-explorer-title" data-reader-explorer-title></h2><button type="button" data-reader-switch></button></header>
-        <div class="reader-thumbnails" data-reader-thumbnails></div>
-        <button class="reader-resume" type="button" data-reader-resume>Reprendre ma lecture</button>
+      <button class="poignee" type="button" data-reader-rail-toggle aria-controls="reader-annotation-tools" aria-expanded="false" aria-label="Ouvrir les outils d’annotation"><span><i data-lucide="chevron-right" aria-hidden="true"></i></span></button>
+      <section class="explorateur" id="reader-explorer" data-reader-explorer aria-labelledby="reader-explorer-title" hidden>
+        <header class="en-tete-pages"><h2 id="reader-explorer-title" data-reader-explorer-title></h2><p data-preview-subtitle></p></header>
+        <div class="mosaique" data-reader-thumbnails></div>
+        <div class="retour-position"><button class="reprendre" type="button" data-reader-resume><i data-lucide="corner-up-left" aria-hidden="true"></i><span data-resume-label></span></button></div>
       </section>
-      <section class="reader-end" data-reader-end hidden aria-label="Fin du livre">
-        <img data-reader-end-cover alt="" hidden>
-        <h2>Livre terminé</h2><p data-reader-end-title></p>
-        <button class="reader-resume" type="button" data-reader-end-return>Revenir à la bibliothèque</button>
+      <section class="fin-du-livre" data-reader-end hidden aria-label="Fin du livre" tabindex="-1">
+        <img data-reader-end-cover alt="" hidden><h2>Livre terminé</h2><p data-reader-end-title></p>
       </section>
-      <div class="reader-settings" data-reader-settings id="reader-settings" role="group" aria-label="Paramètres de lecture" hidden>
-        <span>Affichage</span>
-        <button type="button" data-reader-theme="light" aria-pressed="true">Clair</button>
-        <button type="button" data-reader-theme="dark" aria-pressed="false">Nuit</button>
-      </div>
-      <footer class="reader-progress" data-reader-chrome hidden>
-        <div class="progress-copy">
-          <div class="progress-rule"><i aria-hidden="true"></i><input type="range" min="0" max="0" value="0" data-reader-slider aria-label="Feuilleter les pages" aria-controls="reader-explorer"></div>
-          <div class="reader-numbers" role="status" aria-live="polite"><span data-reader-progress></span><span data-reader-percent></span></div>
+      <footer class="pied" data-reader-chrome hidden>
+        <button type="button" class="pastille bascule-pages" data-reader-switch hidden><span></span></button>
+        <div class="pied-milieu"><div class="zone-piste"><div class="progres" aria-hidden="true"><span class="rempli"></span><span data-track-marks></span></div>
+          <input class="piste-tactile" type="range" min="0" max="0" value="0" data-reader-slider aria-label="Parcourir le livre en carrousel"></div>
+          <div class="chiffres"><span class="nombre" data-reader-progress></span><span class="pct" data-reader-percent></span></div>
         </div>
       </footer>
       <div class="symbol-ghost" data-ghost hidden></div>

@@ -746,77 +746,199 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 
 #bibliotheque-app .reading-edp:focus {outline:0}
 
-/* Full-page controls, folded annotation tools and page navigation. */
-#bibliotheque-app .reading-edp .reader {position:relative;background:var(--paper)}
-#bibliotheque-app .reading-edp .book-bar,
-#bibliotheque-app .reading-edp[data-immersive] .book-bar {display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;background:var(--paper);z-index:8}
-#bibliotheque-app .reading-edp .book-bar .reader-top-actions {display:flex;gap:0}
-#bibliotheque-app .reading-edp .book-bar .reader-top-actions > button {width:44px;min-width:44px;height:44px}
-#bibliotheque-app .reading-edp .book-bar .reader-exit {
-  display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:var(--accent)
+#bibliotheque-app .reading-edp .livre .rail button,#bibliotheque-app .reading-edp .livre .pastille { width:44px; height:44px; display:grid; place-items:center; padding:0; border:0; color:var(--accent); background:transparent; border-radius:50%; }
+#bibliotheque-app .reading-edp .livre .poignee { position:absolute; z-index:1; top:calc(50% - 23px); right:calc(var(--course-rail) - var(--decalage)); transform:translateY(-50%); width:44px; height:50px; padding:0; border:0; background:transparent; display:flex; align-items:center; justify-content:flex-end; color:var(--accent); touch-action:none; user-select:none; }
+#bibliotheque-app .reading-edp .livre .poignee span { width:23px; height:38px; display:grid; place-items:center; border-radius:16px 0 0 16px; background:var(--tint); box-shadow:-2px 1px 6px var(--ombre); }
+#bibliotheque-app .reading-edp .livre .poignee svg { width:16px; height:16px; stroke-width:1.8; }
+#bibliotheque-app .reading-edp .livre .poignee[aria-expanded=false] svg { transform:rotate(180deg); }
+#bibliotheque-app .reading-edp .livre .poignee:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; border-radius:16px; }
+#bibliotheque-app .reading-edp .livre .pastille>span { display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:color-mix(in srgb,var(--tint) 58%,var(--papier)); }
+#bibliotheque-app .reading-edp .livre .pastille svg { width:21px; height:21px; stroke-width:1.6; }
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .pastille svg { width:25px; height:25px; }}
+#bibliotheque-app .reading-edp .livre :is(.rail-pinned,.rail-rest) { display:flex; flex-direction:column; align-items:stretch; min-height:0; }
+#bibliotheque-app .reading-edp .livre .rail-pinned { flex:0 0 auto; border-bottom:1px solid var(--edge); }
+#bibliotheque-app .reading-edp .livre .rail-footer { flex:0 0 auto; margin-block-start:auto; border-top:1px solid var(--edge); padding-top:4px; }
+#bibliotheque-app .reading-edp .livre .rail-footer button { width:100%; }
+#bibliotheque-app .reading-edp .livre .rail .rail-button::before {border-radius:50%;background:transparent;}
+#bibliotheque-app .reading-edp .livre .rail .rail-button[aria-pressed=true]::before,#bibliotheque-app .reading-edp .livre .rail .rail-button[data-options-open]::before {background:color-mix(in srgb,var(--tile) 70%,var(--accent));}
+#bibliotheque-app .reading-edp .livre .rail .rail-button .line-art {width:20px;height:20px;}
+#bibliotheque-app .reading-edp .livre .rail-footer {margin:2px 0 0;padding-top:1px;}
+#bibliotheque-app .reading-edp .livre .rail-pinned {padding-bottom:2px;}
+#bibliotheque-app .reading-edp .livre .rail-options,#bibliotheque-app .reading-edp .livre .sheet[data-viewing=symbol] {position:absolute;inset-inline-end:calc(var(--course-rail) + 2px);z-index:6;}
+#bibliotheque-app .reading-edp .livre .sheet:not([data-viewing=symbol]) {position:absolute;bottom:58px;inset-inline:8px;z-index:6;}
+#bibliotheque-app .reading-edp .livre .delete-status {position:absolute;inset:auto auto 58px 50%;transform:translateX(-50%);z-index:5;width:max-content;max-width:calc(100% - 16px);margin:0;}
+#bibliotheque-app .reading-edp .livre .ribbon-open {z-index:3;inset-block-start:0;}
+#bibliotheque-app .reading-edp .livre .poignee {z-index:4;}
+#bibliotheque-app .reading-edp .livre .ribbon-open { inset-inline-end: max(7px, calc(var(--bord-droit) + 48px - var(--marge-rail))); }
+#bibliotheque-app .reading-edp .livre .droite-lecture{display:flex;gap:4px;align-items:center;pointer-events:auto}
+#bibliotheque-app .reading-edp .livre .droite-lecture [data-fiche] .line-art{height:20px;width:19px}
+#bibliotheque-app .reading-edp .livre .ribbon-open{inset-inline-end:max(7px,calc(var(--bord-droit) + 96px - var(--marge-rail)))}
+#bibliotheque-app .reading-edp .livre .sheet[data-viewing=saved]{z-index:16;inset-block-end:60px;max-height:calc(100% - 124px);overflow:auto}
+#bibliotheque-app .reading-edp .livre[data-explore] .lecture,#bibliotheque-app .reading-edp .livre[data-explore] .tool-rail,#bibliotheque-app .reading-edp .livre[data-explore] .poignee{visibility:hidden}
+#bibliotheque-app .reading-edp .livre .explorateur{position:absolute;z-index:9;inset:0;display:grid;grid-template-rows:98px minmax(0,1fr) 51px 74px;background:var(--papier);color:var(--encre)}
+#bibliotheque-app .reading-edp .livre .en-tete-pages{display:grid;align-content:end;justify-items:center;gap:1px;padding:0 10px 8px;border-bottom:1px solid var(--piste)}
+#bibliotheque-app .reading-edp .livre .en-tete-pages h2{margin:0;font:400 22px/1.12 "Playfair Lecture",Georgia,serif}
+#bibliotheque-app .reading-edp .livre .en-tete-pages p{margin:0;font:400 15px/1.15 "Alegreya Lecture",Georgia,serif;color:var(--accent)}
+#bibliotheque-app .reading-edp .livre .mosaique{align-self:stretch;display:grid;align-content:start;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 9px;overflow-y:auto;overscroll-behavior:contain;padding:14px 12px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--piste) transparent}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .mosaique{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 14px;padding:20px}}
+#bibliotheque-app .reading-edp .livre .apercu-page{background:var(--papier);border:1px solid var(--piste);color:var(--encre);padding:0;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;min-width:0;box-sizing:border-box;border-radius:3px;position:relative;text-align:inherit}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page{width:100%;aspect-ratio: .65}
+#bibliotheque-app .reading-edp .livre .apercu-page[aria-current=true]{outline:2px solid var(--accent);outline-offset:1px}
+#bibliotheque-app .reading-edp .livre .apercu-page[data-origine]::after{content:'';position:absolute;top:0;right:12%;height:13px;width:8px;background:var(--accent);clip-path:polygon(0 0,100% 0,100% 100%,50% 72%,0 100%)}
+#bibliotheque-app .reading-edp .livre .numero-page{flex:none;border-top:1px solid var(--piste);padding:3px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--accent);font:400 14px/1.2 "Alegreya Lecture",Georgia,serif}
+#bibliotheque-app .reading-edp .livre .mini-contenu{display:block;container-type:inline-size;overflow:hidden;flex:1;min-height:0;position:relative;text-align:left}
+#bibliotheque-app .reading-edp .livre .fac-simile{position:absolute;inset:6% 7%;overflow:hidden;font:400 3.3cqw/1.35 "Alegreya Lecture",Georgia,serif;text-align:justify;color:var(--encre);hyphens:auto}
+#bibliotheque-app .reading-edp .livre .fac-simile p{margin:0 0 .5em;font:inherit;color:inherit}
+#bibliotheque-app .reading-edp .livre .fac-simile .titre-folio{display:block;text-align:center;margin:1.8em 0 1em;font:400 1.45em/1.2 "Playfair Lecture",Georgia,serif}
+#bibliotheque-app .reading-edp .livre .fac-simile .centre-folio{text-align:center}
+#bibliotheque-app .reading-edp .livre .fac-simile img,#bibliotheque-app .reading-edp .livre .illustration-folio img{width:100%;height:100%;object-fit:contain;display:block}
+#bibliotheque-app .reading-edp .livre .fac-simile.illust{inset:2%}
+#bibliotheque-app .reading-edp .livre .bandeau-pages{min-width:0;align-self:center;display:flex;align-items:stretch;--carte-largeur:66%;gap:14px;height:min(94%,108vw);overflow-x:auto;overscroll-behavior:contain;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x;box-sizing:border-box}
+#bibliotheque-app .reading-edp .livre .bandeau-pages::before,#bibliotheque-app .reading-edp .livre .bandeau-pages::after{content:'';flex:0 0 calc((100% - var(--carte-largeur))/2 - 14px)}
+#bibliotheque-app .reading-edp .livre .bandeau-pages .apercu-page{flex:0 0 var(--carte-largeur);scroll-snap-align:center;scroll-margin:0;margin-block:3px;}
+#bibliotheque-app .reading-edp .livre .bandeau-pages .apercu-page[aria-current=true]{outline:0;border:2px solid var(--accent)}
+#bibliotheque-app .reading-edp .livre .bandeau-pages .numero-page{font-size:17px;padding-block:6px}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .bandeau-pages{--carte-largeur:57%;height:min(94%,680px)}}
+#bibliotheque-app .reading-edp .livre .retour-position{grid-row:3;align-self:center;justify-self:center}
+#bibliotheque-app .reading-edp .livre .reprendre{display:flex;align-items:center;gap:8px;padding:0 14px;min-height:44px;color:var(--accent);background:var(--tint);border:0;border-radius:25px;font:400 16px/1.3 "Alegreya Lecture",Georgia,serif}
+#bibliotheque-app .reading-edp .livre .reprendre svg{width:17px;height:17px;stroke-width:1.6}
+#bibliotheque-app .reading-edp .livre .pied{z-index:11;display:flex;align-items:center;gap:9px}
+#bibliotheque-app .reading-edp .livre .pied-milieu{min-width:0;flex:1}
+#bibliotheque-app .reading-edp .livre .pied .zone-piste{height:30px;position:relative;display:grid;align-items:end}
+#bibliotheque-app .reading-edp .livre .pied .progres{position:relative;height:4px;bottom:1px}
+#bibliotheque-app .reading-edp .livre .piste-tactile{appearance:none;-webkit-appearance:none;position:absolute;inset:auto 0 -13px;width:100%;height:44px;margin:0;padding:0;z-index:1;opacity:0;touch-action:none}
+#bibliotheque-app .reading-edp .livre .zone-piste:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+#bibliotheque-app .reading-edp .livre[data-explore] .zone-piste::after{content:'';height:16px;width:16px;position:absolute;left:clamp(8px,var(--curseur),calc(100% - 8px));bottom:3px;transform:translate(-50%,50%);background:var(--accent);border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px var(--papier)}
+#bibliotheque-app .reading-edp .livre[data-explore] .lecture,#bibliotheque-app .reading-edp .livre[data-explore] .tool-rail,#bibliotheque-app .reading-edp .livre[data-explore] .poignee{visibility:hidden}
+#bibliotheque-app .reading-edp .livre .pied .bascule-pages{flex:none;align-self:end}
+#bibliotheque-app .reading-edp .livre .lecture .colonnes .texte-folio p{font:inherit;text-align:justify;line-height:1.55;margin:0 0 9px;hyphens:auto}
+#bibliotheque-app .reading-edp .livre .lecture .colonnes .texte-folio .centre-folio{text-align:center}
+#bibliotheque-app .reading-edp .livre .texte-folio .titre-folio{font:400 23px/1.15 "Playfair Lecture",Georgia,serif;text-align:center;margin:0 0 14px;color:var(--encre)}
+#bibliotheque-app .reading-edp .livre .texte-folio .titre-folio::before,#bibliotheque-app .reading-edp .livre .texte-folio .titre-folio::after{content:'';display:inline-block;vertical-align:middle;width:20px;margin:0 8px;height:1px;background:var(--piste)}
+#bibliotheque-app .reading-edp .livre .lecture .illustration-folio{position:absolute;inset:54px 0 3px;display:grid;place-items:center;overflow:hidden}
+#bibliotheque-app .reading-edp .livre .lecture .texte-folio.ouverture{padding-top:max(0px,calc(var(--haut-editeur) - 40px))}
+#bibliotheque-app .reading-edp .livre .lecture .centre-edition{align-content:safe center;display:grid;min-height:100%}
+#bibliotheque-app .reading-edp .livre .image-editeur{max-width:110px;height:auto;display:block;margin:auto}
+#bibliotheque-app .reading-edp .livre .lecture .fin-du-livre{position:absolute;inset:57px 10px 13px;display:grid;align-content:center;justify-items:center;gap:9px;text-align:center}
+#bibliotheque-app .reading-edp .livre .fin-du-livre img{width:min(47%,208px);max-height:51%;object-fit:contain}
+#bibliotheque-app .reading-edp .livre .fin-du-livre h2{font:400 34px/1.2 "Playfair Lecture",Georgia,serif;margin:10px 0 0}
+#bibliotheque-app .reading-edp .livre .fin-du-livre p{margin:0}
+#bibliotheque-app .reading-edp .livre .mosaique{display:block;padding:10px 15px 22px;overflow-anchor:none}
+#bibliotheque-app .reading-edp .livre .groupe-feuilles{margin:0;padding:0}
+#bibliotheque-app .reading-edp .livre .groupe-feuilles+.groupe-feuilles{margin-top:18px}
+#bibliotheque-app .reading-edp .livre .rubrique{font:400 17px/1.22 "Alegreya Lecture",Georgia,serif;color:var(--encre);text-align:center;text-wrap:balance;margin:0 4px 10px}
+#bibliotheque-app .reading-edp .livre .rangees{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px 12px;align-items:start}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page{aspect-ratio: .51;border-radius:2px}
+#bibliotheque-app .reading-edp .livre .mosaique .numero-page{border:0;margin:0 7%;border-top:1px solid var(--piste);padding:3px 0;font-variant-numeric:tabular-nums}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page[aria-current=true]{outline:none}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page[data-origine]{outline:2px solid var(--accent);outline-offset:0}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#bibliotheque-app .reading-edp .livre .mosaique .apercu-page[data-origine]::after{display:none}
+#bibliotheque-app .reading-edp .livre .fac-simile.feuille-centree{display:flex;flex-direction:column;justify-content:safe center}
+#bibliotheque-app .reading-edp .livre .fac-simile.feuille-centree .image-editeur{width:42%;height:auto;margin:1em auto}
+#bibliotheque-app .reading-edp .livre .mosaique .fac-simile.illust{inset:2% 3%}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .rangees{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 15px}}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .mosaique .apercu-page{aspect-ratio:.70}}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .rubrique{font-size:21px;margin-bottom:12px}}
+@media (min-width:600px) and (min-height:500px){#bibliotheque-app .reading-edp .livre .groupe-feuilles+.groupe-feuilles{margin-top:22px}}
+#bibliotheque-app .reading-edp .livre .retour-position .repere-retour{display:none}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens]{position:absolute;grid-row:auto;z-index:2;left:50%;transform:translateX(-50%);justify-self:auto}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens=haut]{top:106px}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens=bas]{bottom:83px}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens] .reprendre{display:grid;gap:3px;background:var(--papier);border:1px solid var(--accent);border-radius:4px;padding:4px;width:86px;box-shadow:0 2px 8px color-mix(in srgb,var(--encre) 15%,transparent);font-size:13px;line-height:1.04}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens] .reprendre>svg,#bibliotheque-app .reading-edp .livre .retour-position[data-sens] .reprendre>i{display:none}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens] .repere-retour{display:block;height:62px;border-bottom:1px solid var(--piste);width:100%}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens]::before{content:'';position:absolute;left:calc(50% - 4px);width:8px;height:8px;background:var(--papier);border-top:1px solid var(--accent);border-left:1px solid var(--accent);transform:rotate(45deg);top:-4px}
+#bibliotheque-app .reading-edp .livre .retour-position[data-sens=bas]::before{top:auto;bottom:-4px;transform:rotate(225deg)}
+/* Reading surface from the approved full-page reader. */
+#bibliotheque-app .reading-edp .livre {
+  --papier:var(--paper); --encre:#493a3b; --tint:#eadbd8; --piste:#d8c5c6; --trait-lu:#8e5368;
+  --ombre:rgba(68,38,48,.13); --course-rail:58px; --marge-rail:24px;
+  --bord-commandes:12px; --bord-gauche:max(var(--bord-commandes),env(safe-area-inset-left,0px));
+  --bord-droit:max(var(--bord-commandes),env(safe-area-inset-right,0px));
+  --pied:max(12px,env(safe-area-inset-bottom,0px)); --reserve-pied:54px;
+  --haut:max(6px,env(safe-area-inset-top,0px)); --reader-body-size:15px;
+  background:var(--papier); color:var(--encre); padding:0;
 }
-#bibliotheque-app .reading-edp .book-bar :is(.reader-exit,.reader-expand) {position:relative}
-#bibliotheque-app .reading-edp .book-bar :is(.reader-exit,.reader-expand)::before {
-  content:"";position:absolute;width:38px;height:38px;border-radius:50%;background:var(--panel)
+#bibliotheque-app[data-theme=dark] .reading-edp .livre {
+  --encre:#b19bb8; --tint:#3b303f; --piste:#514552; --trait-lu:#c5a0ce; --ombre:rgba(0,0,0,.24);
 }
-#bibliotheque-app .reading-edp .book-bar :is(.reader-exit,.reader-expand) svg {position:relative}
-#bibliotheque-app .reading-edp .book-bar .reader-gallery svg {width:20px;height:20px}
-#bibliotheque-app .reading-edp .reader-progress,
-#bibliotheque-app .reading-edp[data-immersive] .reader-progress {order:-1;min-height:36px;padding:0 var(--reader-edge);grid-template-columns:minmax(0,1fr);z-index:8;background:var(--paper)}
-#bibliotheque-app .reading-edp .book-bar {order:-2}
-#bibliotheque-app .reading-edp .progress-copy {position:relative}
-#bibliotheque-app .reading-edp .progress-rule {position:relative}
-#bibliotheque-app .reading-edp .progress-rule input {position:absolute;inset:-11px 0 auto;margin:0;width:100%;height:24px;opacity:0;cursor:pointer}
-#bibliotheque-app .reading-edp .progress-copy:focus-within {outline:1px solid var(--accent);outline-offset:4px}
-#bibliotheque-app .reading-edp .reader-numbers {display:grid;grid-template-columns:1fr auto 1fr;align-items:baseline;gap:6px}
-#bibliotheque-app .reading-edp [data-reader-progress] {grid-column:2;text-align:center}
-#bibliotheque-app .reading-edp [data-reader-percent] {grid-column:3;text-align:right;font-variant-numeric:tabular-nums}
-#bibliotheque-app .reading-edp:not([data-rail-open]) .reader .reader-layout {grid-template-columns:minmax(0,1fr)}
-#bibliotheque-app .reading-edp:not([data-rail-open]) .reader .tool-rail {display:none}
-#bibliotheque-app .reading-edp[data-rail-open] .reader .tool-rail {border:1px solid var(--edge);border-right:0;border-radius:13px 0 0 13px}
-#bibliotheque-app .reading-edp .reader-rail-toggle {
-  display:grid;place-items:center;position:absolute;z-index:6;inset:50% 0 auto auto;transform:translateY(-50%);width:32px;height:68px;
-  padding:0;border:0;background:transparent;color:var(--accent);touch-action:pan-y
+#bibliotheque-app .reading-edp[data-rail-open] .livre {--marge-rail:82px}
+#bibliotheque-app .reading-edp .livre .commandes-lecture {
+  position:absolute;inset:var(--haut) var(--bord-droit) auto var(--bord-gauche);z-index:14;
+  display:flex;align-items:center;justify-content:space-between;pointer-events:none;
 }
-#bibliotheque-app .reading-edp .reader-rail-toggle span {width:3px;height:32px;border-radius:6px;background:currentColor;opacity:.73}
-#bibliotheque-app .reading-edp[data-rail-open] .reader .reader-rail-toggle {right:var(--reader-rail)}
-#bibliotheque-app .reading-edp .reading-column > .page:not([data-page-kind="plate"]):not([data-page-kind="pdf"]) {padding-block:clamp(18px,6svh,57px) 13px}
-#bibliotheque-app .reading-edp .leaf-heading {margin-block-start:0}
-#bibliotheque-app .reading-edp .reader-explorer,
-#bibliotheque-app .reading-edp .reader-end {
-  position:absolute;inset:calc(86px + env(safe-area-inset-top,0px)) 0 0;z-index:7;
-  display:flex;flex-direction:column;align-items:stretch;background:var(--paper);color:var(--ink);min-height:0
+#bibliotheque-app .reading-edp .livre .commandes-lecture button {pointer-events:auto}
+#bibliotheque-app .reading-edp .livre .pastille,.reading-edp .pied .pastille {
+  display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--accent)
 }
-#bibliotheque-app .reading-edp .reader-explorer > header {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px var(--reader-edge);border-bottom:1px solid var(--edge)}
-#bibliotheque-app .reading-edp .reader-explorer h2,
-#bibliotheque-app .reading-edp .reader-end h2 {margin:0;color:var(--title);font:400 25px/1.2 "Instrument Serif Formulaire",Georgia,serif}
-#bibliotheque-app .reading-edp :is([data-reader-switch],.reader-resume) {min-height:44px;border:0;border-radius:24px;padding:0 14px;background:var(--panel);color:var(--accent);font:inherit}
-#bibliotheque-app .reading-edp .reader-resume {align-self:center;margin:8px 8px max(8px,env(safe-area-inset-bottom,0px))}
-#bibliotheque-app .reading-edp .reader-thumbnails {flex:1;min-height:0;overflow:auto;padding:14px var(--reader-edge);overscroll-behavior:contain}
-#bibliotheque-app .reading-edp .reader-thumbnails h3 {margin:12px 0 8px;color:var(--title);font:400 17px/1.2 var(--serif)}
-#bibliotheque-app .reading-edp .reader-thumb-group {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-#bibliotheque-app .reading-edp .reader-thumbnail {
-  display:flex;flex-direction:column;min-width:0;width:100%;border:1px solid var(--edge);padding:0;overflow:hidden;
-  background:var(--paper);color:var(--ink);font:400 12px/1.3 var(--serif);border-radius:3px
+#bibliotheque-app .reading-edp .livre .pastille>span {width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--tint) 58%,var(--papier))}
+#bibliotheque-app .reading-edp .livre .reader-layout {
+  position:absolute;inset:0;display:block;padding:0;min-height:0;pointer-events:none;
 }
-#bibliotheque-app .reading-edp .reader-thumbnail[aria-current] {outline:2px solid var(--accent);outline-offset:0}
-#bibliotheque-app .reading-edp .reader-thumbnail > span:last-child {width:100%;padding:4px 3px;min-width:0;color:var(--accent);border-block-start:1px solid var(--edge);white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
-#bibliotheque-app .reading-edp .reader-thumb-page {display:block;box-sizing:border-box;width:100%;aspect-ratio:2/3;overflow:hidden;padding:9%;font-size:6px;text-align:justify;white-space:pre-line}
-#bibliotheque-app .reading-edp .reader-thumb-page:has(img,canvas) {padding:3%;display:grid;place-items:center}
-#bibliotheque-app .reading-edp .reader-thumb-page img {max-width:100%;max-height:100%;object-fit:contain}
-#bibliotheque-app .reading-edp .reader-thumb-page .pdf-page {position:relative;width:100%;height:auto}
-#bibliotheque-app .reading-edp .reader-thumb-page canvas {width:100%;height:auto;display:block}
-#bibliotheque-app .reading-edp[data-explorer=carousel] .reader .reader-thumbnails {display:flex;align-items:center;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory}
-#bibliotheque-app .reading-edp[data-explorer=carousel] .reader .reader-thumbnail {flex:0 0 clamp(130px,38vw,220px);scroll-snap-align:center}
-#bibliotheque-app .reading-edp[data-explorer=carousel] .reader .reader-thumb-page {font-size:9px}
-#bibliotheque-app .reading-edp .reader-end {z-index:5;align-items:center;justify-content:center;gap:10px;text-align:center}
-#bibliotheque-app .reading-edp .reader-end img {width:min(48%,200px);max-height:51%;object-fit:contain}
-#bibliotheque-app .reading-edp .reader-end p {margin:0}
-#bibliotheque-app .reading-edp[data-finished] [data-reader-viewport] {position:relative;z-index:6;transform-origin:left center;background:var(--paper)}
-#bibliotheque-app .reading-edp:is([data-explorer],[data-finished]) .reader-rail-toggle {visibility:hidden}
-@media (min-width:600px) and (min-height:500px) {
-  #bibliotheque-app .reading-edp :is(.reader-explorer,.reader-end) {inset-block-start:calc(104px + env(safe-area-inset-top,0px))}
-  #bibliotheque-app .reading-edp .reader-thumb-group {grid-template-columns:repeat(4,minmax(0,1fr))}
+#bibliotheque-app .reading-edp .livre .reader-layout>* {pointer-events:auto}
+#bibliotheque-app .reading-edp .livre .reading-column {
+  position:absolute;inset:0 var(--marge-rail) calc(var(--reserve-pied) + var(--pied) - 12px) 0;
 }
-#bibliotheque-app .reading-edp .reader [hidden] {display:none!important}
-#bibliotheque-app[data-theme="dark"] .reading-edp .reader-thumb-page img[data-edition-ink] {filter:brightness(0) invert(78%) sepia(9%) saturate(363%) hue-rotate(238deg)}
+#bibliotheque-app .reading-edp .livre .reading-column:has([data-page-kind=plate]) {right:0}
+#bibliotheque-app .reading-edp .livre .reading-column>.page {
+  width:100%;height:100%;padding:calc(var(--haut) + 51px) 5% 13px;min-height:0;background:var(--papier)
+}
+#bibliotheque-app .reading-edp .livre .page .leaf-viewport {width:100%;max-width:none}
+#bibliotheque-app .reading-edp .livre .page[data-page-kind=plate] {padding:calc(var(--haut) + 48px) 0 3px}
+#bibliotheque-app .reading-edp .livre .page[data-page-kind=pdf] {padding:0}
+#bibliotheque-app .reading-edp .livre .page-foot {position:absolute;inset:auto 0 0}
+#bibliotheque-app .reading-edp .livre .leaf-heading {padding-top:max(0px,calc(var(--haut-editeur,74.25px) - 40px));margin:0 0 14px}
+#bibliotheque-app .reading-edp .livre .leaf-heading .leaf-number {font:400 23px/1.15 "Playfair Lecture",Georgia,serif;color:var(--encre);gap:8px}
+#bibliotheque-app .reading-edp .livre .leaf-number::before,#bibliotheque-app .reading-edp .livre .leaf-number::after {width:20px;background:var(--piste)}
+#bibliotheque-app .reading-edp .livre .printed-leaf+.printed-leaf {break-before:column}
+#bibliotheque-app .reading-edp .livre .tool-rail {
+  position:absolute;inset:calc(50% - 23px) 7px auto auto;transform:translateY(-50%);display:flex;flex-direction:column;align-items:stretch;
+  width:50px;height:auto;min-height:0;max-height:calc(100% - 130px);overflow-y:auto;scrollbar-width:none;
+  padding:3px;gap:0;border:0;border-radius:32px;background:var(--tint);box-shadow:0 3px 12px var(--ombre);z-index:3;
+}
+#bibliotheque-app .reading-edp:not([data-rail-open]) .livre .tool-rail {display:none}
+#bibliotheque-app .reading-edp .livre .rail-button {width:44px;height:44px;min-height:44px;flex:none}
+#bibliotheque-app .reading-edp .livre .poignee {right:0;z-index:4}
+#bibliotheque-app .reading-edp[data-rail-open] .livre .poignee {right:var(--course-rail)}
+#bibliotheque-app .reading-edp .livre .pied {
+  position:absolute;inset:auto var(--bord-droit) var(--pied) var(--bord-gauche);width:auto;padding:0;
+  margin:0;background:var(--papier);font:400 15px/1.1 "Alegreya Lecture",Georgia,serif;color:var(--encre)
+}
+#bibliotheque-app .reading-edp .livre .chiffres {display:grid;grid-template-columns:1fr auto 1fr;gap:3px;margin-top:4px;font:inherit;font-variant-numeric:lining-nums tabular-nums}
+#bibliotheque-app .reading-edp .livre .nombre {grid-column:2}
+#bibliotheque-app .reading-edp .livre .pct {grid-column:3;justify-self:end}
+#bibliotheque-app .reading-edp .livre .progres {width:100%;overflow:hidden;background:var(--piste);border-radius:3px}
+#bibliotheque-app .reading-edp .livre .rempli {display:block;width:var(--progress,0%);height:100%;background:var(--trait-lu)}
+#bibliotheque-app .reading-edp .livre .trait-chap {position:absolute;inset-block:0;width:1px;background:var(--papier)}
+#bibliotheque-app .reading-edp .livre .explorateur {grid-template-rows:calc(92px + var(--haut)) minmax(0,1fr) 51px calc(62px + var(--pied))}
+#bibliotheque-app .reading-edp .livre .fin-du-livre {bottom:calc(var(--reserve-pied) + var(--pied) + 1px);z-index:2;background:var(--papier);font:400 15px/1.5 "Alegreya Lecture",Georgia,serif}
+#bibliotheque-app .reading-edp .livre .sheet[data-viewing=saved] {z-index:16}
+#bibliotheque-app .reading-edp .livre .rail-options {right:calc(var(--course-rail) + 2px);max-height:calc(100% - 68px);overflow:auto;z-index:6}
+#bibliotheque-app .reading-edp:is([data-explorer],[data-finished]) .livre :is(.tool-rail,.poignee) {visibility:hidden}
+#bibliotheque-app .reading-edp[data-explorer] .livre .reading-column {visibility:hidden}
+#bibliotheque-app .reading-edp .livre .apercu-page .fac-simile :is(h1,h2,h3,.leaf-number) {font:400 1.45em/1.2 "Playfair Lecture",Georgia,serif;text-align:center;margin:.7em 0}
+#bibliotheque-app .reading-edp .livre .fac-simile :is(img,canvas) {max-width:100%;object-fit:contain}
+#bibliotheque-app .reading-edp .livre .fac-simile.illust .pdf-page {height:100%;width:100%;display:grid;align-content:center}
+#bibliotheque-app .reading-edp .livre .fac-simile.illust canvas {width:100%;height:auto}
+#bibliotheque-app .reading-edp .livre .fac-simile.illust canvas.pdf-ink {height:100%;object-fit:contain}
+#bibliotheque-app .reading-edp .livre .fac-simile .edition-sheet img {width:min(42%,110px);height:auto;margin:auto}
+#bibliotheque-app[data-theme=dark] .reading-edp .livre img[data-edition-ink] {filter:brightness(0) invert(78%) sepia(9%) saturate(363%) hue-rotate(238deg)}
+@media(min-width:600px) and (min-height:500px) {
+  #bibliotheque-app .reading-edp .livre {--haut-editeur:154.35px;--bord-commandes:20px;--reserve-pied:64px;--course-rail:68px;--marge-rail:26px;--reader-body-size:20px}
+  #bibliotheque-app .reading-edp[data-rail-open] .livre {--marge-rail:94px}
+  #bibliotheque-app .reading-edp .livre .tool-rail {width:56px;padding:4px;right:11px}
+  #bibliotheque-app .reading-edp .livre .rail-button {width:48px;height:48px;min-height:48px}
+  #bibliotheque-app .reading-edp .livre .pied {font-size:18px}
+  #bibliotheque-app .reading-edp .livre .trait-chap {width:2px}
+}
+#bibliotheque-app .reading-edp .livre .fin-du-livre {position:absolute;inset:calc(var(--haut) + 51px) 10px calc(var(--reserve-pied) + var(--pied) + 1px);display:grid;align-content:center;justify-items:center;gap:9px;text-align:center}
+#bibliotheque-app .reading-edp[data-finished] .leaf-viewport:not([hidden]) {z-index:4;background:var(--paper);transform-origin:left center;backface-visibility:hidden}
+#bibliotheque-app .reading-edp .livre .fin-du-livre:focus:not(:focus-visible) {outline:0}
+
+#bibliotheque-app .reading-edp .livre .leaf-number.number-only {text-transform:capitalize}
+#bibliotheque-app .reading-edp .livre .leaf-viewport:focus {outline:0}
+#bibliotheque-app .reading-edp .livre .pied {flex-wrap:nowrap}
+
+#bibliotheque-app .reading-edp .livre .fac-simile .titre-folio {font:400 1.45em/1.2 "Playfair Lecture",Georgia,serif;margin:1.8em 0 1em;text-transform:capitalize}
+#bibliotheque-app .reading-edp .livre .fac-simile .titre-folio span {font:inherit}
