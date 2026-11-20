@@ -179,9 +179,14 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
         (types.some(type => ['frontmatter','preamble','copyright-page','dedication','titlepage'].includes(type)) ||
          /^(?:copyright|biographie|l['’]autrice|dédicace|page de titre)$/iu.test(label)) &&
         !/^(?:sommaire|table des matières|contents|table of contents)$/iu.test(label);
-      sectionInfo.push({kind,plate:isPlate,cover,center,label,chapters:candidates});
+      const pageBreaks = body ? Array.from(body.querySelectorAll('[id]')).filter(el =>
+        el.getAttribute('role') === 'doc-pagebreak' || typeTokens(el).includes('pagebreak')
+      ).map(el => ({id:el.id,number:clean(el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent)}))
+        .filter(entry => entry.number) : [];
+      sectionInfo.push({kind,plate:isPlate,cover,center,label,chapters:candidates,pageBreaks});
       weights.push(Math.max(1,words));
     }
+    const printedTotal = sectionInfo.reduce((last,info) => Math.max(last,...info.pageBreaks.map(item => Number(item.number)||0)),0);
     const tocChapters = sectionInfo.flatMap(info => info.chapters);
     tocChapters.forEach((chapter,i) => {
       chapter.number=i+1;
@@ -194,7 +199,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       if (!cache.has(file)) cache.set(file,readEntry(archive,file,512*1024).then(bytes => bytes ? parse(utf8.decode(bytes)) : []).catch(() => []));
       return cache.get(file);
     });
-    return {count:paths.length,chapterTitles,weights,tocChapters,sectionInfo,language,async read(index) {
+    return {count:paths.length,chapterTitles,weights,tocChapters,sectionInfo,printedTotal,language,async read(index) {
       const data = await readEntry(archive, paths[index], 10 * MiB);
       if (!data) throw Error('Ce chapitre est introuvable.');
       const doc = readText(data);
