@@ -299,6 +299,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   const surface = q('[data-page]');
   let readyToRead = false;
   let motion;
+  let readingFonts;
   let layoutFrame;
   let latestAnchor = {};
   let anchorLayout;
@@ -746,7 +747,8 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   }
   function slide(delta) {
     motion?.cancel();
-    if (!delta || !content.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!delta || !viewport.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Move only the clipped leaf. Moving the column strip also exposes neighbouring leaves.
     const distance = 16*Math.sign(delta);
     motion = viewport.animate([{transform:'translateX('+distance+'px)'},{transform:'translateX(0)'}],{duration:180});
     motion.onfinish = () => annotations.resize();
@@ -868,6 +870,18 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
       pageTask?.cancel();
       const result = await section.read(current);
       if (renderSequence !== version) return;
+      // The previous leaf stays on screen until the new one can be painted in its final theme and position.
+      if (section.sectionInfo) {
+        readingFonts ??= Promise.allSettled(['16px "Alegreya Lecture"','21px "Playfair Lecture"'].map(font => document.fonts?.load(font)));
+        const images = Array.from(result.querySelectorAll('img'));
+        await Promise.all([readingFonts,...images.map(async image => {
+          try {
+            await image.decode();
+            if (version === renderSequence) await adaptEpubIllustration(image);
+          } catch { /* Display the embedded illustration when conversion is unavailable. */ }
+        })]);
+        if (version !== renderSequence) return;
+      }
       const info = section.sectionInfo?.[current];
       const label = info ? (info.label || section.chapterTitles[current] || 'Page du livre') : section.label+' '+(current+1);
       surface.dataset.pageKind = info?.plate ? 'plate' : info?.kind || 'pdf';
@@ -901,16 +915,6 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
         item.offset = prefix.toString().length;
       }
       if (pageWords) readCounts.set(current,pageWords);
-      if (unit() === 'chapter') {
-        const images = Array.from(content.querySelectorAll('img'));
-        await Promise.all([document.fonts?.ready,...images.map(async image => {
-          try {
-            await image.decode();
-            if (renderSequence === version && !info?.cover) await adaptEpubIllustration(image);
-          } catch { /* Keep the original illustration if optional adaptation fails. */ }
-        })]);
-      }
-      if (renderSequence !== version) return;
       chrome.hidden = false;
       pager.measure(unit(),position);
       readyToRead = true;
