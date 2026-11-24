@@ -2437,7 +2437,7 @@ async function activateLibrary(root) {
 
   async function saveAddedBook(data, reading, folderId, isCurrent) {
     const {file, id: catalogueId, isbns, ...details} = data;
-    const {statusChosen, ...readingFields} = reading;
+    const {statusChosen, promesse, ...readingFields} = reading;
     let fingerprint;
     if (file) {
       const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
@@ -2451,6 +2451,7 @@ async function activateLibrary(root) {
     const imported = {
       genres: [], subgenres: [], tropes: [],
       ...existing, ...details, ...(existing && !statusChosen ? {} : readingFields),
+      ...(promesse ? {promesse} : {}),
       id: existing?.id ?? documentId ?? (catalogueId ? 'catalogue:' + catalogueId : 'paper:' + crypto.randomUUID()),
       isbn: code || existing?.isbn || '',
       catalogueId: catalogueId || existing?.catalogueId,
