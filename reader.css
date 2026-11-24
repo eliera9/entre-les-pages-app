@@ -942,3 +942,29 @@ html:has(#bibliotheque-app .reading-edp:not([hidden])) {scrollbar-gutter:auto; o
 
 #bibliotheque-app .reading-edp .livre .fac-simile .titre-folio {font:400 1.45em/1.2 "Playfair Lecture",Georgia,serif;margin:1.8em 0 1em;text-transform:capitalize}
 #bibliotheque-app .reading-edp .livre .fac-simile .titre-folio span {font:inherit}
+
+/* Reading margins and persistent progress control. */
+#bibliotheque-app .reading-edp .livre .page[data-page-kind=body] {
+  padding-block: max(91px, env(safe-area-inset-top)) 13px;
+}
+@media (min-width:600px) and (min-height:500px) {
+  #bibliotheque-app .reading-edp .livre .page[data-page-kind=body] {
+    padding-block: max(142px, env(safe-area-inset-top)) 23px;
+  }
+}
+#bibliotheque-app .reading-edp .livre .page[data-page-kind=body] .leaf-heading {padding-top:0}
+#bibliotheque-app .reading-edp .livre :is(.pied,.pied-milieu,.zone-piste) {
+  border:0; outline:0; box-shadow:none; background:transparent;
+}
+#bibliotheque-app .reading-edp .livre .pied .progres {height:4px;border:0;border-radius:0;overflow:visible}
+#bibliotheque-app .reading-edp .livre .rempli {position:relative;border-radius:0}
+#bibliotheque-app .reading-edp .livre .rempli::after {
+  content:"";position:absolute;right:0;top:50%;transform:translate(50%,-50%);
+  width:12px;height:12px;border-radius:50%;background:var(--trait-lu);pointer-events:none;
+}
+#bibliotheque-app .reading-edp .livre .pied .trait-chap,
+#bibliotheque-app .reading-edp .livre[data-explore] .zone-piste::after {display:none}
+#bibliotheque-app .reading-edp .livre .zone-piste:focus-within {outline:0}
+#bibliotheque-app .reading-edp .livre .zone-piste:has(input:focus-visible) .rempli::after {
+  outline:2px solid var(--accent);outline-offset:2px;
+}

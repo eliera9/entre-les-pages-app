@@ -164,7 +164,9 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   on(popup, 'click', async event => {
     const choice = event.target.closest('[data-pick-status]');
     if (!choice) return;
-    if (await save({status: statuses[choice.dataset.pickStatus][0]})) { render(); setPopup(false, true); }
+    const status = statuses[choice.dataset.pickStatus][0];
+    const finishing = status === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {};
+    if (await save({status, updatedAt: Date.now(), ...finishing})) { render(); setPopup(false, true); }
   });
   on(q('[data-status-disclosure]'), 'focusout', event => {
     if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setPopup(false);
@@ -684,8 +686,25 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   }
   bindPageTurns(endPage,scope.signal,() => finished,turn,() => openExplorer('carousel'));
 
-  function enterReading() { reader.setAttribute('data-immersive',''); }
-  function leaveFullscreen() { reader.removeAttribute('data-immersive'); }
+  let fullscreenPending = false;
+  function requestReaderFullscreen() {
+    if (!reader.hasAttribute('data-immersive') || fullscreenPending || document.fullscreenElement ||
+        !document.fullscreenEnabled || !reader.requestFullscreen || navigator.userActivation?.isActive === false) return;
+    fullscreenPending = true;
+    reader.requestFullscreen({navigationUI:'hide'}).then(() => {
+      if (!reader.hasAttribute('data-immersive') && document.fullscreenElement === reader) return document.exitFullscreen();
+    }).catch(() => {}).finally(() => { fullscreenPending = false; });
+  }
+  function enterReading() {
+    reader.setAttribute('data-immersive','');
+    requestReaderFullscreen();
+    if (!fullscreenPending && !document.fullscreenElement) reader.addEventListener('click',requestReaderFullscreen,{once:true,capture:true});
+  }
+  function leaveFullscreen() {
+    reader.removeEventListener('click',requestReaderFullscreen,true);
+    reader.removeAttribute('data-immersive');
+    if (document.fullscreenElement === reader) document.exitFullscreen().catch(() => {});
+  }
   on(q('[data-reader-exit]'),'click',() => {
     if (explorerMode) {closeExplorer();focus(viewport);}
     else (returnToLibrary || home)();
