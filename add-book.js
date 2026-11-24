@@ -509,9 +509,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     if (!promesseForm) return;
     const pile=selectedStatus==="to-read";
     promesseForm.setVisible(pile);
-    if (pile && currentBook) promesseForm.prefill(currentBook);
+    if (pile && currentBook) promesseForm.prefill(currentBook,prepareSummary(currentBook));
   }
-  import("./promesse-form.js?v=3").then(module=>{
+  import("./promesse-form.js?v=4").then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{onDone(head) {
       const next=following.querySelector(".ep-folder-zone") || head;

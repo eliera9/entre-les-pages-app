@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de 6 questions (5 hors romance).
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=2";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=3";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -44,17 +44,26 @@ async function askServer(book, signal) {
 // Ce que promet un livre : la fonction Supabase d'abord (Hardcover + Gemini), sinon l'appareil seul
 export async function findPromesse(book, signal) {
   let server = null;
-  try { server = await askServer(book, signal); } catch {}
+  const sources = {};
+  try {
+    server = await askServer(book, signal);
+    if (server?.sources) Object.assign(sources, server.sources);
+    else sources.serveur = server ? "ancienne version" : "pas de réponse";
+  } catch (error) {
+    sources.serveur = `erreur ${String(error?.message || "").slice(0, 40)}`;
+  }
   if (signal?.aborted) return null;
   const fromServer = server ? fillGaps(emptyPromesse(), server.promesse) : emptyPromesse();
   const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null;
-  if (full) return {promesse: fromServer, romance: Boolean(server.romance)};
+  if (full) return {promesse: fromServer, romance: Boolean(server.romance), sources};
   // Ce qui manque encore : l'appareil cherche aussi de son côté (Google Books + Open Library)
   try {
     const guess = await guessPromesse(book, signal);
-    return {promesse: fillGaps(fromServer, guess.promesse), romance: Boolean(server?.romance) || guess.romance};
-  } catch {
-    return server ? {promesse: fromServer, romance: Boolean(server.romance)} : null;
+    for (const [name, value] of Object.entries(guess.sources || {})) sources[`${name} (téléphone)`] = value;
+    return {promesse: fillGaps(fromServer, guess.promesse), romance: Boolean(server?.romance) || guess.romance, sources};
+  } catch (error) {
+    sources.telephone = `erreur ${String(error?.message || "").slice(0, 40)}`;
+    return {promesse: fromServer, romance: Boolean(server?.romance), sources};
   }
 }
 
@@ -67,6 +76,7 @@ export function mountPromesse(section, {onDone} = {}) {
   let request = null;
   let open = true;
   let bookKey = "";
+  let sources = null;
 
   section.replaceChildren();
   const head = make("button", "ep-promesse-head cursor-interaction");
@@ -87,7 +97,9 @@ export function mountPromesse(section, {onDone} = {}) {
   track.setAttribute("aria-label", "Questions sur ce que le livre promet");
   const dots = make("div", "ep-promesse-dots");
   dots.setAttribute("aria-hidden", "true");
-  body.append(track, dots);
+  const trace = make("p", "ep-promesse-trace");
+  trace.hidden = true;
+  body.append(track, dots, trace);
   section.append(head, body);
 
   head.addEventListener("click", () => setOpen(!open));
@@ -313,6 +325,12 @@ export function mountPromesse(section, {onDone} = {}) {
       return node;
     }));
     dots.replaceChildren(...list.map(() => make("i")));
+    trace.hidden = true;
+    const empty = !state.humeur.length && !state.emotions.length && !state.decor.length && state.noirceur == null && state.pages == null;
+    if (notFound && empty && sources) {
+      trace.textContent = "Ce que j'ai consulté : " + Object.entries(sources).map(([name, value]) => `${name} · ${value}`).join(" — ");
+      trace.hidden = false;
+    }
     track.scrollLeft = keep;
     updateDots();
   }
@@ -324,7 +342,7 @@ export function mountPromesse(section, {onDone} = {}) {
   }
   track.addEventListener("scroll", updateDots, {passive: true});
 
-  async function prefill(book) {
+  async function prefill(book, summaryReady) {
     const key = [book?.id, book?.title, book?.author].join("|");
     if (!book || key === bookKey) return;
     bookKey = key;
@@ -342,7 +360,11 @@ export function mountPromesse(section, {onDone} = {}) {
     loading = true;
     notFound = false;
     render();
+    // Le résumé aide beaucoup Gemini : on l'attend quelques secondes au plus
+    if (summaryReady) await Promise.race([Promise.resolve(summaryReady).catch(() => {}), new Promise(resolve => setTimeout(resolve, 4000))]);
+    if (controller.signal.aborted) return;
     const result = await findPromesse(book, controller.signal);
+    sources = result?.sources || null;
     const found = result?.promesse || null;
     const romanceFound = Boolean(result?.romance);
     if (controller.signal.aborted) return;
@@ -361,6 +383,7 @@ export function mountPromesse(section, {onDone} = {}) {
     loading = false;
     notFound = false;
     bookKey = "";
+    sources = null;
     romance = true;
     setOpen(true);
     render();
