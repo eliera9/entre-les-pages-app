@@ -184,7 +184,8 @@ export async function guessPromesse(book, signal, {googleKey = ""} = {}) {
     status[name] = source.status === "fulfilled" ? `${source.value.words.length} mots${source.value.pages ? ", pages" : ""}` : `erreur ${String(source.reason?.message || "").slice(0, 40)}`;
   });
   const found = sources.filter(source => source.status === "fulfilled").map(source => source.value);
-  const words = [...(book.genres || []), ...(book.subgenres || []), ...(book.tropes || []), ...found.flatMap(item => item.words || [])];
+  // Le titre compte aussi : « Unknown (dark romance) », « Noël à… »
+  const words = [book.title || "", book.series || book.saga || "", ...(book.genres || []), ...(book.subgenres || []), ...(book.tropes || []), ...found.flatMap(item => item.words || [])];
   const pages = found.find(item => item.pages)?.pages;
   const description = book.summary || found.find(item => item.description)?.description || "";
   return {promesse: mapSignals({words, pages}), words, description, romance: isRomance({genres: words}), sources: status};
