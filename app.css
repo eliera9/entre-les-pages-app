@@ -1850,3 +1850,74 @@ body { margin: 0; }
   font: 400 14px/1.2 Baskervville, Georgia, serif;
 }
 #app-lecture .search-empty-clear svg { inline-size: 15px; block-size: 15px; }
+
+/* ---------- Accueil d'ouverture (24 novembre) ---------- */
+@font-face { font-family: "Italianno Accueil"; src: url("./fonts/italianno-fiche.ttf") format("truetype"); font-display: swap; }
+#app-lecture .accueil-title .title-initial::before {
+  -webkit-mask: none; mask: none; background: none;
+  content: "A"; inline-size: auto; color: var(--masthead-ink, var(--title));
+  font: 400 calc(var(--library-word-size) * 2.1)/.8 "Italianno Accueil", cursive;
+}
+#app-lecture .accueil { display: flex; flex-direction: column; gap: 26px; margin-block: 10px 120px; }
+#app-lecture .accueil[hidden] { display: none; }
+#app-lecture .acc-row[hidden] { display: none; }
+#app-lecture .acc-head { display: flex; align-items: center; gap: 8px; margin-block-end: 10px; }
+#app-lecture .acc-title { flex: 1; margin: 0; font: 400 21px/1.15 var(--section); color: var(--title); }
+#app-lecture .acc-count { font: 600 12px var(--body); padding: 2px 8px; border-radius: 10px; background: light-dark(#EBCFD6, #4A3A50); color: var(--accent); vertical-align: 3px; }
+#app-lecture .acc-link { font: 500 13px var(--body); color: var(--accent); text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; padding: 10px 0; min-block-size: 44px; }
+#app-lecture .acc-track { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -20px; padding-inline: 20px; scroll-padding-inline: 20px; }
+#app-lecture .acc-track::-webkit-scrollbar { display: none; }
+#app-lecture .acc-card { flex: 0 0 96px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: none; color: inherit; text-align: center; transition: transform 160ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-card:active { transform: scale(.97); }
+#app-lecture .acc-cover { position: relative; display: block; inline-size: 96px; block-size: 144px; }
+#app-lecture .acc-cover > .elp-cover { display: flex; align-items: center; justify-content: center; inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 4px; box-shadow: 0 5px 12px -6px rgba(30,20,30,.45); background: var(--tint); color: var(--accent); }
+#app-lecture .acc-name { margin-block-start: 3px; font: 400 14px/1.2 var(--heading); color: var(--title); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#app-lecture .acc-sub { font: italic 12px var(--heading); color: var(--muted); }
+#app-lecture .acc-stamp { position: absolute; inset-inline-start: 4px; inset-block-end: 4px; padding: 2px 6px; border-radius: 8px; background: light-dark(rgba(247,238,235,.92), rgba(33,29,32,.9)); font: 600 9.5px var(--body); font-style: normal; color: var(--accent); }
+#app-lecture .acc-heart { position: absolute; inset-block-start: 5px; inset-inline-end: 5px; inline-size: 24px; block-size: 24px; border-radius: 12px; background: light-dark(rgba(247,238,235,.94), rgba(33,29,32,.9)); font: 13px/24px var(--body); font-style: normal; color: light-dark(#9b3b4a, #E3A2B2); text-align: center; }
+#app-lecture .acc-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#app-lecture .acc-pill-tag { font: 600 10.5px var(--body); padding: 2px 8px; border-radius: 9px; }
+#app-lecture .acc-pill-tag.pile { background: var(--button); color: var(--button-text); }
+#app-lecture .acc-pill-tag.buy { background: light-dark(#EBCFD6, #4A3A50); color: var(--accent); }
+#app-lecture .acc-ticks { display: flex; gap: 3px; }
+#app-lecture .acc-ticks i { inline-size: 14px; block-size: 3px; border-radius: 2px; background: var(--rule); }
+#app-lecture .acc-ticks i.read { background: var(--accent); }
+#app-lecture .acc-ticks i.next { background: light-dark(#D7AEBA, #7C5F86); }
+#app-lecture .acc-more .acc-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px dashed var(--rule); border-radius: 4px; box-sizing: border-box; }
+#app-lecture .acc-more-count { font: 400 28px var(--heading); color: var(--accent); }
+#app-lecture .acc-more .acc-cover small { font: 12px var(--body); color: var(--muted); }
+#app-lecture .acc-dots { display: flex; justify-content: center; gap: 5px; margin-block-start: 8px; }
+#app-lecture .acc-dots[hidden] { display: none; }
+#app-lecture .acc-dots i { inline-size: 5px; block-size: 5px; border-radius: 3px; background: var(--rule); transition: inline-size 200ms cubic-bezier(.23,1,.32,1), background-color 200ms ease; }
+#app-lecture .acc-dots i.on { inline-size: 14px; background: var(--accent); }
+
+/* Pastille du livre en cours */
+#app-lecture .acc-pill { position: fixed; z-index: 30; inset-inline-end: max(12px, calc((100vw - var(--width)) / 2 + 12px)); inset-block-end: calc(77px + env(safe-area-inset-bottom)); inline-size: min(calc(100vw - 24px), calc(var(--width) - 24px)); block-size: 70px; padding: 0; border-radius: 35px; overflow: hidden; border: 1px solid var(--rule); background: light-dark(rgba(242,230,226,.86), rgba(45,38,48,.88)); -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); box-shadow: 0 10px 28px -10px rgba(69,44,53,.45); color: var(--title); text-align: start; transition: inline-size 340ms cubic-bezier(.32,.72,0,1), block-size 340ms cubic-bezier(.32,.72,0,1), border-radius 340ms cubic-bezier(.32,.72,0,1), transform 160ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-pill[hidden] { display: none; }
+#app-lecture .acc-pill:active { transform: scale(.97); }
+#app-lecture .acc-pill-full, #app-lecture .acc-pill-mini { position: absolute; inset: 0; transition: opacity 180ms ease; }
+#app-lecture .acc-pill-full { display: flex; align-items: center; gap: 12px; padding-inline: 9px 12px; }
+#app-lecture .acc-pill-mini { display: flex; align-items: center; justify-content: center; opacity: 0; color: var(--accent); }
+#app-lecture .acc-pill.mini { inline-size: 58px; block-size: 58px; border-radius: 29px; }
+#app-lecture .acc-pill.mini .acc-pill-full { opacity: 0; pointer-events: none; }
+#app-lecture .acc-pill.mini .acc-pill-mini { opacity: 1; transition-delay: 120ms; }
+#app-lecture .acc-pill-cover { inline-size: 36px; block-size: 54px; flex: none; }
+#app-lecture .acc-pill-cover > .elp-cover { display: flex; align-items: center; justify-content: center; inline-size: 100%; block-size: 100%; object-fit: cover; border-radius: 4px; background: var(--tint); }
+#app-lecture .acc-pill-text { flex: 1; min-inline-size: 0; display: flex; flex-direction: column; }
+#app-lecture .acc-pill-text b { font: 400 16px/1.2 var(--heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app-lecture .acc-pill-text small { font: 12.5px var(--body); color: var(--muted); }
+#app-lecture .acc-pill-play { inline-size: 40px; block-size: 40px; flex: none; border-radius: 20px; background: var(--button); color: var(--button-text); display: flex; align-items: center; justify-content: center; }
+#app-lecture .acc-pill-play svg { inline-size: 17px; block-size: 17px; margin-inline-start: 2px; }
+#app-lecture .acc-pill-bar { position: absolute; inset-inline: 58px 64px; inset-block-end: 7px; block-size: 3px; border-radius: 2px; background: var(--tint); }
+#app-lecture .acc-pill-bar i { display: block; block-size: 100%; border-radius: 2px; background: var(--accent); }
+#app-lecture .acc-pill .acc-ring { position: absolute; inset: 4px; inline-size: calc(100% - 8px) !important; block-size: calc(100% - 8px) !important; }
+#app-lecture .acc-pill .acc-book { inline-size: 20px !important; block-size: 20px !important; }
+#app-lecture:has([data-book-open]) .acc-pill, #app-lecture .eli-bibliotheque[data-book-open] .acc-pill { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  #app-lecture .acc-pill, #app-lecture .acc-pill-full, #app-lecture .acc-pill-mini, #app-lecture .acc-dots i { transition-duration: 120ms !important; }
+}
+
+#app-lecture .library-title.accueil-title { display: flex; justify-content: center; align-items: baseline; gap: 0; }
+#app-lecture .accueil-title .title-initial { position: static; }
+#app-lecture .accueil-title .title-initial::before { position: static; display: block; block-size: auto; margin-inline-end: -.06em; }
+#app-lecture .accueil-title .title-word { grid-area: auto; }

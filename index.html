@@ -8,11 +8,11 @@
 <meta name="apple-mobile-web-app-title" content="Entre les pages">
 <meta name="robots" content="noindex, nofollow">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org; object-src 'none'; base-uri 'none'">
-<title>Ma bibliothèque · Entre les pages</title>
+<title>Accueil · Entre les pages</title>
 <link rel="manifest" href="./app.webmanifest?v=entre-les-pages-2" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
 <link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="./app.css?v=16">
+<link rel="stylesheet" href="./app.css?v=17">
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
@@ -28,8 +28,8 @@
 <link rel="stylesheet" href="./book-detail.css?v=4">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=140.1"></script>
-<script defer src="./app.js?v=140"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=141"></script>
+<script defer src="./app.js?v=141"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -280,9 +280,9 @@
     </section>
 
     <div data-library-content>
-      <h1 class="library-title signed-title title-with-initial" aria-label="Ma bibliothèque">
+      <h1 class="library-title signed-title title-with-initial accueil-title" aria-label="Accueil">
         <span class="title-initial" aria-hidden="true"></span>
-        <span class="title-word" aria-hidden="true">bibliothèque<span class="title-baseline" data-baseline-b></span></span>
+        <span class="title-word" aria-hidden="true">ccueil<span class="title-baseline" data-baseline-b></span></span>
       </h1>
       <div class="title-decoration" aria-hidden="true"></div>
       <p class="library-sync-status" role="status" data-library-sync-status hidden></p>
@@ -324,6 +324,36 @@
         <input type="search" aria-label="Rechercher un titre, un auteur ou une saga" placeholder="Rechercher un titre ou un auteur" data-library-search autocomplete="off">
         <button type="button" class="plain search-clear cursor-interaction" aria-label="Effacer la recherche" hidden data-clear-search><i class="navigation-icon" data-lucide="x" aria-hidden="true"></i></button>
       </div>
+      <div class="accueil" data-accueil hidden>
+        <section class="acc-row" data-acc-row="pile" aria-labelledby="acc-pile-title" hidden>
+          <header class="acc-head"><h2 class="acc-title" id="acc-pile-title">Ma pile à lire <span class="acc-count" data-acc-count></span></h2><button type="button" class="acc-link cursor-interaction" data-acc-more="pile">Voir ma pile</button></header>
+          <div class="acc-track" data-acc-track role="list"></div>
+          <div class="acc-dots" data-acc-dots aria-hidden="true"></div>
+        </section>
+        <section class="acc-row" data-acc-row="sagas" aria-labelledby="acc-sagas-title" hidden>
+          <header class="acc-head"><h2 class="acc-title" id="acc-sagas-title">La suite de tes sagas <span class="acc-count" data-acc-count></span></h2><button type="button" class="acc-link cursor-interaction" data-acc-more="sagas">Voir mes sagas</button></header>
+          <div class="acc-track" data-acc-track role="list"></div>
+          <div class="acc-dots" data-acc-dots aria-hidden="true"></div>
+        </section>
+        <section class="acc-row" data-acc-row="lus" aria-labelledby="acc-lus-title" hidden>
+          <header class="acc-head"><h2 class="acc-title" id="acc-lus-title">Lus récemment <span class="acc-count" data-acc-count></span></h2><button type="button" class="acc-link cursor-interaction" data-acc-more="lus">Tout voir</button></header>
+          <div class="acc-track" data-acc-track role="list"></div>
+          <div class="acc-dots" data-acc-dots aria-hidden="true"></div>
+        </section>
+      </div>
+      <button type="button" class="acc-pill cursor-interaction" data-acc-pill hidden>
+        <span class="acc-pill-full">
+          <span class="acc-pill-cover" data-acc-pill-cover></span>
+          <span class="acc-pill-text"><b data-acc-pill-title></b><small data-acc-pill-sub></small></span>
+          <span class="acc-pill-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
+          <span class="acc-pill-bar" aria-hidden="true"><i data-acc-pill-bar></i></span>
+        </span>
+        <span class="acc-pill-mini" aria-hidden="true">
+          <svg class="acc-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="2.4"/><circle data-acc-ring cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" transform="rotate(-90 20 20)" stroke-dasharray="0 999"/></svg>
+          <svg class="acc-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c3-1.2 6-1.2 9 .8 3-2 6-2 9-.8v13c-3-1.2-6-1.2-9 .8-3-2-6-2-9-.8z"/><path d="M12 6.3v13"/></svg>
+        </span>
+      </button>
+
       <div class="library-tabs" data-library-tabs role="group" aria-label="Onglets de la bibliothèque">
         <button class="library-tab cursor-interaction" type="button" data-library-tab="all" aria-pressed="true" aria-controls="bibliotheque-app-tab-body">
           <span class="library-tab-label">Tous mes livres</span>
@@ -671,7 +701,7 @@
       <div data-other-body></div>
     </section>
     <nav class="library-destinations" aria-label="Navigation d’Entre les pages">
-      <button type="button" class="cursor-interaction" data-view-choice="home" data-bottom-page="home" aria-current="page"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg><span>Bibliothèque</span></button>
+      <button type="button" class="cursor-interaction" data-view-choice="home" data-bottom-page="home" aria-current="page"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>Accueil</span></button>
       <button type="button" class="cursor-interaction" data-view-choice="reading" data-bottom-page="reading"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><span>Lecture</span></button>
       <button type="button" class="cursor-interaction" data-view-choice="journal" data-bottom-page="journal"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg><span>Journal</span></button>
       <button type="button" class="cursor-interaction" data-view-choice="sheets" data-bottom-page="sheets"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span>Fiches</span></button>

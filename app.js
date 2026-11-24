@@ -2116,7 +2116,8 @@ async function activateLibrary(root) {
     label.append(select);
     const favorite = button('', 'plain', () => save({coupDeCoeur: !book.coupDeCoeur}));
     favorite.append(icon('heart'), document.createTextNode(' Coup de cœur'));
-    select.addEventListener('change', () => save({status: select.value, updatedAt: Date.now()}));
+    select.addEventListener('change', () => save({status: select.value, updatedAt: Date.now(),
+      ...(select.value === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {})}));
     const folderLabel = el('label', '', 'Ajouter à un dossier');
     const folderSelect = el('select');
     folderLabel.append(folderSelect);
@@ -2212,7 +2213,8 @@ async function activateLibrary(root) {
           return;
         }
         choice.disabled = true;
-        const updated = {...book, status, updatedAt: Date.now()};
+        const updated = {...book, status, updatedAt: Date.now(),
+          ...(status === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {})};
         try {
           await storage.putBook(updated);
         } catch {
@@ -2323,10 +2325,11 @@ async function activateLibrary(root) {
     search.closest('.search').hidden = emptyLibrary;
     statusNotice.hidden = true;
     statusNotice.textContent = '';
-    genreHeading.hidden = !home || emptyLibrary || searching;
-    tabRow.hidden = !home || emptyLibrary || searching;
-    grid.hidden = showResults || emptyLibrary;
-    listAccess.hidden = showResults || emptyLibrary;
+    const accueilOn = home && !emptyLibrary && !searching;
+    genreHeading.hidden = true;
+    tabRow.hidden = true;
+    grid.hidden = showResults || emptyLibrary || accueilOn;
+    listAccess.hidden = showResults || emptyLibrary || accueilOn;
     listAccessLabel.textContent = libraryLists[activeLibraryTab].action;
     results.hidden = !showResults;
     find('[data-save-filter]').hidden = !countFilters(applied);
@@ -2339,7 +2342,10 @@ async function activateLibrary(root) {
       find('[data-tab-count]', tab).textContent = String(books.filter(libraryLists[value].includes).length);
     }
     refreshReadingCover();
-    if (showResults) renderResults(); else renderGrid();
+    find('[data-current-reading]', libraryContent).hidden = true;
+    renderAccueil(accueilOn);
+    renderPill(home && !emptyLibrary);
+    if (showResults) renderResults(); else if (!accueilOn) renderGrid();
   }
 
   function setScope(view, value = null) {
@@ -2450,7 +2456,9 @@ async function activateLibrary(root) {
       fileFingerprint: fingerprint || existing?.fileFingerprint,
       format: !file && existing && existing.format !== 'Papier' ? existing.format : details.format,
       updatedAt: Date.now(),
+      addedAt: existing?.addedAt ?? Date.now(),
     };
+    if (imported.status === 'Terminé' && !imported.finishedAt) imported.finishedAt = Date.now();
     const position = reading.readingPosition;
     if (position?.unit === 'chapter') imported.chapter = position.value;
     if (position?.unit === 'percent') imported.progress = position.value;
@@ -2542,6 +2550,171 @@ async function activateLibrary(root) {
     reading.disabled = !book;
     reading.setAttribute('aria-label', book ? `Reprendre ${book.title}, ${chapter.textContent}, ${progress.textContent}` : label.textContent);
   }
+
+  /* Accueil d'ouverture : ma pile, la suite des sagas, lus récemment, pastille du livre en cours. */
+  const accueil = find('[data-accueil]');
+  const accPill = find('[data-acc-pill]');
+  const ACC_MAX = 5;
+  const accVolume = book => Number(String(book.volume ?? '').replace(',', '.'));
+  const accAddedRank = book => {
+    if (book.addedAt) return book.addedAt;
+    const index = books.indexOf(book);
+    return index < 0 ? 0 : -index;
+  };
+  function accFinishedAt(book) {
+    const end = book.readingEnd;
+    if (end?.year) return new Date(Number(end.year), Number(end.month || 12) - 1, Number(end.day || 1)).getTime();
+    return book.finishedAt || (book.status === 'Terminé' ? book.updatedAt || 0 : 0);
+  }
+  function accAgo(time) {
+    const days = Math.max(0, Math.floor((Date.now() - time) / 86400000));
+    if (days === 0) return 'aujourd’hui';
+    if (days === 1) return 'hier';
+    if (days < 7) return `il y a ${days} jours`;
+    if (days < 30) return `il y a ${Math.round(days / 7)} sem.`;
+    const months = Math.round(days / 30);
+    return months < 12 ? `il y a ${months} mois` : `il y a ${Math.floor(days / 365)} an${days >= 730 ? 's' : ''}`;
+  }
+  /* Pour chaque saga commencée (au moins un tome lu), le tome suivant déjà présent dans la bibliothèque. */
+  function accNextVolumes() {
+    const groups = new Map();
+    for (const book of books) {
+      const saga = (book.saga || '').trim();
+      if (!saga || !Number.isFinite(accVolume(book))) continue;
+      const key = saga.toLocaleLowerCase('fr');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(book);
+    }
+    const next = [];
+    for (const group of groups.values()) {
+      group.sort((a, b) => accVolume(a) - accVolume(b));
+      const read = group.filter(book => book.status === 'Terminé');
+      if (!read.length || group.some(book => book.status === 'En cours')) continue;
+      const lastRead = Math.max(...read.map(accVolume));
+      const candidate = group.find(book => accVolume(book) > lastRead && book.status !== 'Terminé');
+      if (!candidate) continue;
+      const total = Math.max(...group.map(accVolume), Number(candidate.seriesTotal) || 0);
+      next.push({book: candidate, lastRead, total, readAt: Math.max(...read.map(accFinishedAt))});
+    }
+    return next.sort((a, b) => b.readAt - a.readAt);
+  }
+  function accCard(book, {stamp, label, sub, extra, heart} = {}) {
+    const card = el('button', 'acc-card cursor-interaction');
+    card.type = 'button';
+    card.setAttribute('role', 'listitem');
+    card.dataset.book = book.id;
+    card.setAttribute('aria-label', [label || book.title, sub].filter(Boolean).join(', '));
+    const cover = el('span', 'acc-cover');
+    cover.append(catalogueCover(book));
+    if (stamp) cover.append(el('i', 'acc-stamp', stamp));
+    if (heart) {
+      const mark = el('i', 'acc-heart', '♥');
+      mark.setAttribute('aria-hidden', 'true');
+      cover.append(mark);
+    }
+    card.append(cover, el('b', 'acc-name', label || book.title));
+    if (sub) card.append(el('small', 'acc-sub', sub));
+    if (extra) card.append(extra);
+    card.addEventListener('click', () => openSecondary('book', book, card, {fromLibrary: true}));
+    return card;
+  }
+  function accMore(count, noun, target) {
+    const card = el('button', 'acc-card acc-more cursor-interaction');
+    card.type = 'button';
+    card.setAttribute('role', 'listitem');
+    const box = el('span', 'acc-cover');
+    box.append(el('span', 'acc-more-count', `+${count}`), el('small', '', noun));
+    card.append(box, el('b', 'acc-name', target.label));
+    card.addEventListener('click', target.open);
+    return card;
+  }
+  function accFill(name, items, total, moreTarget, noun) {
+    const row = find(`[data-acc-row="${name}"]`, accueil);
+    row.hidden = items.length === 0;
+    if (row.hidden) return;
+    find('[data-acc-count]', row).textContent = String(total);
+    const track = find('[data-acc-track]', row);
+    const cards = items.slice(0, ACC_MAX);
+    if (total > cards.length && moreTarget) cards.push(accMore(total - cards.length, noun(total - cards.length), moreTarget));
+    track.replaceChildren(...cards);
+    const dots = find('[data-acc-dots]', row);
+    dots.replaceChildren(...cards.map((_, index) => el('i', index === 0 ? 'on' : '')));
+    dots.hidden = cards.length < 2;
+    track.scrollLeft = 0;
+  }
+  const accOpenList = view => () => openCatalogue(view);
+  function renderAccueil(show) {
+    accueil.hidden = !show;
+    if (!show) return;
+    const nextVolumes = accNextVolumes();
+    const sagaIds = new Set(nextVolumes.map(item => item.book.id));
+    const pile = books.filter(book => book.status === 'À lire' && !sagaIds.has(book.id))
+      .sort((a, b) => accAddedRank(b) - accAddedRank(a));
+    const pileTotal = books.filter(book => book.status === 'À lire').length;
+    accFill('pile', pile.map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : ''})),
+      pileTotal, {label: 'Voir ma pile', open: accOpenList('pile')}, n => n === 1 ? 'autre livre' : 'autres livres');
+    accFill('sagas', nextVolumes.map(({book, lastRead, total}) => {
+      const status = el('span', 'acc-status');
+      const pill = el('span', `acc-pill-tag ${book.status === 'À lire' ? 'pile' : 'buy'}`, book.status === 'À lire' ? 'Dans ta pile' : 'Dans ta bibliothèque');
+      const ticks = el('span', 'acc-ticks');
+      ticks.setAttribute('aria-hidden', 'true');
+      for (let volume = 1; volume <= Math.max(total, accVolume(book)); volume += 1) {
+        ticks.append(el('i', volume <= lastRead ? 'read' : volume === accVolume(book) ? 'next' : ''));
+      }
+      status.append(pill, ticks);
+      return accCard(book, {label: book.saga, sub: `tome\u00a0${String(book.volume).replace('.', ',')}`, extra: status});
+    }), nextVolumes.length, {label: 'Voir mes sagas', open: accOpenList('all')}, n => n === 1 ? 'autre saga' : 'autres sagas');
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const lus = books.filter(book => book.status === 'Terminé' && accFinishedAt(book) >= monthStart)
+      .sort((a, b) => accFinishedAt(b) - accFinishedAt(a));
+    accFill('lus', lus.map(book => accCard(book, {sub: accAgo(accFinishedAt(book)), heart: book.coupDeCoeur === true})),
+      lus.length, {label: 'Tout voir', open: accOpenList('finished')}, n => n === 1 ? 'autre livre' : 'autres livres');
+  }
+  for (const more of all('[data-acc-more]')) {
+    more.addEventListener('click', () => openCatalogue({pile: 'pile', sagas: 'all', lus: 'finished'}[more.dataset.accMore]));
+  }
+  accueil.addEventListener('scroll', event => {
+    const track = event.target;
+    if (!track.matches?.('[data-acc-track]')) return;
+    const cards = [...track.children];
+    if (!cards.length) return;
+    const step = cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : track.clientWidth;
+    const index = Math.min(cards.length - 1, Math.round(track.scrollLeft / Math.max(1, step)));
+    [...track.nextElementSibling.children].forEach((dot, i) => dot.classList.toggle('on', i === index));
+  }, true);
+  /* Pastille : ouverte en haut de page, réduite en rond quand on fait défiler vers le bas, rouverte en remontant tout en haut. */
+  let accPillMini = false;
+  function renderPill(show) {
+    const book = show ? importedReading() : null;
+    accPill.hidden = !book;
+    if (!book) return;
+    const cover = find('[data-acc-pill-cover]', accPill);
+    cover.replaceChildren(catalogueCover(book));
+    find('[data-acc-pill-title]', accPill).textContent = book.title;
+    const progress = Math.max(0, Math.min(100, Number(book.progress) || 0));
+    find('[data-acc-pill-sub]', accPill).textContent = [book.author, `${progress} %`].filter(Boolean).join(' · ');
+    find('[data-acc-pill-bar]', accPill).style.width = `${progress}%`;
+    find('[data-acc-ring]', accPill).setAttribute('stroke-dasharray', `${(2 * Math.PI * 17 * progress / 100).toFixed(1)} 999`);
+    accPill.setAttribute('aria-label', `Reprendre ${book.title}, ${progress} %`);
+    accPill.classList.toggle('mini', accPillMini);
+  }
+  window.addEventListener('scroll', () => {
+    if (accPill.hidden) return;
+    const y = window.scrollY;
+    if (!accPillMini && y > 40) accPillMini = true;
+    else if (accPillMini && y <= 4) accPillMini = false;
+    else return;
+    accPill.classList.toggle('mini', accPillMini);
+  }, {passive: true});
+  accPill.addEventListener('click', () => {
+    if (accPill.classList.contains('mini')) {
+      accPillMini = false;
+      accPill.classList.remove('mini');
+      return;
+    }
+    openSecondary('reading', null, accPill);
+  });
 
   const previewSpaces = {
     journal: {title: 'Journal', empty: 'Aucune note de lecture.'},
