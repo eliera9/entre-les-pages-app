@@ -2600,7 +2600,7 @@ async function activateLibrary(root) {
     }
     return next.sort((a, b) => b.readAt - a.readAt);
   }
-  function accCard(book, {stamp, label, sub, extra, heart} = {}) {
+  function accCard(book, {stamp, label, sub, extra, heart, menu} = {}) {
     const card = el('button', 'acc-card cursor-interaction');
     card.type = 'button';
     card.setAttribute('role', 'listitem');
@@ -2617,9 +2617,152 @@ async function activateLibrary(root) {
     card.append(cover, el('b', 'acc-name', label || book.title));
     if (sub) card.append(el('small', 'acc-sub', sub));
     if (extra) card.append(extra);
-    card.addEventListener('click', () => openSecondary('book', book, card, {fromLibrary: true}));
+    card.addEventListener('click', event => {
+      if (accPressFired) { accPressFired = false; event.preventDefault(); return; }
+      openSecondary('book', book, card, {fromLibrary: true});
+    });
+    if (menu) accLongPress(card, book);
     return card;
   }
+
+  // Appui long (0,5 s) sur un livre de la pile : la couverture se soulève, une bulle s'ouvre dessous
+  const accMenu = find('[data-acc-menu]');
+  const accVeil = find('[data-acc-veil]');
+  let accPressFired = false;
+  let accMenuCard = null;
+  function accLongPress(card, book) {
+    let timer = 0;
+    let start = null;
+    const cancel = () => { clearTimeout(timer); timer = 0; start = null; if (accMenuCard !== card) card.classList.remove('lifting'); };
+    card.addEventListener('pointerdown', event => {
+      if (!event.isPrimary || event.button !== 0) return;
+      accPressFired = false;
+      start = {x: event.clientX, y: event.clientY};
+      card.classList.add('lifting');
+      timer = setTimeout(() => { timer = 0; accPressFired = true; openAccMenu(card, book); }, 500);
+    });
+    card.addEventListener('pointermove', event => {
+      if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) cancel();
+    });
+    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) card.addEventListener(type, () => { if (timer) cancel(); });
+    card.addEventListener('contextmenu', event => {
+      event.preventDefault();
+      if (accMenuCard === card) return;
+      clearTimeout(timer); timer = 0;
+      openAccMenu(card, book);
+    });
+  }
+  function accMenuItem(label, svg, action, extraClass = '') {
+    const item = el('button', `acc-menu-item cursor-interaction ${extraClass}`.trim());
+    item.type = 'button';
+    item.setAttribute('role', 'menuitem');
+    item.innerHTML = svg;
+    item.append(el('span', '', label));
+    item.addEventListener('click', action);
+    return item;
+  }
+  const ACC_ICONS = {
+    start: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
+    heart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+    heartOn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+    remove: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+  };
+  function placeAccMenu(card) {
+    const rect = card.querySelector('.acc-cover').getBoundingClientRect();
+    const width = accMenu.offsetWidth;
+    const height = accMenu.offsetHeight;
+    const left = Math.min(window.innerWidth - width - 12, Math.max(12, rect.left + rect.width / 2 - width / 2));
+    const below = rect.bottom + 10;
+    const top = below + height > window.innerHeight - 90 ? Math.max(12, rect.top - height - 10) : below;
+    accMenu.style.left = `${left}px`;
+    accMenu.style.top = `${top}px`;
+    accMenu.style.transformOrigin = `${rect.left + rect.width / 2 - left}px ${top >= below ? 0 : height}px`;
+  }
+  function closeAccMenu(focusCard = false) {
+    if (!accMenuCard) return;
+    const card = accMenuCard;
+    accMenuCard = null;
+    card.classList.remove('lifting');
+    accMenu.hidden = true;
+    accVeil.hidden = true;
+    accMenu.replaceChildren();
+    if (focusCard && card.isConnected) card.focus({preventScroll: true});
+  }
+  function openAccMenu(card, book) {
+    closeAccMenu();
+    accMenuCard = card;
+    card.classList.add('lifting');
+    if (navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+    accMenu.setAttribute('aria-label', `Actions pour ${book.title}`);
+    const title = el('p', 'acc-menu-title', book.title);
+    const busy = item => { for (const b of all('button', accMenu)) b.disabled = true; item?.setAttribute('aria-busy', 'true'); };
+    const start = accMenuItem('Commencer', ACC_ICONS.start, async () => {
+      busy(start);
+      const now = new Date();
+      const updated = {...book, status: 'En cours', updatedAt: Date.now(),
+        ...(book.readingStart?.year ? {} : {readingStart: {day: String(now.getDate()), month: String(now.getMonth() + 1), year: String(now.getFullYear())}})};
+      try { await storage.putBook(updated); }
+      catch { closeAccMenu(); showStorageError(); return; }
+      Object.assign(book, updated);
+      closeAccMenu();
+      renderContent();
+      announce(`${book.title} · Lecture commencée.`);
+      // Avec un fichier, la liseuse s'ouvre ; sinon la fiche du livre
+      openSecondary('book', book, search, {fromLibrary: true, read: Boolean(book.fileFingerprint)});
+    });
+    const favorite = accMenuItem(book.coupDeCoeur ? 'Retirer des coups de cœur' : 'Coup de cœur', book.coupDeCoeur ? ACC_ICONS.heartOn : ACC_ICONS.heart, async () => {
+      busy(favorite);
+      const updated = {...book, coupDeCoeur: !book.coupDeCoeur, updatedAt: Date.now()};
+      try { await storage.putBook(updated); }
+      catch { closeAccMenu(); showStorageError(); return; }
+      Object.assign(book, updated);
+      closeAccMenu(true);
+      renderContent();
+      announce(book.coupDeCoeur ? 'Ajouté aux coups de cœur.' : 'Retiré des coups de cœur.');
+    }, book.coupDeCoeur ? 'is-on' : '');
+    const remove = accMenuItem('Retirer de ma pile', ACC_ICONS.remove, () => {
+      // Confirmation dans la bulle : le livre quitte toute l'app
+      const question = el('p', 'acc-menu-ask', 'Supprimer ce livre de ta bibliothèque ?');
+      const actions = el('div', 'acc-menu-confirm');
+      const cancel = el('button', 'acc-menu-cancel cursor-interaction', 'Annuler');
+      cancel.type = 'button';
+      cancel.addEventListener('click', () => closeAccMenu(true));
+      const confirm = el('button', 'acc-menu-delete cursor-interaction', 'Supprimer');
+      confirm.type = 'button';
+      confirm.addEventListener('click', async () => {
+        busy(confirm);
+        try { await storage.removeBook(book.id); }
+        catch { closeAccMenu(); showStorageError(); return; }
+        const index = books.findIndex(item => item.id === book.id);
+        if (index >= 0) books.splice(index, 1);
+        closeAccMenu();
+        renderContent();
+        announce(`${book.title} a été supprimé.`);
+        search.focus({preventScroll: true});
+      });
+      actions.append(cancel, confirm);
+      accMenu.replaceChildren(title, question, actions);
+      placeAccMenu(card);
+      cancel.focus({preventScroll: true});
+    }, 'danger');
+    accMenu.replaceChildren(title, start, favorite, remove);
+    accMenu.hidden = false;
+    accVeil.hidden = false;
+    placeAccMenu(card);
+    start.focus({preventScroll: true});
+  }
+  accVeil.addEventListener('pointerdown', event => { event.preventDefault(); closeAccMenu(); });
+  accMenu.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.stopPropagation(); closeAccMenu(true); return; }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    const items = all('button:not([disabled])', accMenu);
+    const index = items.indexOf(document.activeElement);
+    const next = items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length];
+    event.preventDefault();
+    next?.focus();
+  });
+  window.addEventListener('scroll', () => closeAccMenu(), {passive: true});
+  window.addEventListener('resize', () => closeAccMenu());
   function accMore(count, noun, target) {
     const card = el('button', 'acc-card acc-more cursor-interaction');
     card.type = 'button';
@@ -2662,7 +2805,7 @@ async function activateLibrary(root) {
     const pile = books.filter(book => book.status === 'À lire' && !sagaIds.has(book.id))
       .sort((a, b) => accAddedRank(b) - accAddedRank(a));
     const pileTotal = books.filter(book => book.status === 'À lire').length;
-    accFill('pile', pile.map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : ''})),
+    accFill('pile', pile.map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : '', menu: true})),
       pileTotal, {label: 'Voir ma pile', open: accOpenList('pile')}, n => n === 1 ? 'autre livre' : 'autres livres');
     accFill('sagas', nextVolumes.map(({book, lastRead, total}) => {
       const status = el('span', 'acc-status');
