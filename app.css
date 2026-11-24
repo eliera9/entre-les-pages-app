@@ -2006,3 +2006,43 @@ body { margin: 0; }
 #app-lecture .eli-bibliotheque[data-format="tablet"] .acc-recent { inline-size: 100%; }
 #app-lecture .eli-bibliotheque[data-format="tablet"] .acc-pill:not(.mini) { inline-size: 440px; }
 #app-lecture .eli-bibliotheque[data-format="tablet"] .acc-pill { inset-inline-end: max(var(--library-right, 24px), calc((100vw - 1060px) / 2 + 24px)); inset-block-end: calc(86px + env(safe-area-inset-bottom)); }
+
+/* Appui long sur la pile : la couverture se soulève, bulle dessous */
+#app-lecture .acc-card[data-book] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#app-lecture .acc-card .acc-cover { transition: transform 500ms cubic-bezier(.23,1,.32,1), filter 500ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-card.lifting .acc-cover { transform: translateY(-6px) scale(1.04); filter: drop-shadow(0 14px 14px rgba(40,20,30,.28)); }
+#app-lecture .acc-card.lifting:active { transform: none; }
+#app-lecture .acc-menu-veil { position: fixed; inset: 0; z-index: 40; background: transparent; }
+#app-lecture .acc-menu-veil[hidden], #app-lecture .acc-menu[hidden] { display: none; }
+#app-lecture .acc-menu {
+  position: fixed; z-index: 41; inline-size: 232px; padding: 6px;
+  border: 1px solid var(--rule); border-radius: 16px;
+  background: light-dark(#F2E6E2, #2C2530); color: var(--title);
+  box-shadow: 0 18px 34px -16px rgba(40,20,30,.5);
+  animation: acc-menu-in 200ms cubic-bezier(.23,1,.32,1);
+}
+@keyframes acc-menu-in { from { opacity: 0; transform: scale(.94); } }
+#app-lecture .acc-menu-title { margin: 4px 10px 6px; font: italic 13px/1.3 var(--heading); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app-lecture .acc-menu-item {
+  display: flex; align-items: center; gap: 12px; inline-size: 100%; min-block-size: 44px; padding: 0 10px;
+  border: 0; border-radius: 10px; background: none; color: var(--title); font: 500 15px var(--body); text-align: start;
+  transition: background-color 150ms ease, transform 160ms cubic-bezier(.23,1,.32,1);
+}
+#app-lecture .acc-menu-item svg { flex: none; color: var(--accent); }
+#app-lecture .acc-menu-item.is-on svg { color: light-dark(#9b3b4a, #E3A2B2); }
+#app-lecture .acc-menu-item:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { #app-lecture .acc-menu-item:hover { background: var(--tint); } }
+#app-lecture .acc-menu-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#app-lecture .acc-menu-item.danger, #app-lecture .acc-menu-item.danger svg { color: light-dark(#9b3b4a, #E3A2B2); }
+#app-lecture .acc-menu-ask { margin: 2px 10px 10px; font: 400 15px/1.35 var(--heading); }
+#app-lecture .acc-menu-confirm { display: flex; gap: 6px; }
+#app-lecture .acc-menu-confirm button { flex: 1; min-block-size: 44px; border: 0; border-radius: 22px; font: 600 14px var(--body); transition: transform 160ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-menu-confirm button:active { transform: scale(.97); }
+#app-lecture .acc-menu-cancel { background: var(--tint); color: var(--title); }
+#app-lecture .acc-menu-delete { background: light-dark(#9b3b4a, #C77C8E); color: light-dark(#fff, #211D20); }
+@media (prefers-reduced-motion: reduce) {
+  #app-lecture .acc-card .acc-cover { transition: none; }
+  #app-lecture .acc-card.lifting .acc-cover { transform: none; }
+  #app-lecture .acc-menu { animation-duration: 1ms; }
+}
+#app-lecture .acc-track { padding-block: 10px 4px; margin-block: -10px -4px; }
