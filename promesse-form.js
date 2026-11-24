@@ -29,6 +29,33 @@ function make(tag, className, text) {
   return node;
 }
 
+async function askServer(book, signal) {
+  const db = globalThis.compteLecture?.db;
+  if (!db?.functions) return null;
+  const {data, error} = await db.functions.invoke("catalogue", {
+    body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || book.isbns?.[0] || "",
+      genres: [...(book.genres || []), ...(book.subgenres || [])].slice(0, 20).join("|"), summary: (book.summary || "").slice(0, 3000)}},
+    signal,
+  });
+  if (error || !data?.promesse) return null;
+  return data;
+}
+
+// Ce que promet un livre : la fonction Supabase d'abord (Hardcover + Gemini), sinon l'appareil seul
+export async function findPromesse(book, signal) {
+  try {
+    const server = await askServer(book, signal);
+    if (server) return {promesse: fillGaps(emptyPromesse(), server.promesse), romance: Boolean(server.romance)};
+  } catch {}
+  if (signal?.aborted) return null;
+  try {
+    const guess = await guessPromesse(book, signal);
+    return {promesse: guess.promesse, romance: guess.romance};
+  } catch {
+    return null;
+  }
+}
+
 export function mountPromesse(section, {onDone} = {}) {
   let state = emptyPromesse();
   let touched = new Set();
@@ -295,18 +322,6 @@ export function mountPromesse(section, {onDone} = {}) {
   }
   track.addEventListener("scroll", updateDots, {passive: true});
 
-  async function askServer(book, signal) {
-    const db = globalThis.compteLecture?.db;
-    if (!db?.functions) return null;
-    const {data, error} = await db.functions.invoke("catalogue", {
-      body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || book.isbns?.[0] || "",
-        genres: [...(book.genres || []), ...(book.subgenres || [])].slice(0, 20).join("|"), summary: (book.summary || "").slice(0, 3000)}},
-      signal,
-    });
-    if (error || !data?.promesse) return null;
-    return data;
-  }
-
   async function prefill(book) {
     const key = [book?.id, book?.title, book?.author].join("|");
     if (!book || key === bookKey) return;
@@ -325,19 +340,9 @@ export function mountPromesse(section, {onDone} = {}) {
     loading = true;
     notFound = false;
     render();
-    let found = null;
-    let romanceFound = false;
-    try {
-      const server = await askServer(book, controller.signal);
-      if (server) { found = server.promesse; romanceFound = Boolean(server.romance); }
-    } catch {}
-    if (!found) {
-      try {
-        const guess = await guessPromesse(book, controller.signal);
-        found = guess.promesse;
-        romanceFound = guess.romance;
-      } catch {}
-    }
+    const result = await findPromesse(book, controller.signal);
+    const found = result?.promesse || null;
+    const romanceFound = Boolean(result?.romance);
     if (controller.signal.aborted) return;
     romance = romance || romanceFound;
     const kept = Object.fromEntries([...touched].map(name => [name, state[name]]));
