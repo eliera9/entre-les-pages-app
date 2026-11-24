@@ -653,6 +653,10 @@ async function activateLibrary(root) {
   }
   setTheme(preferences.theme === 'dark' ? 'dark' : 'light');
   if (Array.isArray(preferences.savedFilters)) savedFilters.splice(0, savedFilters.length, ...preferences.savedFilters);
+  const DEFAULT_ANNUAL_READING_GOAL = 30;
+  const validReadingGoal = goal => Number.isSafeInteger(goal) && goal > 0;
+  let annualReadingGoal = validReadingGoal(preferences.annualReadingGoal)
+    ? preferences.annualReadingGoal : DEFAULT_ANNUAL_READING_GOAL;
 
   let activeLibraryTab = tabs.some(tab => tab.dataset.libraryTab === preferences.activeLibraryTab)
     ? preferences.activeLibraryTab : 'all';
@@ -671,6 +675,7 @@ async function activateLibrary(root) {
       activeLibraryTab,
       genreSort: sort,
       bookSort,
+      annualReadingGoal,
     });
   }
   let sort = preferences.genreSort === 'alpha' ? 'alpha' : 'custom';
@@ -2344,8 +2349,11 @@ async function activateLibrary(root) {
     }
     refreshReadingCover();
     find('[data-current-reading]', libraryContent).hidden = true;
-    renderAccueil(accueilOn && !recentOpen());
-    renderHello(home && !emptyLibrary && !searching && !recentOpen());
+    const showRecentSearches = recentOpen();
+    renderAccueil(accueilOn && !showRecentSearches);
+    const now = new Date();
+    renderHello(home && !emptyLibrary && !searching && !showRecentSearches, now);
+    if (home) renderAnnualGoal(now);
     renderRecent();
     renderPill(home && !emptyLibrary);
     if (showResults) renderResults(); else if (!accueilOn) renderGrid();
@@ -2905,35 +2913,84 @@ async function activateLibrary(root) {
     openSecondary('reading', null, accPill);
   });
 
-  // Le haut de l'accueil (validé le 24 novembre) : la date dans la barre, le bonjour, ta pile et ton année
+  // Accueil : salutation, pile à lire et objectif annuel dans la barre.
   const PRENOM = 'Elisa';
-  const accDate = find('[data-acc-date]');
   const accHello = find('[data-acc-hello]');
-  function renderHello(show) {
-    const now = new Date();
-    const evening = now.getHours() >= 18 || now.getHours() < 5;
-    accDate.hidden = !show;
+  const accGoal = find('[data-acc-goal]');
+  function renderHello(show, now) {
     accHello.hidden = !show;
     if (!show) return;
-    accDate.textContent = now.toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
-    const title = find('[data-acc-hello-title]');
+    const hour = now.getHours();
+    const evening = hour >= 18 || hour < 5;
+    const title = find('[data-acc-hello-title]', accHello);
     const word = evening ? 'Bonsoir' : 'Bonjour';
     title.replaceChildren(el('span', 'acc-hello-initial', word[0]), `${word.slice(1)} ${PRENOM}`);
     title.setAttribute('aria-label', `${word} ${PRENOM}`);
-    const moment = evening ? 'Belle soirée de lecture' : now.getHours() < 12 ? 'Belle matinée de lecture' : 'Bel après-midi de lecture';
+    const moment = evening ? 'Belle soirée de lecture' : hour < 12 ? 'Belle matinée de lecture' : 'Bel après-midi de lecture';
     const pile = books.filter(book => book.status === 'À lire').length;
-    find('[data-acc-hello-sub]').textContent = pile
-      ? `${moment} · ${pile}\u00a0livre${pile > 1 ? 's' : ''} t'attend${pile > 1 ? 'ent' : ''} dans ta pile`
-      : moment;
+    const subtitle = find('[data-acc-hello-sub]', accHello);
+    subtitle.replaceChildren(el('em', '', moment));
+    if (pile) {
+      subtitle.append(' · ', el('strong', '', `${pile}\u00a0livre${pile > 1 ? 's' : ''}`),
+        ` t’attend${pile > 1 ? 'ent' : ''} dans ta pile`);
+    }
+  }
+
+  function renderAnnualGoal(now) {
     const year = now.getFullYear();
-    const finished = books.filter(book => book.status === 'Terminé').map(accFinishedAt).filter(Boolean).map(time => new Date(time));
-    const thisYear = finished.filter(date => date.getFullYear() === year);
-    const thisMonth = thisYear.filter(date => date.getMonth() === now.getMonth());
-    const yearBox = find('[data-acc-year]');
-    yearBox.hidden = !thisYear.length;
-    find('[data-acc-year-count]').textContent = String(thisYear.length);
-    find('[data-acc-year-label]').textContent = `livre${thisYear.length > 1 ? 's' : ''} lu${thisYear.length > 1 ? 's' : ''} en ${year}`;
-    find('[data-acc-year-month]').textContent = thisMonth.length ? `dont ${thisMonth.length} ce mois-ci` : 'aucun encore ce mois-ci';
+    const count = books.filter(book => book.status === 'Terminé' && new Date(accFinishedAt(book)).getFullYear() === year).length;
+    const percent = Math.min(count / annualReadingGoal, 1) * 100;
+    find('[data-acc-goal-count]', accGoal).textContent = `${count} / ${annualReadingGoal}`;
+    find('[data-acc-goal-ring]', accGoal).setAttribute('stroke-dasharray', `${percent} 100`);
+    const unit = count > 1 ? 'livres lus' : 'livre lu';
+    accGoal.setAttribute('aria-label', `Objectif de lecture ${year}, ${count} ${unit} sur ${annualReadingGoal}`);
+    accGoal.hidden = false;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || scope !== 'home' || !other.hidden) return;
+    const now = new Date();
+    renderHello(!accHello.hidden, now);
+    renderAnnualGoal(now);
+  });
+
+  function annualGoalSetting() {
+    const form = el('form', 'library-goal-setting');
+    const title = el('label', '', 'Objectif annuel de lecture');
+    title.htmlFor = 'elp-annual-reading-goal';
+    const field = Object.assign(el('input'), {
+      id: title.htmlFor,
+      type: 'number',
+      min: '1',
+      max: String(Number.MAX_SAFE_INTEGER),
+      step: '1',
+      required: true,
+      value: String(annualReadingGoal),
+    });
+    const submit = el('button', 'plain cursor-interaction', 'Enregistrer');
+    submit.type = 'submit';
+    const feedback = el('p');
+    feedback.setAttribute('role', 'status');
+    form.append(title, field, submit, feedback);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (submit.disabled || !validReadingGoal(field.valueAsNumber)) return;
+      const previous = annualReadingGoal;
+      annualReadingGoal = field.valueAsNumber;
+      field.disabled = submit.disabled = true;
+      feedback.textContent = '';
+      try {
+        await savePreferences();
+        feedback.textContent = 'Objectif enregistré.';
+      } catch {
+        annualReadingGoal = previous;
+        feedback.textContent = 'Impossible d’enregistrer l’objectif. Réessaie.';
+      } finally {
+        field.disabled = submit.disabled = false;
+        if (scope === 'home') renderAnnualGoal(new Date());
+      }
+    });
+    return form;
   }
 
   // Recherches récentes : 3 gardées sur l'appareil
@@ -3062,7 +3119,7 @@ async function activateLibrary(root) {
       });
       theme.setAttribute('aria-pressed', String(root.dataset.theme === 'dark'));
       const settings = el('div', 'library-settings');
-      settings.append(theme, el('h3', '', 'Filtres enregistrés'));
+      settings.append(theme, annualGoalSetting(), el('h3', '', 'Filtres enregistrés'));
       for (const filters of savedFilters) {
         const label = filterLabelOrder.flatMap(name => filters[name]).filter(Boolean).join(' · ');
         settings.append(button(label, 'plain', () => {
