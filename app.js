@@ -2345,6 +2345,7 @@ async function activateLibrary(root) {
     refreshReadingCover();
     find('[data-current-reading]', libraryContent).hidden = true;
     renderAccueil(accueilOn && !recentOpen());
+    renderHello(home && !emptyLibrary && !searching && !recentOpen());
     renderRecent();
     renderPill(home && !emptyLibrary);
     if (showResults) renderResults(); else if (!accueilOn) renderGrid();
@@ -2903,6 +2904,37 @@ async function activateLibrary(root) {
     }
     openSecondary('reading', null, accPill);
   });
+
+  // Le haut de l'accueil (validé le 24 novembre) : la date dans la barre, le bonjour, ta pile et ton année
+  const PRENOM = 'Elisa';
+  const accDate = find('[data-acc-date]');
+  const accHello = find('[data-acc-hello]');
+  function renderHello(show) {
+    const now = new Date();
+    const evening = now.getHours() >= 18 || now.getHours() < 5;
+    accDate.hidden = !show;
+    accHello.hidden = !show;
+    if (!show) return;
+    accDate.textContent = now.toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'long'});
+    const title = find('[data-acc-hello-title]');
+    const word = evening ? 'Bonsoir' : 'Bonjour';
+    title.replaceChildren(el('span', 'acc-hello-initial', word[0]), `${word.slice(1)} ${PRENOM}`);
+    title.setAttribute('aria-label', `${word} ${PRENOM}`);
+    const moment = evening ? 'Belle soirée de lecture' : now.getHours() < 12 ? 'Belle matinée de lecture' : 'Bel après-midi de lecture';
+    const pile = books.filter(book => book.status === 'À lire').length;
+    find('[data-acc-hello-sub]').textContent = pile
+      ? `${moment} · ${pile}\u00a0livre${pile > 1 ? 's' : ''} t'attend${pile > 1 ? 'ent' : ''} dans ta pile`
+      : moment;
+    const year = now.getFullYear();
+    const finished = books.filter(book => book.status === 'Terminé').map(accFinishedAt).filter(Boolean).map(time => new Date(time));
+    const thisYear = finished.filter(date => date.getFullYear() === year);
+    const thisMonth = thisYear.filter(date => date.getMonth() === now.getMonth());
+    const yearBox = find('[data-acc-year]');
+    yearBox.hidden = !thisYear.length;
+    find('[data-acc-year-count]').textContent = String(thisYear.length);
+    find('[data-acc-year-label]').textContent = `livre${thisYear.length > 1 ? 's' : ''} lu${thisYear.length > 1 ? 's' : ''} en ${year}`;
+    find('[data-acc-year-month]').textContent = thisMonth.length ? `dont ${thisMonth.length} ce mois-ci` : 'aucun encore ce mois-ci';
+  }
 
   // Recherches récentes : 3 gardées sur l'appareil
   const RECENT_KEY = 'elp-recherches-recentes';

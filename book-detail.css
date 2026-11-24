@@ -696,3 +696,5 @@
   #bibliotheque-app #elp-saved-book .ep-saved-status-button {grid-template-columns:20px minmax(0,1fr) 7px;gap:4px;padding-inline:5px}
   #bibliotheque-app #elp-saved-book .ep-saved-status-button .ep-status-art {inline-size:20px}
 }
+/* Tablette : texte de la fiche un peu plus grand */
+#bibliotheque-app[data-format="tablet"] #elp-saved-book .ep-following { --ep-summary-size: 19px; --ep-label-size: 18px; }
