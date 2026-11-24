@@ -30,7 +30,8 @@ function make(tag, className, text) {
 }
 
 async function askServer(book, signal) {
-  const db = globalThis.compteLecture?.db;
+  // compteLecture est déclaré avec const dans compte.js : il n'est pas sur window, on le lit par son nom
+  const db = typeof compteLecture !== "undefined" ? compteLecture?.db : null;
   if (!db?.functions) return null;
   const {data, error} = await db.functions.invoke("catalogue", {
     body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || book.isbns?.[0] || "",
@@ -49,6 +50,7 @@ export async function findPromesse(book, signal) {
     server = await askServer(book, signal);
     if (server?.sources) Object.assign(sources, server.sources);
     else sources.serveur = server ? "ancienne version" : "pas de réponse";
+    if (server && !Object.values(server.promesse || {}).some(value => Array.isArray(value) ? value.length : value != null)) sources.serveur = "rien trouvé";
   } catch (error) {
     sources.serveur = `erreur ${String(error?.message || "").slice(0, 40)}`;
   }
