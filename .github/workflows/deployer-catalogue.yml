@@ -20,4 +20,4 @@ jobs:
         with:
           version: latest
       - name: Déployer
-        run: supabase functions deploy catalogue --project-ref onbizlpuzybodnmdtacx --use-api
+        run: supabase functions deploy catalogue --remote=onbizlpuzybodnmdtacx --use-api --yes
