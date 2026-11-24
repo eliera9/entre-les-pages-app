@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre les pages">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org; object-src 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org https://www.googleapis.com; object-src 'none'; base-uri 'none'">
 <title>Accueil · Entre les pages</title>
 <link rel="manifest" href="./app.webmanifest?v=entre-les-pages-2" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
@@ -21,15 +21,15 @@
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=10">
+<link rel="stylesheet" href="./add-book.css?v=12">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=2"></script>
-<script defer src="./add-book.js?v=10"></script>
+<script defer src="./add-book.js?v=11"></script>
 <link rel="stylesheet" href="./book-detail.css?v=4">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
 <script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=141"></script>
-<script defer src="./app.js?v=143"></script>
+<script defer src="./app.js?v=144"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -986,6 +986,7 @@
           </div>
         </div>
       </section>
+      <section class="ep-promesse" data-promesse aria-label="Ce qu’il me promet" hidden></section>
       <section class="ep-folder-zone" aria-labelledby="ep-collections-heading">
         <h3 class="ep-summary-heading" id="ep-collections-heading">Mes collections</h3>
         <div class="catalogue-folder-created" data-book-folder-created role="status" hidden>

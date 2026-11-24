@@ -502,6 +502,24 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const pickers=mountPickers(following,form);
   const folderPicker=mountFolders(following);
   const readingFields=mountReadingFields(following,pickers);
+  // « Ce qu'il me promet » : seulement pour un livre de la pile, pré-rempli par l'app
+  const promesseSection=following.querySelector("[data-promesse]");
+  let promesseForm=null;
+  function syncPromesse() {
+    if (!promesseForm) return;
+    const pile=selectedStatus==="to-read";
+    promesseForm.setVisible(pile);
+    if (pile && currentBook) promesseForm.prefill(currentBook);
+  }
+  import("./promesse-form.js?v=1").then(module=>{
+    if (signal.aborted) return;
+    promesseForm=module.mountPromesse(promesseSection,{onDone(head) {
+      const next=following.querySelector(".ep-folder-zone") || head;
+      next.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+    }});
+    syncPromesse();
+  }).catch(()=>{promesseSection.hidden=true;});
+  for (const option of following.querySelectorAll('input[name="ep-statut-lecture"]')) option.addEventListener("change",syncPromesse);
   let lastStep="";
   let currentBook;
   let origin;
@@ -570,8 +588,12 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   }
 
   function openBook(book,step,trigger) {
-    if (currentBook!==book) readingFields.clear();
+    if (currentBook!==book) {
+      readingFields.clear();
+      promesseForm?.clear();
+    }
     currentBook=book;
+    syncPromesse();
     lastStep=step;
     origin=trigger;
     originScroll=window.scrollY;
@@ -1068,6 +1090,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const book=currentBook;
     const reading=readingFields.values();
     if (!reading) return;
+    const promesse=selectedStatus==="to-read" ? promesseForm?.values() : null;
+    if (promesse) reading.promesse=promesse;
     const collection=folderPicker.id();
     addButton.disabled=true;
     saveStatus.textContent="";
