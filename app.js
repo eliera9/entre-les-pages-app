@@ -2302,6 +2302,7 @@ async function activateLibrary(root) {
     markBottomPage('home');
     refreshSidebarPage();
     syncCatalogueView();
+    root.toggleAttribute('data-accueil-page', scope === 'home');
     if (catalogues.has(scope)) {
       if (!catalogueView.hidden) {
         const title = catalogueTitleText();
@@ -2343,7 +2344,8 @@ async function activateLibrary(root) {
     }
     refreshReadingCover();
     find('[data-current-reading]', libraryContent).hidden = true;
-    renderAccueil(accueilOn);
+    renderAccueil(accueilOn && !recentOpen());
+    renderRecent();
     renderPill(home && !emptyLibrary);
     if (showResults) renderResults(); else if (!accueilOn) renderGrid();
   }
@@ -2641,7 +2643,16 @@ async function activateLibrary(root) {
     dots.replaceChildren(...cards.map((_, index) => el('i', index === 0 ? 'on' : '')));
     dots.hidden = cards.length < 2;
     track.scrollLeft = 0;
+    requestAnimationFrame(accDotsFit);
   }
+  // Les points n'apparaissent que si la rangée déborde de l'écran
+  function accDotsFit() {
+    for (const track of all('[data-acc-track]', accueil)) {
+      const dots = track.nextElementSibling;
+      dots.hidden = track.children.length < 2 || track.scrollWidth <= track.clientWidth + 2;
+    }
+  }
+  window.addEventListener('resize', () => { if (!accueil.hidden) accDotsFit(); });
   const accOpenList = view => () => openCatalogue(view);
   function renderAccueil(show) {
     accueil.hidden = !show;
@@ -2715,6 +2726,65 @@ async function activateLibrary(root) {
     }
     openSecondary('reading', null, accPill);
   });
+
+  // Recherches récentes : 3 gardées sur l'appareil
+  const RECENT_KEY = 'elp-recherches-recentes';
+  const recentBox = find('[data-recent]');
+  const recentList = find('[data-recent-list]');
+  let searchFocused = false;
+  function readRecent() {
+    try { const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(list) ? list.filter(q => typeof q === 'string').slice(0, 3) : []; }
+    catch { return []; }
+  }
+  function writeRecent(list) {
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 3))); } catch {}
+  }
+  function rememberSearch() {
+    const q = search.value.trim();
+    if (q.length < 2) return;
+    writeRecent([q, ...readRecent().filter(item => item.toLowerCase() !== q.toLowerCase())]);
+  }
+  function recentOpen() {
+    return scope === 'home' && searchFocused && !search.value.trim() && books.length > 0 && readRecent().length > 0;
+  }
+  function renderRecent() {
+    const open = recentOpen();
+    recentBox.hidden = !open;
+    if (!open) return;
+    recentList.replaceChildren(...readRecent().map(q => {
+      const item = el('li', 'acc-recent-item');
+      const pick = el('button', 'acc-recent-pick cursor-interaction');
+      pick.type = 'button';
+      pick.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+      pick.append(el('span', '', q));
+      pick.addEventListener('click', () => { search.value = q; rememberSearch(); renderContent(); });
+      const remove = el('button', 'acc-recent-remove cursor-interaction');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', `Retirer « ${q} » des recherches récentes`);
+      remove.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+      remove.addEventListener('click', () => { writeRecent(readRecent().filter(item => item !== q)); renderContent(); search.focus({preventScroll: true}); });
+      item.append(pick, remove);
+      return item;
+    }));
+  }
+  // Toucher la liste ne doit pas faire perdre le focus du champ avant le clic
+  recentBox.addEventListener('pointerdown', event => event.preventDefault());
+  find('[data-recent-clear]').addEventListener('click', () => { writeRecent([]); renderContent(); });
+  search.addEventListener('focus', () => { searchFocused = true; if (recentOpen()) renderContent(); });
+  search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (scope === 'home') renderContent(); });
+  search.addEventListener('keydown', event => { if (event.key === 'Enter') { rememberSearch(); search.blur(); } });
+
+  // En-tête : se réduit en barre compacte collée en haut quand on fait défiler
+  const headerBar = find('.toolbar');
+  let headerCompact = false;
+  function updateHeader() {
+    const y = window.scrollY;
+    const next = headerCompact ? y > 40 : y > 72;
+    if (next === headerCompact) return;
+    headerCompact = next;
+    headerBar.classList.toggle('is-compact', headerCompact);
+  }
+  window.addEventListener('scroll', updateHeader, {passive: true});
 
   const previewSpaces = {
     journal: {title: 'Journal', empty: 'Aucune note de lecture.'},
