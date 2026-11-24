@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de 6 questions (5 hors romance).
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=1";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=2";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -43,16 +43,18 @@ async function askServer(book, signal) {
 
 // Ce que promet un livre : la fonction Supabase d'abord (Hardcover + Gemini), sinon l'appareil seul
 export async function findPromesse(book, signal) {
-  try {
-    const server = await askServer(book, signal);
-    if (server) return {promesse: fillGaps(emptyPromesse(), server.promesse), romance: Boolean(server.romance)};
-  } catch {}
+  let server = null;
+  try { server = await askServer(book, signal); } catch {}
   if (signal?.aborted) return null;
+  const fromServer = server ? fillGaps(emptyPromesse(), server.promesse) : emptyPromesse();
+  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null;
+  if (full) return {promesse: fromServer, romance: Boolean(server.romance)};
+  // Ce qui manque encore : l'appareil cherche aussi de son côté (Google Books + Open Library)
   try {
     const guess = await guessPromesse(book, signal);
-    return {promesse: guess.promesse, romance: guess.romance};
+    return {promesse: fillGaps(fromServer, guess.promesse), romance: Boolean(server?.romance) || guess.romance};
   } catch {
-    return null;
+    return server ? {promesse: fromServer, romance: Boolean(server.romance)} : null;
   }
 }
 
