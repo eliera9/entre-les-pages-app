@@ -2046,3 +2046,12 @@ body { margin: 0; }
   #app-lecture .acc-menu { animation-duration: 1ms; }
 }
 #app-lecture .acc-track { padding-block: 10px 4px; margin-block: -10px -4px; }
+
+/* Dé de la pile : ouvre le questionnaire */
+#app-lecture .acc-dice { display: grid; place-items: center; inline-size: 44px; block-size: 44px; flex: none; margin-inline-start: 4px; padding: 0; border: 0; background: none; transition: transform 160ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-dice:active { transform: scale(.97); }
+#app-lecture .acc-dice-art { position: relative; display: block; inline-size: 34px; block-size: 34px; border-radius: 10px; background: light-dark(#EBCFD6, #4A3A50); }
+#app-lecture .acc-dice-art::after { content: ""; position: absolute; inset: 4px; background: var(--accent); -webkit-mask: url("./art/questionnaire/de.webp") center / contain no-repeat; mask: url("./art/questionnaire/de.webp") center / contain no-repeat; }
+#app-lecture .acc-dice-art.is-rolling { animation: acc-dice-roll 420ms cubic-bezier(.23,1,.32,1); }
+@keyframes acc-dice-roll { 0% { transform: rotate(0) scale(1); } 45% { transform: rotate(200deg) scale(1.12); } 100% { transform: rotate(360deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { #app-lecture .acc-dice-art.is-rolling { animation: none; } }

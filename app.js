@@ -2626,6 +2626,48 @@ async function activateLibrary(root) {
     return card;
   }
 
+  // Commencer un livre : statut « En cours », date du jour, puis la liseuse (avec fichier) ou la fiche
+  async function accStartBook(book, before) {
+    const now = new Date();
+    const updated = {...book, status: 'En cours', updatedAt: Date.now(),
+      ...(book.readingStart?.year ? {} : {readingStart: {day: String(now.getDate()), month: String(now.getMonth() + 1), year: String(now.getFullYear())}})};
+    try { await storage.putBook(updated); }
+    catch { showStorageError(); return false; }
+    Object.assign(book, updated);
+    before?.();
+    renderContent();
+    announce(`${book.title} · Lecture commencée.`);
+    openSecondary('book', book, search, {fromLibrary: true, read: Boolean(book.fileFingerprint)});
+    return true;
+  }
+
+  // Le dé de la pile : ouvre le questionnaire « Ta prochaine lecture »
+  const accDice = find('[data-acc-dice]');
+  let questionnaire = null;
+  accDice?.addEventListener('click', async () => {
+    try {
+      if (!questionnaire) {
+        const module = await import('./questionnaire.js?v=1');
+        questionnaire = module.mountQuestionnaire({
+          host: root,
+          books: () => books,
+          cover: catalogueCover,
+          openBook: book => openSecondary('book', book, search, {fromLibrary: true}),
+          startBook: book => accStartBook(book),
+          async saveBook(updated) {
+            const stamped = {...updated, updatedAt: Date.now()};
+            await storage.putBook(stamped);
+            const target = books.find(item => item.id === stamped.id);
+            if (target) Object.assign(target, stamped);
+          },
+        });
+      }
+      questionnaire.open(accDice);
+    } catch {
+      showStorageError();
+    }
+  });
+
   // Appui long (0,5 s) sur un livre de la pile : la couverture se soulève, une bulle s'ouvre dessous
   const accMenu = find('[data-acc-menu]');
   const accVeil = find('[data-acc-veil]');
@@ -2699,17 +2741,8 @@ async function activateLibrary(root) {
     const busy = item => { for (const b of all('button', accMenu)) b.disabled = true; item?.setAttribute('aria-busy', 'true'); };
     const start = accMenuItem('Commencer', ACC_ICONS.start, async () => {
       busy(start);
-      const now = new Date();
-      const updated = {...book, status: 'En cours', updatedAt: Date.now(),
-        ...(book.readingStart?.year ? {} : {readingStart: {day: String(now.getDate()), month: String(now.getMonth() + 1), year: String(now.getFullYear())}})};
-      try { await storage.putBook(updated); }
-      catch { closeAccMenu(); showStorageError(); return; }
-      Object.assign(book, updated);
-      closeAccMenu();
-      renderContent();
-      announce(`${book.title} · Lecture commencée.`);
-      // Avec un fichier, la liseuse s'ouvre ; sinon la fiche du livre
-      openSecondary('book', book, search, {fromLibrary: true, read: Boolean(book.fileFingerprint)});
+      const ok = await accStartBook(book, () => closeAccMenu());
+      if (!ok) closeAccMenu();
     });
     const favorite = accMenuItem(book.coupDeCoeur ? 'Retirer des coups de cœur' : 'Coup de cœur', book.coupDeCoeur ? ACC_ICONS.heartOn : ACC_ICONS.heart, async () => {
       busy(favorite);
