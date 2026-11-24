@@ -767,3 +767,4 @@
   #bibliotheque-app #elp-add-book :is(.ep-promesse-body.is-opening,.ep-promesse-ghost,.is-loading) { animation:none; }
   #bibliotheque-app #elp-add-book .ep-promesse-check input:checked + .ep-promesse-box path { transition:none; }
 }
+#bibliotheque-app #elp-add-book .ep-promesse-trace { margin:10px 0 0; text-align:center; font:12px/1.4 "Source Sans 3 Formulaire",Arial,sans-serif; color:var(--ep-muted); overflow-wrap:anywhere; }
