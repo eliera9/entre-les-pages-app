@@ -2055,3 +2055,44 @@ body { margin: 0; }
 #app-lecture .acc-dice-art.is-rolling { animation: acc-dice-roll 420ms cubic-bezier(.23,1,.32,1); }
 @keyframes acc-dice-roll { 0% { transform: rotate(0) scale(1); } 45% { transform: rotate(200deg) scale(1.12); } 100% { transform: rotate(360deg) scale(1); } }
 @media (prefers-reduced-motion: reduce) { #app-lecture .acc-dice-art.is-rolling { animation: none; } }
+
+/* En-tête de l'accueil : un long trait sous les boutons, sur toute la largeur */
+#app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar { border-block-end-color: var(--rule); margin-block-end: 14px; }
+
+/* Tablette : tout un peu plus grand (validé le 24 novembre au soir) */
+#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar { padding-block-end: 12px; }
+#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar .round { inline-size: 54px; block-size: 54px; flex-basis: 54px; }
+#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar .round::before { inline-size: 54px; block-size: 54px; }
+#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar .round svg { inline-size: 28px; block-size: 28px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] #bibliotheque-app-search { block-size: 56px; min-block-size: 56px; padding-inline: 20px 8px; margin-block-end: 26px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] #bibliotheque-app-search input { font-size: 19px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] #bibliotheque-app-search .search-loupe { inline-size: 27px; block-size: 27px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .accueil { gap: 40px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-title { font-size: 34px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-count { font-size: 14px; padding: 3px 10px; vertical-align: 6px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-link { font-size: 17px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-dice { inline-size: 54px; block-size: 54px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-dice-art { inline-size: 44px; block-size: 44px; border-radius: 12px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-track { gap: 22px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-card { flex-basis: 164px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-cover { inline-size: 164px; block-size: 246px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-cover > .elp-cover { border-radius: 6px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-name { font-size: 18px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-sub { font-size: 15px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-stamp { font-size: 12.5px; padding: 3px 9px; inset-inline-start: 6px; inset-block-end: 6px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-heart { inline-size: 32px; block-size: 32px; border-radius: 16px; font-size: 17px; line-height: 32px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-more-count { font-size: 36px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-more .acc-cover small { font-size: 14px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-tag { font-size: 13px; padding: 4px 12px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-ticks i { inline-size: 22px; block-size: 4px; }
+/* Pastille du livre en cours : toute la largeur de la page sur tablette */
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill:not(.mini) { inline-size: calc(min(100vw, 1060px) - 2 * clamp(12px, 3vw, 30px)); block-size: 84px; border-radius: 42px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill { inset-inline-end: calc((100vw - min(100vw, 1060px)) / 2 + clamp(12px, 3vw, 30px)); inset-block-end: calc(92px + env(safe-area-inset-bottom)); }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill.mini { inline-size: 70px; block-size: 70px; border-radius: 35px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-full { gap: 16px; padding-inline: 12px 16px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-cover { inline-size: 44px; block-size: 66px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-text b { font-size: 20px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-text small { font-size: 15px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-play { inline-size: 52px; block-size: 52px; border-radius: 26px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-bar { inset-inline: 72px 80px; inset-block-end: 9px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .accueil { margin-block-end: 140px; }
