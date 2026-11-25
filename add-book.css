@@ -773,3 +773,52 @@
 #bibliotheque-app #elp-add-book .ep-promesse-track { inline-size:100%; min-inline-size:0; }
 /* Les cases cachées (sr-only) sont en position absolue : elles doivent rester dans leur carte */
 #bibliotheque-app #elp-add-book :is(.ep-promesse, .ep-promesse-track, .ep-promesse-slide, .ep-promesse-check) { position:relative; }
+
+/* Choix du format et ses deux panneaux dépliables. */
+#bibliotheque-app #elp-add-book:not([data-step="next"]) {
+  --add-disc:34px; --add-icon:19px; --add-heading:30px; --add-question:15.5px;
+  --add-ink:light-dark(#604259,#C5ADCC);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) {
+  --add-disc:42px; --add-icon:23px; --add-heading:48px; --add-question:19px;
+  --add-ink:light-dark(#51334D,#D4C5EE);
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button {
+  display:grid; place-items:center; inline-size:44px; block-size:44px; min-width:44px; min-height:44px;
+  padding:0; background:transparent; color:var(--accent);
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button::before {
+  content:""; grid-area:1/1; width:var(--add-disc); height:var(--add-disc); border-radius:50%;
+  background:var(--tint);
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button svg {
+  width:var(--add-icon); height:var(--add-icon);
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-close span {font:400 var(--add-icon)/1 Arial,sans-serif}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-header,
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-title {display:block; text-align:center}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) :is(.ep-art-open,.ep-tablet-decoration) {display:none}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-title h2 {
+  margin:0; color:var(--add-ink); font:400 var(--add-heading)/1.12 "Cormorant Garamond",Georgia,serif;
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-title-initial {
+  font:400 1.6em/0 "Italianno Accueil",cursive; vertical-align:-.12em;
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-question {
+  margin:4px 0 20px; min-block-size:0; text-align:center;
+  font:400 var(--add-question)/1.35 "Baskervville Formulaire",Georgia,serif;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-question::after {
+  content:""; display:block; width:min(245px,65%); height:26px; margin:8px auto 0;
+  background:var(--add-ink); mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
+  -webkit-mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-choices {grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card {
+  flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  min-height:162px; padding:clamp(10px,2.7vw,23px); gap:12px;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card .ep-art {width:64px; height:64px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-copy {flex:0 1 auto; gap:4px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-title {font-size:30px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-detail {font-size:16px}

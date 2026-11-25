@@ -495,6 +495,14 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const signal=lifecycle.signal;
   const pendingMetadata=new WeakMap();
   const editedSummaries=new WeakSet();
+  const completedMetadata=new WeakSet();
+  const editedFields=new WeakMap();
+  const lookupStatus=get("[data-book-lookup]");
+  for (const field of editFields) field.addEventListener("input",()=>{
+    if (!currentBook) return;
+    if (!editedFields.has(currentBook)) editedFields.set(currentBook,new Set());
+    editedFields.get(currentBook).add(field.name);
+  });
   const editedTags=new WeakMap();
   const normTag=value=>String(value).normalize("NFKD").replace(/\p{M}/gu,"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
   const tropeNames=["Slow burn","Enemies to lovers","Friends to lovers","Found family","Fake dating","Forced proximity","Second chance","Grumpy / Sunshine","Forbidden love","Only one bed","Marriage of convenience","Love triangle","Touch her and die","Secret identity","Rivals to lovers","Brother’s best friend","Opposites attract","Who did this to you"];
@@ -538,9 +546,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const formReady=import("./promesse-form.js?v=8").then(module=>{
+  const formReady=import("./promesse-form.js?v=ajout-01").then(module=>{
     if (signal.aborted) return;
-    promesseForm=module.mountPromesse(promesseSection,{onDone(head) {
+    promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
       const next=following.querySelector(".ep-folder-zone") || head;
       next.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
     }});
@@ -603,10 +611,18 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   function renderBook(book) {
     nextBook.replaceChildren(drawRecap(book));
     summary.textContent=book.summary || (editedSummaries.has(book) ? "Résumé indisponible." : "Recherche du résumé…");
+    lookupStatus.hidden=completedMetadata.has(book);
+    lookupStatus.textContent=lookupStatus.hidden ? "" : "Recherche des informations du livre…";
     prepareMetadata(book).then(()=>{
       if (signal.aborted || currentBook!==book) return;
       nextBook.replaceChildren(drawRecap(book));
-      if (!editForm.hidden) tags.update(book);
+      lookupStatus.hidden=true;
+      if (!editForm.hidden) {
+        tags.update(book);
+        for (const field of editFields) {
+          if (!editedFields.get(book)?.has(field.name) && !field.value) field.value=book[field.name] || "";
+        }
+      }
       summary.textContent=book.summary || "Résumé indisponible.";
       if (!editForm.hidden && !editSummaryChanged) editSummary.value=book.summary || "";
     });
@@ -710,7 +726,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }
     try {
       // The same catalogue adapters can reach the public sources from the device.
-      const {createCatalogue}=await import("./catalogue-engine.js?v=2");
+      if (action==="details") return serverData || {};
+      const {createCatalogue}=await import("./catalogue-engine.js?v=ajout-01");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
@@ -740,13 +757,27 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     if (!pendingMetadata.has(book)) {
       classify(book,{});
       const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
-        isbn:book.isbn || book.isbns?.[0] || "",metadata:"1"};
-      const request=AbortSignal.any([signal,AbortSignal.timeout(14500)]);
-      const lookup=book.id || query.isbn || query.author ? queryCatalogues("details",query,request) : Promise.resolve({});
-      pendingMetadata.set(book,lookup.catch(()=>({})).then(data=>{
+        isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1"};
+      const request=AbortSignal.any([signal,AbortSignal.timeout(36000)]);
+      const sample=false;
+      const eligible=book.id || query.isbn || query.author;
+      const server=eligible ? queryCatalogues("details",query,request) : {};
+      const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=ajout-01").then(({createCatalogue})=>
+        createCatalogue([],request).details(new URLSearchParams(query))) : {};
+      const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
+      const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
+      pendingMetadata.set(book,sources.then(notices=>{
         if (!signal.aborted) {
-          classify(book,data);
-          if (!editedSummaries.has(book) && !book.summary) book.summary=data.summary || "";
+          for (const data of notices) {
+            classify(book,data);
+            if (!editedSummaries.has(book) && !book.summary && data.summary) book.summary=data.summary;
+            for (const name of ["title","author","series","volume","isbn","coverData","publisher","publicationDate","language","pageCount"]) {
+              if (book[name] || editedFields.get(book)?.has(name) || !data[name]) continue;
+              if (name==="pageCount" && (!Number.isInteger(data[name]) || data[name]<1)) continue;
+              book[name]=data[name];
+            }
+          }
+          completedMetadata.add(book);
         }
         return book.summary;
       }));
@@ -780,7 +811,10 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     for (const info of books) {
       if (seen.has(info.id)) continue;
       seen.add(info.id);
-      const book={...info,format:"Papier"};
+      const typed=isbn(query.value.trim());
+      const known=info.isbns || [];
+      const selectedIsbn=info.isbn || (known.includes(typed) ? typed : known.length===1 ? known[0] : "");
+      const book={...info,isbn:selectedIsbn,format:"Papier"};
       const item=document.createElement("li");
       item.dataset.catalogueId=book.id;
       const button=document.createElement("button");
@@ -970,12 +1004,18 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       message("Recherche dans le catalogue…");
       const matched=await matchDocument(info,fileName);
       if (!current(version)) return;
-      const title=matched?.title || info.title || fileName;
-      const code=isbn(info.isbn || matched?.isbns?.[0]);
-      digitalBook={...matched,publicationDate:matched?.publicationDate || matched?.publishedDate || info.publicationDate,title,author:matched?.author || info.author || "",series:matched?.series || info.series || "",
-        volume:matched?.volume || info.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
+      const title=info.title || matched?.title || fileName;
+      const code=isbn(info.isbn || matched?.isbn || (matched?.isbns?.length===1 ? matched.isbns[0] : ""));
+      digitalBook={...matched,publisher:info.publisher || matched?.publisher,language:info.language || matched?.language,
+        publicationDate:info.publicationDate || matched?.publicationDate || matched?.publishedDate,title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
+        volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
-      prepareMetadata(digitalBook);
+      const imported=digitalBook;
+      const ready=prepareMetadata(imported);
+      formReady.then(()=>{
+        if (current(version) && digitalBook===imported && selectedStatus==="to-read")
+          promesseForm?.collect(imported,ready);
+      });
       manualTitle.value=title;
       titleField.hidden=Boolean(title);
       if (!title) recovery.hidden=false;

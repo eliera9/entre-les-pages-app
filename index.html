@@ -21,17 +21,17 @@
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=15">
+<link rel="stylesheet" href="./add-book.css?v=ajout-01">
 <link rel="stylesheet" href="./questionnaire.css?v=3">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<script defer src="./add-book.js?v=19"></script>
+<script defer src="./add-book.js?v=ajout-01"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
 <script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=144"></script>
 <script defer src="./reading-status.js"></script>
-<script defer src="./app.js?v=lus-01"></script>
+<script defer src="./app.js?v=ajout-01"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -850,9 +850,9 @@
       </button>
       <div class="ep-title">
         <span class="ep-art ep-art-open" aria-hidden="true"></span>
-        <h2 id="ep-add-title">Ajouter un livre</h2>
+        <h2 id="ep-add-title"><span class="ep-title-initial">A</span>jouter un livre</h2>
       </div>
-      <button class="ep-icon-button ep-close cursor-interaction" type="button" aria-label="Fermer et retourner à la bibliothèque">×</button>
+      <button class="ep-icon-button ep-close cursor-interaction" type="button" aria-label="Fermer et retourner à la bibliothèque"><span aria-hidden="true">×</span></button>
           </div>
           <div class="ep-tablet-decoration title-decoration" aria-hidden="true"></div>
           <div class="ep-edit-toolbar" hidden>
@@ -951,6 +951,7 @@
         <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
       </form>
       <h3 class="ep-summary-heading" id="ep-summary-heading">Résumé</h3>
+      <p class="ep-message" data-book-lookup role="status" hidden></p>
       <p class="ep-next-summary"></p>
       <textarea id="ep-summary-editor" class="ep-summary-editor" aria-labelledby="ep-summary-heading" form="ep-book-editor" rows="5" hidden></textarea>
       <section class="ep-status-section" aria-label="Statut de lecture">

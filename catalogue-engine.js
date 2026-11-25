@@ -169,7 +169,8 @@ export function createCatalogue(localRows=[], signal) {
     return [{
       id:text(row.key).replace("/books/","ol-edition:") || "isbn:"+code,
       title:text(row.title),author:text(person.name || row.by_statement),series:text(Array.isArray(row.series) ? row.series[0] : row.series),
-      volume:"",genres:[],subjects:list([...(row.subjects || []), ...(workData.subjects || [])]),subgenres:[],tropes:[],isbns:[code],summary:summary(row.description || workData.description),
+      publisher:text(row.publishers?.[0]),language:text(row.languages?.[0]?.key).split("/").pop(),
+      publicationDate:text(row.publish_date),pageCount:row.number_of_pages,volume:"",genres:[],subjects:list([...(row.subjects || []), ...(workData.subjects || [])]),subgenres:[],tropes:[],isbns:[code],summary:summary(row.description || workData.description),
       coverData:openLibraryCover(row) || openLibraryCover(workData),
     }];
   }
@@ -225,7 +226,10 @@ export function createCatalogue(localRows=[], signal) {
         ...(seen.find(Boolean) ? {ISBN:seen.find(Boolean)} : {idArk:"ark:/12148/"+id}),couverture:"1",taille:"originale",
       });
       return [{
-        id:"bnf:"+id,title,author,authors,aliases:[sub(field("454"),"t"),sub(field("500"),"a")].filter(Boolean),series:sub(field("461"),"t"),volume:sub(field("461"),"v") || sub(field("200"),"h"),
+        id:"bnf:"+id,title,author,authors,
+        publisher:sub(field("214") || field("210"),"c"), publicationDate:(sub(field("214") || field("210"),"d").match(/\d{4}/) || [])[0],
+        pageCount:Number(sub(field("215"),"a").match(/(\d+)\s*p(?:ages|\.)/i)?.[1]) || undefined,
+        language:sub(field("101"),"a"),aliases:[sub(field("454"),"t"),sub(field("500"),"a")].filter(Boolean),series:sub(field("461"),"t"),volume:sub(field("461"),"v") || sub(field("200"),"h"),
         genres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"a"))),
         subgenres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"x"))),tropes:[],
         isbns:[...new Set(seen.filter(Boolean))],
@@ -301,6 +305,18 @@ export function createCatalogue(localRows=[], signal) {
     return {books,partial:outcomes.some(row=>row.status==="rejected")};
   }
 
+  async function googleEditions(title,author,code) {
+    const term=code ? "isbn:"+code : 'intitle:"'+title+'" inauthor:"'+author+'"';
+    const data=await json("https://www.googleapis.com/books/v1/volumes?"+new URLSearchParams({q:term,maxResults:"10"}));
+    return (data.items || []).map(({volumeInfo:row={}})=>({
+      title:text(row.title), author:text(row.authors?.[0]), authors:list(row.authors),
+      isbns:(row.industryIdentifiers || []).map(item=>isbn(item.identifier)).filter(Boolean),
+      subjects:list(row.categories), summary:summary(row.description),
+      publisher:text(row.publisher), publicationDate:text(row.publishedDate),
+      language:text(row.language), pageCount:row.pageCount,
+    }));
+  }
+
   async function details(params) {
     const id=text(params.get("id"));
     const title=text(params.get("title"));
@@ -309,16 +325,17 @@ export function createCatalogue(localRows=[], signal) {
     const code=isbn(params.get("isbn"));
     const key=id.match(/^ol-work:(OL\d+W)$/)?.[1];
     const appleId=id.match(/^apple:(\d+)$/)?.[1];
-    const [work,known,alternatives,national]=await Promise.all([
+    const [work,known,alternatives,national,google]=await Promise.all([
       key ? json(openLibrary+"/works/"+key+".json",8000).catch(()=>({})) : {},
       code ? openLibraryIsbn(code).catch(()=>[]) : [],
       appleId ? json(apple+"/lookup?"+new URLSearchParams({id:appleId,country:"fr"})).then(data=>
         (Array.isArray(data.results) ? data.results : []).filter(row=>String(row.trackId)===appleId).map(row=>({title,author,volume,isbns:[],summary:summary(row.description)}))).catch(()=>[])
         : title && author ? appleSearch([title,volume && "tome "+volume,author].filter(Boolean).join(" ")).catch(()=>[]) : [],
       id.startsWith("bnf:") || !appleId && !key ? bnfSearch(title,code,author).catch(()=>[]) : [],
+      code || title && author ? googleEditions(title,author,code).catch(()=>[]) : [],
     ]);
     const requested={title,author,volume};
-    const nearby=[...alternatives,...national].filter(book=>sameWork(requested,book));
+    const nearby=[...alternatives,...national,...google].filter(book=>sameWork(requested,book));
     const sameVolume=nearby.filter(book=>!bookVolume(requested) || bookVolume(book)===bookVolume(requested));
     const exact=nearby.find(book=>book.summary && code && book.isbns.includes(code));
     const uniqueSummary=rows=>{
@@ -331,10 +348,23 @@ export function createCatalogue(localRows=[], signal) {
     const curated = local.length === 1 ? local[0] : null;
     const candidates = [...known,...sameVolume].filter(book =>
       (code && book.isbns.includes(code)) || sameWork(requested,book));
-    return {summary:curated?.summary || description || "", genres:curated?.genres || [],
+    // Une œuvre peut regrouper plusieurs éditions. Réserver les données physiques à la notice identifiée.
+    const editions=[...national,...known,...google].filter(row=>
+      (code && row.isbns.includes(code)) || (!code && id.startsWith("bnf:") && row.id===id));
+    const edition={};
+    for (const row of editions) {
+      for (const name of ["publisher","language","publicationDate","pageCount"]) {
+        if (!edition[name] && row[name]) edition[name]=row[name];
+      }
+      if (!edition.isbn) edition.isbn=code || row.isbns[0];
+    }
+    const matched=[...editions,...candidates];
+    const first=name=>matched.find(row=>row[name])?.[name];
+    return {...edition, title:first("title"),author:first("author"),series:first("series"),volume:first("volume"),
+      coverData:first("coverData"), summary:curated?.summary || description || first("summary") || "", genres:curated?.genres || [],
       subgenres:list([...(curated?.subgenres || []), ...candidates.flatMap(row => row.subgenres || [])]),
       tropes:curated?.tropes || [],
-      subjects:list([...(Array.isArray(work.subjects) ? work.subjects : []), ...candidates.flatMap(row => [...(row.subjects || []), ...(row.genres || [])])])};
+      subjects:list([...(Array.isArray(work.subjects) ? work.subjects : []), ...matched.flatMap(row => [...(row.subjects || []), ...(row.genres || [])])])};
   }
 
 

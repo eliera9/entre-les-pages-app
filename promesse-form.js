@@ -42,7 +42,7 @@ async function askServer(book, signal) {
   const db = typeof compteLecture !== "undefined" ? compteLecture?.db : null;
   if (!db?.functions) return null;
   const {data, error} = await db.functions.invoke("catalogue", {
-    body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || book.isbns?.[0] || "",
+    body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),
       genres: [...(book.genres || []), ...(book.subgenres || [])].slice(0, 20).join("|"), summary: (book.summary || "").slice(0, 3000)}},
     signal,
   });
@@ -77,7 +77,7 @@ export async function findPromesse(book, signal) {
   }
 }
 
-export function mountPromesse(section, {onDone} = {}) {
+export function mountPromesse(section, {onDone, signal} = {}) {
   let state = emptyPromesse();
   let touched = new Set();
   let romance = true;
@@ -355,6 +355,19 @@ export function mountPromesse(section, {onDone} = {}) {
   }
   track.addEventListener("scroll", updateDots, {passive: true});
 
+  const collected=new WeakMap();
+  function collect(book, metadata) {
+    if (!collected.has(book)) {
+      const result=Promise.resolve(metadata).then(()=>{
+        if (signal?.aborted) return null;
+        const deadline=AbortSignal.timeout(38000);
+        return findPromesse(book,signal ? AbortSignal.any([signal,deadline]) : deadline);
+      }).catch(()=>null);
+      collected.set(book,result);
+    }
+    return collected.get(book);
+  }
+
   let pending;
   function prefill(book, summaryReady) {
     const key = [book?.id, book?.title, book?.author].join("|");
@@ -378,13 +391,12 @@ export function mountPromesse(section, {onDone} = {}) {
     loading = true;
     notFound = false;
     render();
-    // Le résumé aide beaucoup Gemini : on l'attend quelques secondes au plus
-    if (summaryReady) await Promise.race([Promise.resolve(summaryReady).catch(() => {}), new Promise(resolve => setTimeout(resolve, 4000))]);
-    if (controller.signal.aborted) return;
-    const result = await findPromesse(book, AbortSignal.any([controller.signal, AbortSignal.timeout(28000)])).catch(() => null);
+    // Les réponses du formulaire utilisent la notice enrichie et sa pagination.
+    const result = await collect(book,summaryReady);
     if (controller.signal.aborted) return;
     sources = result?.sources || null;
-    const found = result?.promesse || null;
+    const found = {...result?.promesse};
+    if (Number.isInteger(book.pageCount) && book.pageCount>0 && book.pageCount<=5000) found.pages=book.pageCount;
     const romanceFound = Boolean(result?.romance);
     if (controller.signal.aborted) return;
     romance = romance || romanceFound;
@@ -424,5 +436,5 @@ export function mountPromesse(section, {onDone} = {}) {
   }
 
   render();
-  return {prefill, clear, values, setVisible};
+  return {collect, prefill, clear, values, setVisible};
 }

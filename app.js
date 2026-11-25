@@ -322,7 +322,8 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       }
     }
 
-    return {type: 'EPUB', publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
+    return {type: 'EPUB', publisher: named(metadata,'publisher')[0]?.textContent.trim(),
+      language: named(metadata,'language')[0]?.textContent.trim(), publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
   async function fromPdf(bytes, track) {
@@ -2570,7 +2571,7 @@ async function activateLibrary(root) {
       fingerprint = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('');
     }
     const documentId = fingerprint && 'cover-import-' + fingerprint;
-    const code = details.isbn || isbns?.[0] || '';
+    const code = details.isbn || (isbns?.length === 1 ? isbns[0] : '');
     const existing = books.find(book => (documentId && (book.id === documentId || book.fileFingerprint === fingerprint)) ||
       (catalogueId && book.catalogueId === catalogueId) || (code && book.isbn === code));
     const imported = {
