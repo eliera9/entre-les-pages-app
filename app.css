@@ -2119,15 +2119,33 @@ body { margin: 0; }
 #app-lecture .acc-goal-copy { display: grid; min-inline-size: 0; line-height: 1.12; }
 #app-lecture .acc-goal-copy b { color: var(--title); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 #app-lecture .acc-goal-copy small { color: var(--muted); font-size: 11px; white-space: nowrap; }
-#app-lecture .acc-hello { margin: 4px 0 14px; }
-#app-lecture .acc-hello-title { margin: 0; font: 400 30px/1.1 var(--section); color: var(--title); }
+#app-lecture .acc-hello {
+  --hello-ink: light-dark(#604259, #C5ADCC);
+  margin: 4px 0 14px;
+  text-align: left;
+}
+#app-lecture .acc-hello .acc-hello-title { margin: 0; font: 400 30px/1.1 "Cormorant Garamond", Georgia, serif; color: var(--hello-ink); text-align: center; }
 #app-lecture .acc-hello-initial { font: 400 1.6em/0 "Italianno Accueil", cursive; color: var(--accent); vertical-align: -.12em; margin-inline-end: .02em; }
 #app-lecture .acc-hello-sub { margin: 4px 0 0; font: 400 15.5px/1.35 var(--heading); color: var(--title); }
 #app-lecture .acc-hello-sub em { color: var(--muted); }
 #app-lecture .acc-hello-sub strong { color: light-dark(#784B5B, #C8B9CC); font-weight: 400; white-space: nowrap; }
-#app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello { margin-block: 8px 20px; }
-#app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello-title { font-size: 42px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello {
+  --hello-ink: light-dark(#51334D, #D4C5EE);
+  margin-block: 8px 20px;
+  text-align: center;
+}
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello-title { font-size: 48px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello-sub { font-size: 19px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-hello::after {
+  content: "";
+  display: block;
+  inline-size: min(245px, 100%);
+  block-size: 26px;
+  margin: 10px auto 0;
+  background-color: var(--hello-ink);
+  -webkit-mask: url("./art/etoile-entete.png") center / 114% auto no-repeat;
+  mask: url("./art/etoile-entete.png") center / 114% auto no-repeat;
+}
 
 /* Tablette, toute l'app : barres du haut et du bas plus grandes, comme les autres apps */
 #app-lecture #bibliotheque-app:has([data-other-view]:not([hidden])) :is(.acc-goal, .acc-hello) { display: none; }
