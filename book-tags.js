@@ -1,8 +1,8 @@
 // The same tabbed picker edits the classification before and after a book is added.
 function mountBookTags(container, options, refreshIcons) {
   const key = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr').replaceAll('œ', 'oe').trim();
-  const names = {genres: 'Genres', subgenres: 'Sous-genres'};
-  const placeholders = {genres: 'Rechercher un genre', subgenres: 'Rechercher un sous-genre'};
+  const names = {genres: 'Genres', subgenres: 'Sous-genres', tropes: 'Tropes'};
+  const placeholders = {genres: 'Rechercher un genre', subgenres: 'Rechercher un sous-genre', tropes: 'Rechercher ou saisir un trope'};
   const element = (tag, className, text) => {
     const node = document.createElement(tag);
     node.className = className;
@@ -11,7 +11,7 @@ function mountBookTags(container, options, refreshIcons) {
   };
   const tabs = element('div', 'ep-tag-tabs');
   tabs.setAttribute('role', 'tablist');
-  tabs.setAttribute('aria-label', 'Genres et sous-genres');
+  tabs.setAttribute('aria-label', 'Genres, sous-genres et tropes');
   const panel = element('div', 'ep-tag-panel');
   panel.id = container.closest('form').id + '-tag-panel';
   panel.setAttribute('role', 'tabpanel');
@@ -29,11 +29,13 @@ function mountBookTags(container, options, refreshIcons) {
   live.setAttribute('role', 'status');
   panel.append(search, suggestions, picked);
   container.append(tabs, panel, live);
+  const changed = new Set();
   let active = 'genres';
   let values;
   let matches;
 
   function select(value, remove) {
+    changed.add(active);
     if (remove) values[active] = values[active].filter(item => key(item) !== key(value));
     else {
       values[active].push(value);
@@ -65,6 +67,8 @@ function mountBookTags(container, options, refreshIcons) {
     picked.replaceChildren(...selected.map(value => chip(value, true)));
     matches = term ? options[active].filter(value => !chosen.has(key(value)) && key(value).includes(term))
       .sort((a, b) => Number(key(b).startsWith(term)) - Number(key(a).startsWith(term))) : [];
+    if (active === 'tropes' && term && !chosen.has(term) && !matches.some(item => key(item) === term))
+      matches = [input.value.trim().slice(0,120), ...matches];
     suggestions.hidden = !term;
     suggestions.replaceChildren(...(matches.length ? matches.slice(0, 8).map(value => chip(value, false))
       : term ? [element('p', '', 'Aucune suggestion.')] : []));
@@ -95,7 +99,10 @@ function mountBookTags(container, options, refreshIcons) {
     button.addEventListener('keydown', event => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const target = event.key === 'Home' ? 'genres' : event.key === 'End' || active === 'genres' ? 'subgenres' : 'genres';
+      const keys = Object.keys(names);
+      const index = keys.indexOf(active);
+      const target = event.key === 'Home' ? keys[0] : event.key === 'End' ? keys.at(-1)
+        : keys[(index + (event.key === 'ArrowLeft' ? -1 : 1) + keys.length) % keys.length];
       chooseTab(target);
       tabs.querySelector('[aria-selected="true"]').focus();
     });
@@ -122,10 +129,14 @@ function mountBookTags(container, options, refreshIcons) {
         .map(value => [key(value), value.trim()]));
       return [name, [...unique.values()]];
     }));
+    changed.clear();
     live.textContent = '';
     chooseTab('genres');
   }
   set({});
   refreshIcons();
-  return {set, values: () => Object.fromEntries(Object.keys(names).map(name => [name, [...values[name]]]))};
+  return {set, update(book) {
+    for (const name of Object.keys(names)) if (!changed.has(name)) values[name] = [...(book[name] || [])];
+    render();
+  }, changed: () => [...changed], values: () => Object.fromEntries(Object.keys(names).map(name => [name, [...values[name]]]))};
 }

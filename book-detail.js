@@ -127,7 +127,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     q('[data-series-volume]').toggleAttribute('data-simple-volume', /^Tome \d+$/i.test(volumeText));
     q('[data-series-separator]').hidden = !series || !volume;
     q('.ep-book-series').hidden = !series && !volume;
-    for (const field of ['genres', 'subgenres']) {
+    for (const field of ['genres', 'subgenres', 'tropes']) {
       const group = q('[data-book-' + field + ']');
       const tags = list(book[field]).map(name => {
         const tag = document.createElement('span');

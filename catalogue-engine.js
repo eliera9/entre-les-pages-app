@@ -169,7 +169,7 @@ export function createCatalogue(localRows=[], signal) {
     return [{
       id:text(row.key).replace("/books/","ol-edition:") || "isbn:"+code,
       title:text(row.title),author:text(person.name || row.by_statement),series:text(Array.isArray(row.series) ? row.series[0] : row.series),
-      volume:"",genres:[],subgenres:[],tropes:[],isbns:[code],summary:summary(row.description || workData.description),
+      volume:"",genres:[],subjects:list([...(row.subjects || []), ...(workData.subjects || [])]),subgenres:[],tropes:[],isbns:[code],summary:summary(row.description || workData.description),
       coverData:openLibraryCover(row) || openLibraryCover(workData),
     }];
   }
@@ -219,15 +219,15 @@ export function createCatalogue(localRows=[], signal) {
       const authors=fields.filter(([,tag])=>["700","701"].includes(tag)).map(([, ,part])=>
         [sub(part,"b"),sub(part,"a")].filter(Boolean).join(" ")).filter(Boolean);
       const author=authors[0] || sub(field("200"),"f");
-      const seen=fields.filter(([,tag])=>tag==="010").map(([,value])=>isbn(sub(value,"a")));
+      const seen=fields.filter(([,tag])=>tag==="010").map(([, ,value])=>isbn(sub(value,"a")));
       if (!title || (code && !seen.includes(code))) return [];
       const image="https://openapi.bnf.fr/couverture/image/image/recupererImage?"+new URLSearchParams({
         ...(seen.find(Boolean) ? {ISBN:seen.find(Boolean)} : {idArk:"ark:/12148/"+id}),couverture:"1",taille:"originale",
       });
       return [{
         id:"bnf:"+id,title,author,authors,aliases:[sub(field("454"),"t"),sub(field("500"),"a")].filter(Boolean),series:sub(field("461"),"t"),volume:sub(field("461"),"v") || sub(field("200"),"h"),
-        genres:list(fields.filter(([,tag])=>tag==="608").map(([,value])=>sub(value,"a"))),
-        subgenres:list(fields.filter(([,tag])=>tag==="608").map(([,value])=>sub(value,"x"))),tropes:[],
+        genres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"a"))),
+        subgenres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"x"))),tropes:[],
         isbns:[...new Set(seen.filter(Boolean))],
         summary:sub(field("330"),"a",1800),coverData:coverUrl(image),
       }];
@@ -245,6 +245,9 @@ export function createCatalogue(localRows=[], signal) {
       }
       if (candidates.length!==1) continue;
       const row=candidates[0];
+      row.author=row.author || book.author;
+      row.series=row.series || book.series;
+      row.volume=row.volume || book.volume;
       row.summary=row.summary || book.summary;
       row.coverData=row.coverData || book.coverData;
       row.isbns=[...new Set([...row.isbns,...book.isbns])];
@@ -324,7 +327,14 @@ export function createCatalogue(localRows=[], signal) {
     };
     const description=summary(work.description) || exact?.summary || uniqueSummary(sameVolume) ||
       known.find(book=>book.summary && sameWork(requested,book))?.summary || (!volume ? uniqueSummary(nearby) : "");
-    return {summary:description || ""};
+    const local = localRows.map(fromAppCatalogue).filter(book => (code && book.isbns.includes(code)) || sameWork(requested,book));
+    const curated = local.length === 1 ? local[0] : null;
+    const candidates = [...known,...sameVolume].filter(book =>
+      (code && book.isbns.includes(code)) || sameWork(requested,book));
+    return {summary:curated?.summary || description || "", genres:curated?.genres || [],
+      subgenres:list([...(curated?.subgenres || []), ...candidates.flatMap(row => row.subgenres || [])]),
+      tropes:curated?.tropes || [],
+      subjects:list([...(Array.isArray(work.subjects) ? work.subjects : []), ...candidates.flatMap(row => [...(row.subjects || []), ...(row.genres || [])])])};
   }
 
 

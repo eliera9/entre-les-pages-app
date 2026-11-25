@@ -322,7 +322,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       }
     }
 
-    return {type: 'EPUB', title, author, isbn, series, volume, summary, cover, coverIssue};
+    return {type: 'EPUB', title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
   async function fromPdf(bytes, track) {
@@ -344,7 +344,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const title = clean(metadata?.info?.Title);
     const author = clean(metadata?.info?.Author);
     const isbn = findIsbn(metadata?.metadata?.get('dc:identifier'));
-    return {type: 'PDF', document, title, author, isbn, TextLayer: pdf.TextLayer};
+    return {type: 'PDF', document, title, author, isbn, subjects: String(metadata?.info?.Keywords || '').slice(0,5000).split(/[,;]/).map(item => item.trim()).filter(Boolean), TextLayer: pdf.TextLayer};
   }
 
   function formatOf(bytes) {
@@ -582,7 +582,7 @@ async function activateLibrary(root) {
     genre: sorted(genres.map(genre => genre.name)), subgenre: sorted(allSubgenres),
     trope: sorted(unique(books.flatMap(book => book.tropes))), status: statuses, author: sorted(unique(books.map(book => book.author).filter(Boolean))),
   };
-  const bookTagOptions = {genres: options.genre, subgenres: options.subgenre};
+  const bookTagOptions = {genres: options.genre, subgenres: options.subgenre, get tropes() { return options.trope; }};
   const emptyFilters = () => Object.fromEntries(Object.keys(options).map(kind => [kind, []]));
   const copy = filters => Object.fromEntries(Object.entries(filters).map(([kind, values]) => [kind, [...values]]));
   const countFilters = filters => Object.values(filters).filter(values => values.length).length;
@@ -2656,7 +2656,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=6');
+        const module = await import('./questionnaire.js?v=7');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,

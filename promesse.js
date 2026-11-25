@@ -139,6 +139,15 @@ export function fillGaps(base, extra) {
 
 const clean = value => String(value || "").replace(/\s+/g, " ").trim().slice(0, 200);
 
+const normalized = value => clean(value).normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+export function sameNotice(book, title, authors, ids = []) {
+  const isbn = clean(book.isbn).replace(/[ -]/g, "");
+  if (isbn && ids.includes(isbn)) return true;
+  const name = value => normalized(value).split(" ").sort().join(" ");
+  return Boolean(book.title && book.author && normalized(title) === normalized(book.title) &&
+    authors.some(author => name(author) === name(book.author)));
+}
+
 async function getJson(url, signal, init) {
   const response = await fetch(url, {...init, signal});
   if (!response.ok) throw new Error(String(response.status));
@@ -149,35 +158,32 @@ async function getJson(url, signal, init) {
 export async function fromGoogleBooks(book, signal, key = "") {
   const isbn = clean(book.isbn).replace(/[^0-9X]/gi, "");
   const q = /^97[89]\d{10}$/.test(isbn) ? `isbn:${isbn}` : `intitle:${clean(book.title)}${book.author ? ` inauthor:${clean(book.author)}` : ""}`;
-  const params = new URLSearchParams({q, maxResults: "3", printType: "books", fields: "items(volumeInfo(title,categories,pageCount,description))"});
+  const params = new URLSearchParams({q, maxResults: "3", printType: "books", fields: "items(volumeInfo(title,authors,industryIdentifiers,categories,pageCount,description,language))"});
   if (key) params.set("key", key);
   const data = await getJson("https://www.googleapis.com/books/v1/volumes?" + params, signal);
-  const info = (data.items || []).map(item => item.volumeInfo || {});
+  const info = (data.items || []).map(item => item.volumeInfo || {}).filter(item =>
+    sameNotice(book, item.title, item.authors || [], (item.industryIdentifiers || []).map(id => id.identifier)));
+  if (info.length !== 1) return {words: []};
   return {
     words: info.flatMap(item => item.categories || []),
     pages: info.find(item => item.pageCount)?.pageCount,
-    description: info.find(item => item.description)?.description || "",
+    description: info.find(item => item.language === "fr" && item.description)?.description || "",
   };
 }
 
 // Open Library : sujets donnés par les lecteurs et bibliothèques
 export async function fromOpenLibrary(book, signal) {
-  const params = new URLSearchParams({title: clean(book.title), limit: "2", fields: "subject,number_of_pages_median"});
+  const params = new URLSearchParams({title: clean(book.title), limit: "2", fields: "title,author_name,isbn,subject,number_of_pages_median"});
   if (book.author) params.set("author", clean(book.author));
   const data = await getJson("https://openlibrary.org/search.json?" + params, signal);
-  const docs = data.docs || [];
+  const docs = (data.docs || []).filter(item => sameNotice(book, item.title, item.author_name || [], item.isbn || []));
+  if (docs.length !== 1) return {words: []};
   return {words: docs.flatMap(doc => (doc.subject || []).slice(0, 40)), pages: docs.find(doc => doc.number_of_pages_median)?.number_of_pages_median};
 }
 
 // Devine tout ce qu'on peut sans IA : genres de l'app + Google Books + Open Library
 export async function guessPromesse(book, signal, {googleKey = ""} = {}) {
-  const tryGoogle = async () => {
-    const first = await fromGoogleBooks(book, signal, googleKey);
-    if (first.words.length || first.pages || !book.author) return first;
-    // Sans résultat avec l'autrice, on réessaie avec le titre seul
-    return fromGoogleBooks({...book, author: "", isbn: ""}, signal, googleKey);
-  };
-  const sources = await Promise.allSettled([tryGoogle(), fromOpenLibrary(book, signal)]);
+  const sources = await Promise.allSettled([fromGoogleBooks(book, signal, googleKey), fromOpenLibrary(book, signal)]);
   const status = {};
   ["Google Books", "Open Library"].forEach((name, i) => {
     const source = sources[i];
