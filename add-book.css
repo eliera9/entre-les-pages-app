@@ -822,3 +822,21 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-copy {flex:0 1 auto; gap:4px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-title {font-size:30px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-card-detail {font-size:16px}
+
+#bibliotheque-app #elp-add-book .ep-title-initial {margin-inline-end:.09em}
+#bibliotheque-app #elp-add-book .ep-digital {margin-top:0;padding:0;border:0}
+#bibliotheque-app #elp-add-book .ep-drop {inline-size:100%;min-height:140px;border:1px solid var(--ep-line);background:var(--ep-card);gap:5px}
+#bibliotheque-app #elp-add-book .ep-drop .ep-art-reader {inline-size:42px;block-size:42px}
+#bibliotheque-app #elp-add-book .ep-drop .ep-drop-detail {display:inline}
+#bibliotheque-app #elp-add-book .ep-drop .ep-drop-drag {display:none}
+#bibliotheque-app #elp-add-book .ep-digital {--cover:86px;--name:23px;--author:15px;--series:14px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital {--cover:116px;--name:26px;--author:16px;--series:15px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book {width:100%;max-width:none}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-form {max-width:1060px;margin-inline:auto;--space-x:clamp(12px,3vw,30px);padding-inline:max(var(--space-x),env(safe-area-inset-left)) max(var(--space-x),env(safe-area-inset-right))}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-snapshot {grid-template-columns:min(var(--cover),34%) minmax(0,1fr);gap:16px}
+#bibliotheque-app #elp-add-book .ep-digital .ep-cover:has(img:not([hidden])) {border:0;padding:0;margin:0;background:transparent;border-radius:0;aspect-ratio:auto;block-size:auto;box-shadow:none}
+#bibliotheque-app #elp-add-book .ep-digital .ep-cover img {height:auto}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-name {font:400 var(--name)/1.14 "Cormorant Garamond",Georgia,serif;color:light-dark(#51334D,#F0DFE4)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-author {font:400 var(--author)/1.25 "Baskervville Formulaire",Georgia,serif;color:light-dark(#51334D,#F0DFE4)}
+#bibliotheque-app #elp-add-book .ep-digital .ep-book-series {font:400 var(--series)/1.25 "Instrument Serif Formulaire",Georgia,serif;color:light-dark(#784B5B,var(--muted))}
+#bibliotheque-app #elp-add-book .ep-book-spin {font:400 var(--series,16px)/1.25 "Cormorant Garamond",Georgia,serif;color:light-dark(#784B5B,#F7EBE1)}

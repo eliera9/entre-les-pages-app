@@ -392,6 +392,12 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const series = fragment.querySelector(".ep-book-series");
     series.textContent = showSeries ? seriesLine(book) : "";
     series.hidden = !series.textContent;
+    if (showSeries && book.spinOffOf) {
+      const spin=document.createElement("span");
+      spin.className="ep-book-spin";
+      spin.textContent="Spin-off de "+book.spinOffOf;
+      series.after(spin);
+    }
     return fragment;
   }
 
@@ -466,7 +472,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const editCoverStatus=get("[data-edit-cover-status]");
   const nextBook=get("[data-next-book]");
   const summary=get(".ep-next-summary");
-  const editFields=["title","author","series","volume"].map(name=>editForm.elements.namedItem(name));
+  const editFields=["title","author","series","volume","spinOffOf"].map(name=>editForm.elements.namedItem(name));
   const tags=mountBookTags(editForm.querySelector("[data-book-tags]"),bookTagOptions,refreshIcons);
   const cards=[...form.querySelectorAll("[data-book]")];
   const searchForm=get(".ep-paper-search");
@@ -800,6 +806,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         else if (!literary?.summary && !literary?.genres?.length && !literary?.tropes?.length)
           analysisIssue.set(book,"Les sources consultées ne donnent pas assez d’indices pour analyser ce livre.");
         if (literary) {
+          for (const key of ["series","volume","spinOffOf"]) {
+            if (!book[key] && !editedFields.get(book)?.has(key) && literary[key]) book[key]=literary[key];
+          }
           for (const name of ["genres","subgenres","tropes"]) {
             if (!editedTags.get(book)?.has(name) && Array.isArray(literary[name]) && literary[name].length)
               book[name]=[...new Set([...literary[name],...(book[name] || [])])];
@@ -962,7 +971,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     fileChoice.hidden=Boolean(digitalBook);
     digitalPreview.hidden=!digitalBook;
     if (digitalBook) {
-      get("[data-ep-snapshot]").replaceChildren(drawBook(digitalBook));
+      get("[data-ep-snapshot]").replaceChildren(drawBook(digitalBook,true));
       nextButton.disabled=!digitalBook.title;
     }
   }
@@ -1070,10 +1079,23 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         publicationDate:info.publicationDate || matched?.publicationDate || matched?.publishedDate,title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
         volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
+      const spinPattern=/\s*\(spin[- ]off\s+de\s+([^()]+)\)/i;
+      const spin=title.match(spinPattern) || fileName.match(spinPattern);
+      if (spin) {
+        digitalBook.spinOffOf=spin[1].trim();
+        digitalBook.title=title.replace(spinPattern,"").trim() || title;
+      }
+      const parts=digitalBook.title.match(/^(.+?)\s*[-–—:,]\s*tome\s+(\d+(?:[.,]\d+)?)\s*[-–—:.\n]\s*(.+)$/is);
+      if (parts && (!info.volume || String(info.volume)===parts[2])) {
+        digitalBook.series ||= parts[1].trim();
+        digitalBook.volume ||= parts[2];
+        digitalBook.title=parts[3].trim();
+      }
       const imported=digitalBook;
       if (info.analysisContext) ebookSamples.set(imported,info.analysisContext);
       if (started) await analysisModule.then(module=>module.reuseAnalysis(imported,started)).catch(()=>{});
       const ready=prepareMetadata(imported,started);
+      ready.then(()=>{if (current(version) && digitalBook===imported) drawDigital();});
       formReady.then(()=>{
         if (current(version) && digitalBook===imported && selectedStatus==="to-read")
           promesseForm?.collect(imported,ready);
@@ -1241,7 +1263,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }
   });
   readingFields.clear();
-  showStep("",false);
+  showStep("digital",false);
   refreshIcons();
   exit.focus({preventScroll:true});
 

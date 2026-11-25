@@ -26,11 +26,11 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=ajout-01">
+<link rel="stylesheet" href="./add-book.css?v=import-direct">
 <link rel="stylesheet" href="./questionnaire.css?v=3">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<script defer src="./add-book.js?v=pages-tous"></script>
+<script defer src="./add-book.js?v=import-direct"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
@@ -869,23 +869,12 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
           </div>
     </header>
     <p class="ep-question">Quel livre veux-tu ajouter ?</p>
-    <div class="ep-choices">
-      <button class="ep-card cursor-interaction" type="button" data-book="digital" aria-expanded="false">
-        <span class="ep-art ep-art-reader" aria-hidden="true"></span>
-        <span class="ep-card-copy"><span class="ep-card-title">Livre numérique</span><span class="ep-card-detail">Importer un EPUB ou un PDF</span></span>
-      </button>
-      <button class="ep-card cursor-interaction" type="button" data-book="paper" aria-expanded="false">
-        <span class="ep-art ep-art-closed" aria-hidden="true"></span>
-        <span class="ep-card-copy"><span class="ep-card-title">Livre papier</span><span class="ep-card-detail">Retrouver un livre dans le catalogue</span></span>
-      </button>
-    </div>
-
-      <section class="ep-step ep-digital" aria-label="Importer un fichier" hidden>
+<section class="ep-step ep-digital" aria-label="Importer un fichier" hidden>
         <div data-ep-file-choice>
-          <h3>Importer un fichier</h3>
+          
           <label class="ep-drop cursor-interaction">
                 <input class="sr-only ep-file" data-ep-document type="file" accept=".epub,.pdf,application/epub+zip,application/pdf">
-                <i data-lucide="file-up" aria-hidden="true"></i>
+                <span class="ep-art ep-art-reader" aria-hidden="true"></span>
                 <span>Choisir un fichier</span>
                 <span class="ep-drop-detail">EPUB ou PDF</span>
                 <span class="ep-drop-drag">Glisser un EPUB ou un PDF ici</span>
@@ -951,6 +940,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
           <div class="ep-edit-series">
             <label>Saga <input name="series" type="text"></label>
             <label>Tome <input name="volume" type="text"></label>
+            <label>Spin-off de <input name="spinOffOf" type="text"></label>
           </div>
         </div>
         <div class="ep-tag-editor" data-book-tags></div>
