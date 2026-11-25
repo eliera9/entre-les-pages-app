@@ -2204,9 +2204,9 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-copy b { font-size: 19px; }
 #app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-copy small { font-size: 14px; }
 
-#app-lecture .search-caption {display:flex;align-items:center;gap:7px;margin:12px 0 5px;color:var(--title);font:small-caps 17px/1.2 var(--heading)}
-#app-lecture .search-caption svg {width:14px;height:16px}
-#app-lecture .search-caption small {margin-inline-start:auto;color:var(--muted);font:14px var(--heading)}
+#app-lecture .search-caption {display:flex;align-items:center;gap:7px;margin:12px 0 5px;color:var(--title);font:small-caps 25px/1.2 var(--heading)}
+#app-lecture .search-caption svg {width:.4em;height:.7em}
+#app-lecture .search-caption small {margin-inline-start:auto;color:var(--muted);font:20px var(--heading);white-space:nowrap}
 #app-lecture .search-bookmark {position:fixed;z-index:90;box-sizing:border-box;width:156px;max-width:calc(100vw - 10px);margin:0;padding:5px 7px;background:var(--paper);color:var(--text);border:1px solid var(--rule);border-radius:8px;box-shadow:0 4px 14px var(--shadow);font:14px/1.2 var(--heading)}
 #app-lecture [data-format="tablet"] .search-bookmark {width:204px}
 #app-lecture .bookmark-title {font:small-caps 16px/1.2 'Cormorant Garamond',Georgia,serif;border-inline-start:2px solid light-dark(#604259,#d4c5ee);padding:3px 5px;overflow-wrap:anywhere;margin:0;border-bottom:1px solid var(--rule)}
@@ -2218,6 +2218,15 @@ body { margin: 0; }
 #app-lecture .bookmark-choice:before {content:'';width:7px;height:7px;border-radius:50%;border:1px solid currentColor;margin-inline:3px}
 #app-lecture .bookmark-choice[aria-pressed="true"]:before {background:currentColor}
 @media (prefers-reduced-motion:no-preference) {
- #app-lecture [data-accueil-page] [data-library-search-results] .elp-tile {animation:elp-search-rise .27s ease-out backwards;animation-delay:var(--arrival,0ms)}
- @keyframes elp-search-rise {from{transform:translateY(13px);opacity:0}to{transform:translateY(0);opacity:1}}
+ #app-lecture [data-accueil-page] [data-library-search-results] .elp-tile {animation:elp-search-rise .85s ease-out backwards;animation-delay:var(--arrival,0ms)}
+ @keyframes elp-search-rise {from{transform:translateY(22px);opacity:0}to{transform:translateY(0);opacity:1}}
 }
+
+#app-lecture [data-format="tablet"] .search-caption {font-size:31px}
+#app-lecture [data-format="tablet"] .search-caption small {font-size:24px}
+#app-lecture .search-caption {padding-block:7px}
+#app-lecture .search-bookmark {transform-origin:var(--pin-x,50%) var(--pin-y,0%)}
+#app-lecture .search-bookmark::before {content:'';position:absolute;left:var(--pin-x,50%);top:-6px;width:10px;height:10px;background:var(--paper);border-top:1px solid var(--rule);border-left:1px solid var(--rule);transform:translateX(-50%) rotate(45deg);pointer-events:none}
+#app-lecture .search-bookmark[data-pin-bottom]::before {top:auto;bottom:-6px;transform:translateX(-50%) rotate(225deg)}
+#app-lecture .elp-mosaic[data-bookmark-open] .elp-tile:not([data-bookmark-owner]) .elp-cover {opacity:.52}
+#app-lecture .elp-mosaic[data-bookmark-open] .elp-tile {animation:none}

@@ -1881,12 +1881,16 @@ async function activateLibrary(root) {
   function dismissBookmark(focus = false) {
     if (focus) anchorBook()?.focus({preventScroll:true});
     bookmark.hidden = true;
+    root.querySelector('[data-bookmark-open]')?.removeAttribute('data-bookmark-open');
+    root.querySelector('[data-bookmark-owner]')?.removeAttribute('data-bookmark-owner');
     bookmarkId = null;
   }
   function placeBookmark() {
     if (bookmark.hidden) return;
     const anchor = anchorBook();
     if (!anchor?.getClientRects().length) return dismissBookmark();
+    anchor.closest('.elp-mosaic')?.setAttribute('data-bookmark-open','');
+    anchor.closest('.elp-tile')?.setAttribute('data-bookmark-owner','');
     const rect = (anchor.querySelector('img,.elp-cover') || anchor).getBoundingClientRect();
     const vv = window.visualViewport;
     const left = vv?.offsetLeft || 0, top = vv?.offsetTop || 0;
@@ -1894,10 +1898,19 @@ async function activateLibrary(root) {
     if (rect.bottom <= top || rect.top >= bottom) return dismissBookmark();
     const width = bookmark.offsetWidth, height = bookmark.offsetHeight;
     const x = right - rect.right >= rect.left - left ? rect.right - width * .25 : rect.left - width * .75;
-    bookmark.style.left = Math.max(left + 5, Math.min(right - width - 5, x)) + 'px';
-    bookmark.style.top = Math.max(top + 5, Math.min(bottom - height - 5, rect.bottom - height * .28)) + 'px';
+    const menuX = Math.max(left + 5, Math.min(right - width - 5, x));
+    const cornerX = right - rect.right >= rect.left - left ? rect.right - 9 : rect.left + 9;
+    bookmark.style.setProperty('--pin-x',Math.max(12,Math.min(width-12,cornerX-menuX))+'px');
+    bookmark.style.left = menuX + 'px';
+    const menuY = Math.max(top + 6, Math.min(bottom - height - 6, rect.bottom - height * .28));
+    const bottomPin = rect.bottom > menuY + height;
+    bookmark.toggleAttribute('data-pin-bottom',bottomPin);
+    bookmark.style.setProperty('--pin-y',bottomPin?'100%':'0%');
+    bookmark.style.top = menuY + 'px';
   }
   function showBookmark(book, choosing = false, takeFocus = true) {
+    const opening = bookmark.hidden || bookmarkId !== book.id;
+    if (opening) dismissBookmark();
     bookmarkId = book.id;
     statusView = choosing;
     bookmark.replaceChildren();
@@ -1939,6 +1952,11 @@ async function activateLibrary(root) {
       bookmark.append(fiche,change);
     }
     refreshIcons(); placeBookmark();
+    if (opening && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
+      bookmark.getAnimations().forEach(animation => animation.cancel());
+      bookmark.animate([{transform:'scale(.83,.69)',opacity:.25},{transform:'scale(1)',opacity:1}],
+        {duration:480,easing:'cubic-bezier(.2,.7,.2,1)'});
+    }
     if (takeFocus) (bookmark.querySelector('[aria-pressed="true"]') || bookmark.querySelector('button'))?.focus({preventScroll:true});
   }
   document.addEventListener('pointerdown', event => {
@@ -2370,7 +2388,7 @@ async function activateLibrary(root) {
           showSaga: false,
           linkId: `library-book-${book.id}`,
         })));
-        [...mosaic.children].forEach((tile,i) => tile.style.setProperty('--arrival', Math.min(i,8)*40+'ms'));
+        [...mosaic.children].forEach((tile,i) => tile.style.setProperty('--arrival', Math.min(i,8)*170+'ms'));
         bookList.replaceChildren(mosaic);
         if (!bookmark.hidden) placeBookmark();
       }
