@@ -2139,3 +2139,25 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .library-destinations button svg { width: 27px; height: 27px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .library-sidebar { --sidebar-avatar: 54px; --sidebar-profile-name: 34px; --sidebar-profile-caption: 18px; --sidebar-heading: 30px; --sidebar-label: 21px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill { inset-block-end: calc(100px + env(safe-area-inset-bottom)); }
+
+/* Tomes à acheter et « Bientôt en librairie » */
+#app-lecture .acc-remote { cursor: default; }
+#app-lecture .acc-remote-title { padding: 8px; font: 400 13px/1.2 var(--heading); text-align: center; color: var(--accent); }
+#app-lecture .acc-cover.is-soon > .elp-cover { opacity: .55; filter: saturate(.7); }
+#app-lecture .acc-band { position: absolute; inset-inline: 0; inset-block-end: 12px; padding: 3px 0; background: light-dark(rgba(120,75,91,.92), rgba(200,185,204,.92)); color: light-dark(#EFDBDF, #211D20); font: 600 10.5px var(--body); font-style: normal; letter-spacing: .06em; text-transform: uppercase; text-align: center; }
+#app-lecture :is(.acc-bell, .acc-plus) { position: absolute; display: grid; place-items: center; inline-size: 44px; block-size: 44px; padding: 0; border: 0; background: none; color: var(--accent); }
+#app-lecture .acc-bell { inset-block-start: -2px; inset-inline-end: -2px; }
+#app-lecture .acc-plus { inset-block-start: -2px; inset-inline-end: -2px; }
+#app-lecture :is(.acc-bell, .acc-plus) svg { box-sizing: content-box; inline-size: 16px; block-size: 16px; padding: 6px; border-radius: 50%; background: light-dark(rgba(247,238,235,.95), rgba(33,29,32,.92)); box-shadow: 0 2px 6px rgba(30,20,30,.25); transition: transform 160ms cubic-bezier(.23,1,.32,1); }
+#app-lecture .acc-plus svg { background: var(--button); color: var(--button-text); }
+#app-lecture :is(.acc-bell, .acc-plus):active svg { transform: scale(.92); }
+#app-lecture .acc-plus:disabled { opacity: .5; }
+#app-lecture .acc-when { font: 600 12px var(--body); color: var(--muted); }
+#app-lecture .acc-when.is-out { color: var(--accent); }
+#app-lecture .acc-follow { font-size: 12px; color: light-dark(#9b3b4a, #E3A2B2); }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-band { font-size: 12.5px; padding: 5px 0; }
+#app-lecture #bibliotheque-app[data-format="tablet"] :is(.acc-bell, .acc-plus) svg { inline-size: 20px; block-size: 20px; padding: 8px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-when { font-size: 14px; }
+/* Barre du bas : 5 destinations avec la Bibliothèque */
+#app-lecture .library-destinations { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+

@@ -1,4 +1,29 @@
+// Vitesse de lecture : pages imprimées lues par heure, mesurée en tournant les pages dans la liseuse
+let speedLast = null;
+function trackSpeed(printedPage, percent) {
+  const now = Date.now();
+  const bookPages = Number(speedBook?.promesse?.pages || speedBook?.pages) || 0;
+  const page = Number.isFinite(printedPage) && printedPage > 0 ? printedPage : bookPages && Number.isFinite(percent) ? percent / 100 * bookPages : null;
+  if (page == null) { speedLast = null; return; }
+  const previous = speedLast;
+  speedLast = {time: now, page, book: speedBook?.id};
+  if (!previous || previous.book !== speedLast.book) return;
+  const pages = page - previous.page;
+  const elapsed = now - previous.time;
+  // Une page tournée en 3 s à 5 min compte ; au-delà, c'était une pause
+  if (pages <= 0 || pages > 5 || elapsed < 3000 || elapsed > 300000) return;
+  try {
+    const stats = JSON.parse(localStorage.getItem('elp-vitesse') || '{}');
+    stats.pages = (Number(stats.pages) || 0) + pages;
+    stats.minutes = (Number(stats.minutes) || 0) + elapsed / 60000;
+    localStorage.setItem('elp-vitesse', JSON.stringify(stats));
+  } catch {}
+}
+let speedBook = null;
+
 function mountSavedBook({root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+  speedBook = book;
+  speedLast = null;
   const scope = new AbortController();
   const on = (node, type, callback) => node.addEventListener(type, callback, {signal: scope.signal});
   host.replaceChildren(root.querySelector('[data-saved-book-template]').content.cloneNode(true));
@@ -759,6 +784,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     setText('[data-reader-progress]',label);
     chrome.style.setProperty('--progress',shownPercent+'%');
     chrome.hidden = false;
+    trackSpeed(numbered ? Number(leaf.number) : null, percent);
     if (record) {
       const readingPosition = {unit:unit(),value:index+1,...latestAnchor};
       savePosition = savePosition.then(() => save({readingPosition}));
