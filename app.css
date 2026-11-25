@@ -2312,7 +2312,7 @@ body { margin: 0; }
   @keyframes pal-die-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes pal-die-trace { to { stroke-dashoffset: 0; } }
 }
-#app-lecture #acc-pile-title {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
+#app-lecture :is(#acc-pile-title,#acc-sagas-title) {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
 #app-lecture .pile-title-link {
   display:flex; align-items:center; justify-content:center; gap:8px;
   width:100%; min-height:44px; padding:0; border:0; background:none;
@@ -2327,6 +2327,24 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-recent-pick {font-size:23px}
 #app-lecture #bibliotheque-app[data-format="tablet"] [data-recent-clear] {font-size:22px}
 #app-lecture .pile-title-link::before,#app-lecture .pile-title-link::after {content:"";flex:1;height:1px;background:var(--rule)}
-#app-lecture #bibliotheque-app #acc-pile-title .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
-#app-lecture [data-acc-row="pile"] .acc-dots {display:none}
-#app-lecture #bibliotheque-app[data-format="tablet"] #acc-pile-title {font-size:30px}
+#app-lecture #bibliotheque-app :is(#acc-pile-title,#acc-sagas-title) .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
+#app-lecture :is([data-acc-row="pile"],[data-acc-row="sagas"]) .acc-dots {display:none}
+#app-lecture #bibliotheque-app[data-format="tablet"] :is(#acc-pile-title,#acc-sagas-title) {font-size:30px}
+
+@font-face { font-family: "DM Sans"; src: url("./fonts/dm-sans.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
+#app-lecture #bibliotheque-app [data-acc-row="sagas"] .acc-card { min-inline-size: 0; }
+#app-lecture #bibliotheque-app [data-acc-row="sagas"] .acc-name {
+  max-inline-size: 100%; font: 400 13.5px/1.25 "DM Sans", sans-serif;
+  color: light-dark(#51334D, #F0DFD7); overflow-wrap: anywhere; text-align: center;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+#app-lecture #bibliotheque-app[data-format="tablet"] [data-acc-row="sagas"] .acc-name { font-size: 14.5px; }
+#app-lecture [data-acc-row="sagas"] .acc-status { width: 100%; }
+#app-lecture [data-acc-row="sagas"] .acc-ticks { width: fit-content; max-width: 100%; }
+#app-lecture [data-acc-row="sagas"] .acc-saga-progress { font: 400 12px/1.2 var(--body); color:var(--muted); }
+#app-lecture .acc-remote-open { position:absolute; inset:0; border:0; background:transparent; }
+#app-lecture .acc-remote-open + .acc-plus { z-index:1; }
+#app-lecture .acc-saga-details { max-width:min(86vw,23rem); padding:20px; color:var(--title); background:var(--paper); border:1px solid var(--rule); border-radius:12px; }
+#app-lecture .acc-saga-details::backdrop { background:#22192577; }
+#app-lecture .acc-saga-details h2 { font-family:var(--heading); }
+#app-lecture .acc-saga-details button { font:inherit; color:var(--button-text); background:var(--button); border:0; border-radius:8px; min-height:44px; padding-inline:18px; }
