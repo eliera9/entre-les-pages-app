@@ -2307,24 +2307,20 @@ body { margin: 0; }
   @keyframes pal-die-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes pal-die-trace { to { stroke-dashoffset: 0; } }
 }
-#app-lecture :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title) {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
+#app-lecture :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
 #app-lecture .pile-title-link {
   display:flex; align-items:center; justify-content:center; gap:8px;
   width:100%; min-height:44px; padding:0; border:0; background:none;
   font:inherit; color:inherit; cursor:pointer;
-}
-#app-lecture .pile-signet {
-  width:10px; height:17px; background:var(--accent);
-  clip-path:polygon(0 0,100% 0,100% 100%,50% 76%,0 100%);
 }
 #app-lecture .pile-title-link:focus-visible {outline:2px solid var(--accent);outline-offset:2px}
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-recent-title {font-size:30px}
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-recent-pick {font-size:23px}
 #app-lecture #bibliotheque-app[data-format="tablet"] [data-recent-clear] {font-size:22px}
 #app-lecture :is(.pile-title-link,#acc-bientot-title)::before,#app-lecture :is(.pile-title-link,#acc-bientot-title)::after {content:"";flex:1;height:1px;background:var(--rule)}
-#app-lecture #bibliotheque-app :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title) .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
+#app-lecture #bibliotheque-app :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
 #app-lecture :is([data-acc-row="pile"],[data-acc-row="sagas"]) .acc-dots {display:none}
-#app-lecture #bibliotheque-app[data-format="tablet"] :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title) {font-size:30px}
+#app-lecture #bibliotheque-app[data-format="tablet"] :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) {font-size:30px}
 
 @font-face { font-family: "DM Sans"; src: url("./fonts/dm-sans.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
 #app-lecture #bibliotheque-app [data-acc-row="sagas"] .acc-card { min-inline-size: 0; }
@@ -2353,7 +2349,6 @@ body { margin: 0; }
 }
 #app-lecture #bibliotheque-app[data-format="tablet"] #acc-bientot-title { font-size: clamp(17px, 7.2cqi, 30px); }
 #app-lecture #bibliotheque-app #acc-bientot-title .acc-count { font-size: clamp(13px, 4.7cqi, 16px); }
-#app-lecture #acc-bientot-title .pile-signet { flex: none; }
 #app-lecture [data-acc-row="bientot"] .acc-band {
   padding: 4px 2px;
   font: 500 11px/1.2 var(--body);

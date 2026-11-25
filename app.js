@@ -2839,7 +2839,7 @@ async function activateLibrary(root) {
     const row = find(`[data-acc-row="${name}"]`, accueil);
     row.hidden = items.length === 0;
     if (row.hidden) return;
-    find('[data-acc-count]', row).textContent = name === 'bientot' ? countLabel(total) : String(total);
+    find('[data-acc-count]', row).textContent = (name === 'bientot' || name === 'lus') ? countLabel(total) : String(total);
     const track = find('[data-acc-track]', row);
     if (homeCarousels.has(name)) {
       find('[data-acc-count]',row).textContent = name === 'pile' ? countLabel(total) : total + (total > 1 ? ' sagas' : ' saga');
