@@ -407,6 +407,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const author=identity.querySelector(".ep-book-author");
     author.hidden=!book.author;
     if (book.author) author.prepend("Par ");
+    if (book.pageCount) {
+      const pagination=document.createElement("span");
+      pagination.textContent=book.pageCount+" pages";
+      identity.append(pagination);
+    }
 
     const series=identity.querySelector(".ep-book-series");
     series.textContent=series.textContent.replace(/\bTome (?=\d+$)/i,"Tome\u00a0");
@@ -1061,7 +1066,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       if (!current(version)) return;
       const title=info.title || matched?.title || fileName;
       const code=isbn(info.isbn || matched?.isbn || (matched?.isbns?.length===1 ? matched.isbns[0] : ""));
-      digitalBook={...matched,publisher:info.publisher || matched?.publisher,language:info.language || matched?.language,
+      digitalBook={...matched,pageCount:info.pageCount || matched?.pageCount,publisher:info.publisher || matched?.publisher,language:info.language || matched?.language,
         publicationDate:info.publicationDate || matched?.publicationDate || matched?.publishedDate,title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
         volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};

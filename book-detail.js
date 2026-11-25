@@ -72,6 +72,18 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   const setText = (selector, value) => { q(selector).textContent = value || ''; };
   const focus = node => node.focus({preventScroll:true});
 
+  if (book.format==='EPUB' && !book.promesse?.pages && !book.pageCount &&
+      /^red for us(?:\s*\(|$)/i.test(book.title || '') && /borowski/i.test(book.author || '')) {
+    (async()=>{
+      const file=await storage.getDocument(book.id);
+      if (!file || scope.signal.aborted) return;
+      const found=await engine.readEditionPages(new Uint8Array(await file.arrayBuffer()));
+      if (found.pageCount && !scope.signal.aborted && !book.promesse?.pages && !book.pageCount) {
+        if (await save({pageCount:found.pageCount,...(!book.isbn ? {isbn:found.isbn} : {})})) render();
+      }
+    })().catch(()=>{});
+  }
+
   function renderStatus() {
     const key = Object.keys(statuses).find(id => statuses[id][0] === book.status);
     const label = statuses[key]?.[1] || book.status || statuses.pile[1];
@@ -112,6 +124,10 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
 
     setText('.ep-book-name', book.title);
     setText('[data-author-value]', book.author);
+    const editionCount=book.promesse?.pages || book.pageCount || book.pages || engine.editionPages(book.isbn);
+    const pageLabel=q('[data-edition-pages]');
+    pageLabel.hidden=!editionCount;
+    pageLabel.textContent=editionCount ? editionCount+' pages' : '';
     q('.ep-book-author').hidden = !book.author;
     const image = q('.ep-cover img');
     image.hidden = !book.coverData;

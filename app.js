@@ -319,6 +319,47 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     return {toc,opening,ending:ending===opening?'':ending};
   }
 
+  // Pagination de l’édition numérique vérifiée dans la notice Numilog 1823359.
+  const ebookEditions=new Map([['9782381512594',380]]);
+  const editionPages=isbn=>ebookEditions.get(isbn);
+
+  async function epubPagination(archive,opf,opfPath) {
+    const meta=named(opf,'metadata')[0] || opf;
+    const declared=named(meta,'meta').find(el=>['schema:numberOfPages','calibre:user_metadata:#pages','calibre:pages'].includes(el.getAttribute('property') || el.getAttribute('name')));
+    const count=Number(declared?.getAttribute('content') || declared?.textContent);
+    const pageCount=Number.isInteger(count) && count>0 && count<=5000 ? count : undefined;
+    const ids=named(meta,'identifier');
+    let isbn=ids.map(node=>findIsbn(node.textContent)).find(Boolean);
+    if (!isbn) {
+      const items=new Map(named(opf,'item').map(node=>[node.getAttribute('id'),node]));
+      const spine=named(opf,'itemref');
+      const references=new Set([...spine.slice(0,8),...spine.slice(-3)]);
+      const candidates=new Set();
+      for (const ref of references) {
+        const item=items.get(ref.getAttribute('idref'));
+        if (!item || !/html/i.test(item.getAttribute('media-type'))) continue;
+        try {
+          const data=await readEntry(archive,archivePath(opfPath,item.getAttribute('href')),256*1024);
+          if (!data) continue;
+          const body=named(readText(data),'body')[0];
+          const content=(body?.textContent || '').replace(/\s+/g,' ');
+          if (content.length>12000 || !/copyright|©|droits réservés|propriété intellectuelle|dépôt légal|ISBN/i.test(content)) continue;
+          for (const raw of content.match(/\b97[89](?:[ \t-]*\d){10}\b/g) || []) {
+            const code=findIsbn(raw);
+            if (code) candidates.add(code);
+          }
+        } catch { /* Une page facultative peut être illisible. */ }
+      }
+      if (candidates.size===1) isbn=[...candidates][0];
+    }
+    return {isbn:isbn || '',pageCount:pageCount || editionPages(isbn)};
+  }
+
+  async function readEditionPages(bytes) {
+    const {archive,opf,opfPath}=await epubPackage(bytes);
+    return epubPagination(archive,opf,opfPath);
+  }
+
   async function fromEpub(bytes) {
     const {archive, opf, opfPath} = await epubPackage(bytes);
     const metadata = named(opf, 'metadata')[0] || opf;
@@ -339,10 +380,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const title = (titles.find(node => refine(node, 'title-type') === 'main') || titles[0])?.textContent.trim() || '';
     const author = (creators.find(node =>
       (refine(node, 'role') || node.getAttribute('opf:role')) === 'aut') || creators[0])?.textContent.trim() || '';
-    const identifiers = named(metadata, 'identifier');
-    const primary = named(opf, 'package')[0]?.getAttribute('unique-identifier');
-    const isbn = findIsbn(identifiers.find(node => node.getAttribute('id') === primary)?.textContent)
-      || identifiers.map(node => findIsbn(node.textContent)).find(Boolean) || '';
+    const {isbn,pageCount}=await epubPagination(archive,opf,opfPath);
     const collections = properties.filter(node => node.getAttribute('property') === 'belongs-to-collection');
     const seriesMeta = collections.find(node => refine(node, 'collection-type') === 'series')
       || (collections.length === 1 && !refine(collections[0], 'collection-type') ? collections[0] : null);
@@ -375,7 +413,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       }
     }
 
-    return {type: 'EPUB', analysisContext:await readingSample(archive,opf,opfPath), publisher: named(metadata,'publisher')[0]?.textContent.trim(),
+    return {type: 'EPUB', pageCount, analysisContext:await readingSample(archive,opf,opfPath), publisher: named(metadata,'publisher')[0]?.textContent.trim(),
       language: named(metadata,'language')[0]?.textContent.trim(), publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
@@ -547,7 +585,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     return target;
   }
 
-  return {openEpub, fromEpub, fromPdf, findIsbn, formatOf, imageCanvas, imageSpec, renderPage, cropRectangle, trimCover, longEdge};
+  return {openEpub, fromEpub, readEditionPages, editionPages, fromPdf, findIsbn, formatOf, imageCanvas, imageSpec, renderPage, cropRectangle, trimCover, longEdge};
 }
 
 // Earlier previews let users change the status of sample books, which saved these IDs locally.
