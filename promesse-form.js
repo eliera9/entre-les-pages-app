@@ -49,12 +49,14 @@ async function askServer(book, context, signal) {
 
 export function beginAnalysis(book, context, signal) {
   if (!analyses.has(book)) {
-    const deadline=AbortSignal.timeout(60000);
+    const deadline=AbortSignal.timeout(95000);
     const active=signal ? AbortSignal.any([signal,deadline]) : deadline;
     analyses.set(book,askServer(book,context,active).catch(()=>null));
   }
   return analyses.get(book);
 }
+
+export function forgetAnalysis(book) { analyses.delete(book); }
 
 export function reuseAnalysis(book,pending) {
   analyses.set(book,pending);
@@ -416,6 +418,12 @@ export function mountPromesse(section, {onDone, signal} = {}) {
     render();
   }
 
+  function retry(book,metadata) {
+    collected.delete(book);
+    bookKey="";
+    return prefill(book,metadata);
+  }
+
   function clear() {
     request?.abort();
     pending = null;
@@ -445,5 +453,5 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   }
 
   render();
-  return {collect, prefill, clear, values, setVisible};
+  return {collect, prefill, retry, clear, values, setVisible};
 }

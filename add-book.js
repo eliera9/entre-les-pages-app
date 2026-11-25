@@ -497,7 +497,28 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const editedSummaries=new WeakSet();
   const completedMetadata=new WeakSet();
   const editedFields=new WeakMap();
+  const analysisIssue=new WeakMap();
+  const ebookSamples=new WeakMap();
   const lookupStatus=get("[data-book-lookup]");
+  const retryAnalysis=document.createElement("button");
+  retryAnalysis.type="button";
+  retryAnalysis.textContent="Relancer la recherche";
+  retryAnalysis.className="ep-access";
+  retryAnalysis.hidden=true;
+  lookupStatus.after(retryAnalysis);
+  retryAnalysis.addEventListener("click",async()=>{
+    const book=currentBook;
+    retryAnalysis.hidden=true;
+    const module=await analysisModule;
+    if (signal.aborted || currentBook!==book) return;
+    module.forgetAnalysis(book);
+    pendingMetadata.delete(book);
+    completedMetadata.delete(book);
+    analysisIssue.delete(book);
+    const ready=prepareMetadata(book);
+    renderBook(book);
+    if (selectedStatus==="to-read" && promesseForm) pendingPromesse=promesseForm.retry(book,ready);
+  });
   for (const field of editFields) field.addEventListener("input",()=>{
     if (!currentBook) return;
     if (!editedFields.has(currentBook)) editedFields.set(currentBook,new Set());
@@ -546,7 +567,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=gemini-01");
+  const analysisModule=import("./promesse-form.js?v=relance-01");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
@@ -610,6 +631,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   }
 
   function renderBook(book) {
+    retryAnalysis.hidden=true;
     nextBook.replaceChildren(drawRecap(book));
     summary.textContent=book.summary || (editedSummaries.has(book) ? "Résumé indisponible." : "Recherche du résumé…");
     lookupStatus.hidden=completedMetadata.has(book);
@@ -617,7 +639,10 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     prepareMetadata(book).then(()=>{
       if (signal.aborted || currentBook!==book) return;
       nextBook.replaceChildren(drawRecap(book));
-      lookupStatus.hidden=true;
+      const issue=analysisIssue.get(book);
+      lookupStatus.hidden=!issue;
+      retryAnalysis.hidden=!issue;
+      if (issue) lookupStatus.textContent=issue;
       if (!editForm.hidden) {
         tags.update(book);
         for (const field of editFields) {
@@ -761,10 +786,14 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   function prepareMetadata(book,started) {
     if (!pendingMetadata.has(book)) {
       classify(book,{});
-      const primary=started || analyse(book);
+      const primary=started || analyse(book,ebookSamples.get(book));
       pendingMetadata.set(book,primary.then(result=>{
         if (signal.aborted) return book.summary;
         const literary=result?.literature;
+        if (!result || result.sources?.gemini && result.sources.gemini!=="ok")
+          analysisIssue.set(book,"Gemini est indisponible. Les informations récupérées sont conservées.");
+        else if (!literary?.summary && !literary?.genres?.length && !literary?.tropes?.length)
+          analysisIssue.set(book,"Les sources consultées ne donnent pas assez d’indices pour analyser ce livre.");
         if (literary) {
           for (const name of ["genres","subgenres","tropes"]) {
             if (!editedTags.get(book)?.has(name) && Array.isArray(literary[name]) && literary[name].length)
@@ -1037,6 +1066,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
       const imported=digitalBook;
+      if (info.analysisContext) ebookSamples.set(imported,info.analysisContext);
       if (started) await analysisModule.then(module=>module.reuseAnalysis(imported,started)).catch(()=>{});
       const ready=prepareMetadata(imported,started);
       formReady.then(()=>{
