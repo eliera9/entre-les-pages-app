@@ -2373,7 +2373,11 @@ async function activateLibrary(root) {
     results.toggleAttribute('data-library-search-results', query);
     const caption = find('[data-search-caption]');
     caption.hidden = !(scope === 'home' && query);
-    if (!caption.hidden) caption.querySelector('small').textContent = countLabel(matching.length);
+    if (!caption.hidden) {
+      const count = caption.querySelector('small');
+      count.hidden = false;
+      count.textContent = countLabel(matching.length);
+    }
     resultsHeader.hidden = noMatch || !caption.hidden;
     renderSearchEmpty(searchEmpty, noMatch, query, countFilters(applied) > 0);
     bookList.hidden = noMatch;
@@ -2946,11 +2950,6 @@ async function activateLibrary(root) {
   pileTrack.addEventListener('scroll',schedulePile,{passive:true});
   document.addEventListener('visibilitychange',schedulePile);
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',schedulePile);
-  function pileEndCard() {
-    const card = button('','acc-card pal-end',accOpenList('pile'));
-    card.append(el('span','acc-cover'),el('b','acc-name','Ma pile à lire'));
-    return card;
-  }
   function accFill(name, items, total, moreTarget, noun) {
     const row = find(`[data-acc-row="${name}"]`, accueil);
     row.hidden = items.length === 0;
@@ -2960,7 +2959,7 @@ async function activateLibrary(root) {
     if (name === 'pile') {
       find('[data-acc-count]',row).textContent = countLabel(total);
       const previous = track.scrollLeft;
-      track.replaceChildren(...items,pileEndCard());
+      track.replaceChildren(...items);
       track.scrollLeft = previous;
       schedulePile();
       return;
@@ -3342,6 +3341,9 @@ async function activateLibrary(root) {
     const open = recentOpen();
     recentBox.hidden = !open;
     if (!open) return;
+    const caption = find('[data-search-caption]');
+    caption.hidden = false;
+    caption.querySelector('small').hidden = true;
     recentList.replaceChildren(...readRecent().map(q => {
       const item = el('li', 'acc-recent-item');
       const pick = el('button', 'acc-recent-pick cursor-interaction');
