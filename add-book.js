@@ -412,6 +412,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     series.textContent=series.textContent.replace(/\bTome (?=\d+$)/i,"Tome\u00a0");
     if (book.genres?.length) info.append(tagGroup("Genres",book.genres,"genres"));
     if (book.subgenres?.length) info.append(tagGroup("Sous-genres",book.subgenres,"subgenres"));
+    if (book.tropes?.length) info.append(tagGroup("Tropes",book.tropes,"tropes"));
     return fragment;
   }
 
@@ -492,8 +493,33 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const original=get("[data-ep-original]");
   const imageInput=get("[data-ep-image]");
   const signal=lifecycle.signal;
-  const pendingSummaries=new WeakMap();
+  const pendingMetadata=new WeakMap();
   const editedSummaries=new WeakSet();
+  const editedTags=new WeakMap();
+  const normTag=value=>String(value).normalize("NFKD").replace(/\p{M}/gu,"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+  const tropeNames=["Slow burn","Enemies to lovers","Friends to lovers","Found family","Fake dating","Forced proximity","Second chance","Grumpy / Sunshine","Forbidden love","Only one bed","Marriage of convenience","Love triangle","Touch her and die","Secret identity","Rivals to lovers","Brother’s best friend","Opposites attract","Who did this to you"];
+  const aliases=new Map(Object.entries({"proximite forcee":"Forced proximity","faux couple":"Fake dating","famille choisie":"Found family","seconde chance":"Second chance","amour interdit":"Forbidden love","triangle amoureux":"Love triangle","mariage de convenance":"Marriage of convenience","un seul lit":"Only one bed","science fiction":"Science-fiction","historical fiction":"Fiction historique","contemporary romance":"Romance contemporaine","cozy mystery":"Cozy mystery"}));
+  function classify(book,data) {
+    const fields=["genres","subgenres","tropes"];
+    const indexes=fields.map(name=>new Map([...(name==="tropes" ? tropeNames : []),...bookTagOptions[name]].map(label=>[normTag(label),label])));
+    const result=Object.fromEntries(fields.map(name=>[name,new Map()]));
+    function add(name,label) {
+      if (typeof label==="string" && label.trim()) result[name].set(normTag(label),label.trim());
+    }
+    function subject(label) {
+      const key=normTag(aliases.get(normTag(label)) || label);
+      // An explicit trope can also be present in the historical subgenre index.
+      for (const i of [2,0,1]) if (indexes[i].has(key)) { add(fields[i],indexes[i].get(key)); return true; }
+      return false;
+    }
+    for (const name of fields) for (const label of [...(book[name] || []),...(data[name] || [])]) {
+      if (name!=="genres" || !subject(label)) add(name,label);
+    }
+    for (const label of [...(book.subjects || []),...(data.subjects || [])]) {
+      if (typeof label==="string" && !subject(label)) label.split(/[/;,>|]/).forEach(subject);
+    }
+    for (const name of fields) if (!editedTags.get(book)?.has(name)) book[name]=[...result[name].values()];
+  }
 
   digital.id="ep-fiche-numerique";
   paper.id="ep-fiche-papier";
@@ -505,13 +531,14 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   // « Ce qu'il me promet » : seulement pour un livre de la pile, pré-rempli par l'app
   const promesseSection=following.querySelector("[data-promesse]");
   let promesseForm=null;
+  let pendingPromesse;
   function syncPromesse() {
     if (!promesseForm) return;
     const pile=selectedStatus==="to-read";
     promesseForm.setVisible(pile);
-    if (pile && currentBook) promesseForm.prefill(currentBook,prepareSummary(currentBook));
+    if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  import("./promesse-form.js?v=7").then(module=>{
+  const formReady=import("./promesse-form.js?v=8").then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{onDone(head) {
       const next=following.querySelector(".ep-folder-zone") || head;
@@ -575,13 +602,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
 
   function renderBook(book) {
     nextBook.replaceChildren(drawRecap(book));
-    if (book.summary || editedSummaries.has(book)) {
-      summary.textContent=book.summary || "Résumé indisponible.";
-      return;
-    }
-    summary.textContent="Recherche du résumé…";
-    prepareSummary(book).then(()=>{
+    summary.textContent=book.summary || (editedSummaries.has(book) ? "Résumé indisponible." : "Recherche du résumé…");
+    prepareMetadata(book).then(()=>{
       if (signal.aborted || currentBook!==book) return;
+      nextBook.replaceChildren(drawRecap(book));
+      if (!editForm.hidden) tags.update(book);
       summary.textContent=book.summary || "Résumé indisponible.";
       if (!editForm.hidden && !editSummaryChanged) editSummary.value=book.summary || "";
     });
@@ -646,6 +671,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     title.setCustomValidity(title.value.trim() ? "" : "Renseigne le titre du livre.");
     if (!editForm.reportValidity()) return false;
     for (const field of editFields) currentBook[field.name]=field.value.trim();
+    const changed=editedTags.get(currentBook) || new Set();
+    for (const name of tags.changed()) changed.add(name);
+    editedTags.set(currentBook,changed);
     Object.assign(currentBook,tags.values());
     if (editSummaryChanged) {
       currentBook.summary=editSummary.value.trim();
@@ -675,21 +703,21 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       });
       if (!error && data) {
         serverData=data;
-        if (action==="details" ? serverData.summary : Array.isArray(serverData.books) && (serverData.books.length || !serverData.partial)) return serverData;
+        if (action==="details" ? (serverData.subjects || serverData.summary) : Array.isArray(serverData.books) && (serverData.books.length || !serverData.partial)) return serverData;
       }
     } catch (error) {
       if (requestSignal.aborted) throw error;
     }
     try {
       // The same catalogue adapters can reach the public sources from the device.
-      const {createCatalogue}=await import("./catalogue-engine.js?v=1");
+      const {createCatalogue}=await import("./catalogue-engine.js?v=2");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
       }
       const local=createCatalogue([],requestSignal);
       const fallback=await (action==="details" ? local.details(params) : local.search(params));
-      return query.paper ? {...fallback,partial:true} : fallback;
+      return fallback;
     } catch (error) {
       if (requestSignal.aborted || !serverData) throw error;
       return serverData;
@@ -708,25 +736,22 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return data;
   }
 
-  async function loadSummary(book) {
-    if (!book.id) return "";
-    try {
-      const data=await queryCatalogues("details",{id:book.id,title:book.title,author:book.author || "",volume:book.volume || "",isbn:book.isbn || book.isbns?.[0] || ""},signal);
-      return typeof data?.summary==="string" ? data.summary : "";
-    } catch {
-      return "";
-    }
-  }
-
-  function prepareSummary(book,fallback="") {
-    if (book.summary || editedSummaries.has(book)) return Promise.resolve(book.summary);
-    if (!pendingSummaries.has(book)) {
-      pendingSummaries.set(book,loadSummary(book).then(value=>{
-        if (!editedSummaries.has(book)) book.summary=value || fallback;
+  function prepareMetadata(book) {
+    if (!pendingMetadata.has(book)) {
+      classify(book,{});
+      const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
+        isbn:book.isbn || book.isbns?.[0] || "",metadata:"1"};
+      const request=AbortSignal.any([signal,AbortSignal.timeout(14500)]);
+      const lookup=book.id || query.isbn || query.author ? queryCatalogues("details",query,request) : Promise.resolve({});
+      pendingMetadata.set(book,lookup.catch(()=>({})).then(data=>{
+        if (!signal.aborted) {
+          classify(book,data);
+          if (!editedSummaries.has(book) && !book.summary) book.summary=data.summary || "";
+        }
         return book.summary;
       }));
     }
-    return pendingSummaries.get(book);
+    return pendingMetadata.get(book);
   }
 
   async function matchDocument(info,fileName) {
@@ -948,8 +973,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       const title=matched?.title || info.title || fileName;
       const code=isbn(info.isbn || matched?.isbns?.[0]);
       digitalBook={...matched,title,author:matched?.author || info.author || "",series:matched?.series || info.series || "",
-        volume:matched?.volume || info.volume || "",isbn:code,format,file};
-      prepareSummary(digitalBook,info.summary);
+        volume:matched?.volume || info.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
+        subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
+      prepareMetadata(digitalBook);
       manualTitle.value=title;
       titleField.hidden=Boolean(title);
       if (!title) recovery.hidden=false;
@@ -1064,7 +1090,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   for (const card of cards) card.addEventListener("click",()=>showStep(card.dataset.book));
   nextButton.addEventListener("click",()=>{if (digitalBook?.title) openBook(digitalBook,"digital",nextButton);});
   function returnToResults() {
-    if (!applyBookEdits()) return;
+    if (addButton.disabled || !applyBookEdits()) return;
     showStep(lastStep);
     window.scrollTo({top:originScroll,behavior:"instant"});
     origin?.focus({preventScroll:true});
@@ -1090,17 +1116,24 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const book=currentBook;
     const reading=readingFields.values();
     if (!reading) return;
-    const promesse=selectedStatus==="to-read" ? promesseForm?.values() : null;
-    if (promesse) reading.promesse=promesse;
+    const pile=selectedStatus==="to-read";
     const collection=folderPicker.id();
     addButton.disabled=true;
-    saveStatus.textContent="";
+    saveStatus.textContent="Préparation de la fiche…";
+    following.inert=true;
     try {
-      await prepareSummary(book);
+      await prepareMetadata(book);
+      if (pile && !signal.aborted && book===currentBook) {
+        await formReady;
+        await pendingPromesse;
+        const promesse=promesseForm?.values();
+        if (promesse) reading.promesse=promesse;
+      }
       if (!signal.aborted && book===currentBook) await saveBook(book,reading,collection,()=>!signal.aborted && book===currentBook);
     } catch {
       if (!signal.aborted) saveStatus.textContent="Enregistrement impossible. Vérifie l’espace disponible, puis réessaie.";
     } finally {
+      following.inert=false;
       addButton.disabled=false;
     }
   });

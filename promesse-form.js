@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de 6 questions (5 hors romance).
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=4";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=5";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -64,7 +64,7 @@ export async function findPromesse(book, signal) {
   }
   if (signal?.aborted) return null;
   const fromServer = server ? fillGaps(emptyPromesse(), server.promesse) : emptyPromesse();
-  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null;
+  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null && (!server?.romance || fromServer.spice != null);
   if (full) return {promesse: fromServer, romance: Boolean(server.romance), sources};
   // Ce qui manque encore : l'appareil cherche aussi de son côté (Google Books + Open Library)
   try {
@@ -355,10 +355,15 @@ export function mountPromesse(section, {onDone} = {}) {
   }
   track.addEventListener("scroll", updateDots, {passive: true});
 
-  async function prefill(book, summaryReady) {
+  let pending;
+  function prefill(book, summaryReady) {
     const key = [book?.id, book?.title, book?.author].join("|");
-    if (!book || key === bookKey) return;
+    if (!book || key === bookKey) return pending;
     bookKey = key;
+    pending = fill(book, summaryReady);
+    return pending;
+  }
+  async function fill(book, summaryReady) {
     request?.abort();
     const controller = new AbortController();
     request = controller;
@@ -376,7 +381,8 @@ export function mountPromesse(section, {onDone} = {}) {
     // Le résumé aide beaucoup Gemini : on l'attend quelques secondes au plus
     if (summaryReady) await Promise.race([Promise.resolve(summaryReady).catch(() => {}), new Promise(resolve => setTimeout(resolve, 4000))]);
     if (controller.signal.aborted) return;
-    const result = await findPromesse(book, controller.signal);
+    const result = await findPromesse(book, AbortSignal.any([controller.signal, AbortSignal.timeout(28000)])).catch(() => null);
+    if (controller.signal.aborted) return;
     sources = result?.sources || null;
     const found = result?.promesse || null;
     const romanceFound = Boolean(result?.romance);
@@ -391,6 +397,7 @@ export function mountPromesse(section, {onDone} = {}) {
 
   function clear() {
     request?.abort();
+    pending = null;
     state = emptyPromesse();
     touched = new Set();
     loading = false;

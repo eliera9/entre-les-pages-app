@@ -229,7 +229,7 @@
     margin-block-end: -2px;
   }
   #bibliotheque-app #elp-saved-book [data-series-volume][data-simple-volume] { white-space: nowrap; }
-  #bibliotheque-app[data-book-open] #elp-saved-book .ep-book-snapshot :is([data-book-genres],[data-book-subgenres]) {
+  #bibliotheque-app[data-book-open] #elp-saved-book .ep-book-snapshot :is([data-book-genres],[data-book-subgenres],[data-book-tropes]) {
     border-block-start: 0;
     padding-block-start: 0;
     margin-block-end: -2px;
@@ -243,11 +243,11 @@
     margin: 4px auto 0;
     background: var(--ep-line);
   }
-  #bibliotheque-app[data-book-open] #elp-saved-book .ep-book-snapshot [data-book-subgenres] {
+  #bibliotheque-app[data-book-open] #elp-saved-book .ep-book-snapshot :is([data-book-subgenres],[data-book-tropes]) {
     display: grid;
     gap: 4px;
   }
-  #bibliotheque-app #elp-saved-book .ep-book-snapshot :is([data-book-genres],[data-book-subgenres]) .ep-tag-values {
+  #bibliotheque-app #elp-saved-book .ep-book-snapshot :is([data-book-genres],[data-book-subgenres],[data-book-tropes]) .ep-tag-values {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -255,14 +255,14 @@
     color: var(--ep-accent);
     font-family: var(--heading);
   }
-  #bibliotheque-app #elp-saved-book :is([data-book-genres],[data-book-subgenres]) .ep-tag {
+  #bibliotheque-app #elp-saved-book :is([data-book-genres],[data-book-subgenres],[data-book-tropes]) .ep-tag {
     border: 1px solid transparent;
     border-radius: 999px;
     padding: 1px 7px;
     max-inline-size: 100%;
     background: var(--ep-pressed);
   }
-  #bibliotheque-app #elp-saved-book :is([data-book-genres],[data-book-subgenres]) .ep-tag + .ep-tag::before { content: none; }
+  #bibliotheque-app #elp-saved-book :is([data-book-genres],[data-book-subgenres],[data-book-tropes]) .ep-tag + .ep-tag::before { content: none; }
   #app-lecture .eli-bibliotheque[data-layout][data-book-open] .library {
     min-block-size: 338px;
   }
