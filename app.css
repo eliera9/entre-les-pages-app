@@ -2161,3 +2161,27 @@ body { margin: 0; }
 /* Barre du bas : 5 destinations avec la Bibliothèque */
 #app-lecture .library-destinations { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
+
+/* Accueil · tailles de la barre validées pour chaque format. */
+#app-lecture #bibliotheque-app[data-accueil-page] {
+  --acc-button-disc: 34px;
+  --acc-button-icon: 19px;
+}
+#app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] {
+  --acc-button-disc: 42px;
+  --acc-button-icon: 23px;
+}
+#app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar .round:is([data-window-choice="menu"], [data-view-choice="add"])::before {
+  inline-size: var(--acc-button-disc);
+  block-size: var(--acc-button-disc);
+}
+#app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar .round:is([data-window-choice="menu"], [data-view-choice="add"]) svg {
+  inline-size: var(--acc-button-icon);
+  block-size: var(--acc-button-icon);
+}
+#app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-ring {
+  inline-size: 42px;
+  block-size: 42px;
+}
+#app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-copy b { font-size: 19px; }
+#app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-copy small { font-size: 14px; }
