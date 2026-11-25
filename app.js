@@ -2717,7 +2717,7 @@ async function activateLibrary(root) {
     }
     return next.sort((a, b) => b.readAt - a.readAt);
   }
-  function accCard(book, {stamp, label, sub, extra, heart, menu} = {}) {
+  function accCard(book, {label, sub, extra, heart, menu} = {}) {
     const card = el('button', 'acc-card cursor-interaction');
     card.type = 'button';
     card.setAttribute('role', 'listitem');
@@ -2725,7 +2725,6 @@ async function activateLibrary(root) {
     card.setAttribute('aria-label', [label || book.title, sub].filter(Boolean).join(', '));
     const cover = el('span', 'acc-cover');
     cover.append(catalogueCover(book));
-    if (stamp) cover.append(el('i', 'acc-stamp', stamp));
     if (heart) {
       const mark = el('i', 'acc-heart', '♥');
       mark.setAttribute('aria-hidden', 'true');
@@ -3175,7 +3174,7 @@ async function activateLibrary(root) {
     const nextVolumes = accNextVolumes();
     const pile = books.filter(book => book.status === 'À lire').sort((a,b) =>
       publicationRank(b) - publicationRank(a) || accAddedRank(b) - accAddedRank(a));
-    accFill('pile', pile.slice(0,10).map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : '', menu:true})), pile.length);
+    accFill('pile', pile.slice(0,10).map(book => accCard(book, {menu:true})), pile.length);
     const sagaCards = nextVolumes.map(({book, lastRead, total, readAt}) => {
       const status = el('span', 'acc-status');
       const pill = el('span', `acc-pill-tag ${book.status === 'À lire' ? 'pile' : 'buy'}`, book.status === 'À lire' ? 'Dans ta pile' : 'Dans ta bibliothèque');
