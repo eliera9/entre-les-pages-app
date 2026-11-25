@@ -8,6 +8,11 @@
 <meta name="apple-mobile-web-app-title" content="Entre les pages">
 <meta name="robots" content="noindex, nofollow">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.hardcover.app https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org https://www.googleapis.com https://*.hardcover.app; object-src 'none'; base-uri 'none'">
+<style>
+#app-lecture[data-starting] { visibility: hidden !important; }
+html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))),
+html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) body { background: #2B1C2D !important; }
+</style>
 <title>Accueil · Entre les pages</title>
 <link rel="manifest" href="./app.webmanifest?v=accueil-direct" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
@@ -16,7 +21,7 @@
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css?v=accueil-direct">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
-<script defer src="./compte.js?v=accueil-direct"></script>
+<script defer src="./compte.js?v=accueil-pret"></script>
 <script defer src="./bibliotheque-supabase.js"></script>
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
@@ -82,7 +87,7 @@
       </div>
     </section>
   </div></article></main>
-<div hidden id="app-lecture" lang="fr">
+<div hidden data-starting id="app-lecture" lang="fr">
 <div id="bibliotheque-app" class="eli-bibliotheque" data-design="librairie" data-layout="compacte" lang="fr" data-format="phone" data-theme="light" data-sidebar-open="false" data-storage-state="opening" style="--sidebar-duration: 230ms">
   <p class="storage-alert" role="alert" data-storage-alert hidden></p>
     <div class="sidebar-layer" id="bibliotheque-app-menu" data-sidebar-layer role="dialog" aria-modal="true" aria-label="Navigation latérale" hidden>

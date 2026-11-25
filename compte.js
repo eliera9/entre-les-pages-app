@@ -85,7 +85,10 @@ const compteLecture = (() => {
         accountScreen.hidden = true;
         libraryScreen.hidden = false;
 
-        setTimeout(openLibrary, 0);
+        setTimeout(async () => {
+          await openLibrary();
+          libraryScreen.removeAttribute('data-starting');
+        }, 0);
       }
     });
   }
