@@ -649,7 +649,6 @@ async function activateLibrary(root) {
   const savedFilters = [{genre: ['Romantasy'], subgenre: [], trope: ['Slow burn'], status: ['À lire'], author: []}];
   function setTheme(theme) {
     root.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#211D20' : '#F7EEEB');
   }
   setTheme(preferences.theme === 'dark' ? 'dark' : 'light');
   if (Array.isArray(preferences.savedFilters)) savedFilters.splice(0, savedFilters.length, ...preferences.savedFilters);
