@@ -2235,3 +2235,23 @@ body { margin: 0; }
 #app-lecture .search-bookmark[data-pin-bottom]::before {top:auto;bottom:-6px;transform:translateX(-50%) rotate(225deg)}
 #app-lecture .elp-mosaic[data-bookmark-open] .elp-tile:not([data-bookmark-owner]) .elp-cover {opacity:.52}
 #app-lecture .elp-mosaic[data-bookmark-open] .elp-tile {animation:none}
+
+#app-lecture #bibliotheque-app .pal-dice {display:grid;justify-items:center;align-content:center;gap:2px;padding:2px 4px;border:0;background:none;color:var(--title);font:15px/1.1 var(--heading);text-align:center;max-width:100%}
+#app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);align-items:center}
+#app-lecture .toolbar:has(.pal-dice:not([hidden])) .toolbar-group:last-of-type,#app-lecture .pal-dice+.toolbar-group {justify-self:end}
+#app-lecture #bibliotheque-app[data-book-open] .pal-dice,#app-lecture #bibliotheque-app:not([data-accueil-page]) .pal-dice {display:none}
+#app-lecture .pal-dice span {width:50px;height:30px;background:currentColor;mask:url('./art/de-lectures.png') center/contain no-repeat}
+#app-lecture #acc-pile-title {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
+#app-lecture #acc-pile-title::before,#app-lecture #acc-pile-title::after {content:"";flex:1;height:1px;background:var(--rule)}
+#app-lecture #bibliotheque-app #acc-pile-title .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
+#app-lecture [data-acc-row="pile"] .acc-dots {display:none}
+#app-lecture .pal-end .acc-cover {display:grid;place-items:center;background:transparent;border:0;box-shadow:none}
+#app-lecture .pal-end .acc-cover::after {content:"";width:82%;height:70%;background:var(--accent);mask:url('./art/rayon-etoile.png') center/contain no-repeat}
+#app-lecture #bibliotheque-app[data-format="tablet"] #acc-pile-title {font-size:30px}
+#app-lecture #bibliotheque-app[data-format="tablet"] .pal-dice {font-size:19px}
+#app-lecture [data-format="tablet"] .pal-dice span {width:64px;height:39px}
+@media(prefers-reduced-motion:no-preference){
+ #app-lecture .pal-dice:not([hidden]) span {animation:pal-unveil 850ms ease-out both,pal-sway 3s ease-in-out 850ms infinite}
+ @keyframes pal-unveil{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+ @keyframes pal-sway{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}}
+}

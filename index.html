@@ -12,7 +12,7 @@
 <link rel="manifest" href="./app.webmanifest?v=entre-les-pages-2" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
 <link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="./app.css?v=31">
+<link rel="stylesheet" href="./app.css?v=32">
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
@@ -25,13 +25,13 @@
 <link rel="stylesheet" href="./questionnaire.css?v=3">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<script defer src="./add-book.js?v=18"></script>
+<script defer src="./add-book.js?v=19"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
 <script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=144"></script>
 <script defer src="./reading-status.js"></script>
-<script defer src="./app.js?v=156"></script>
+<script defer src="./app.js?v=157"></script>
 </head>
 <body>
 <main id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -132,6 +132,7 @@
         <button type="button" class="round toolbar-action cursor-interaction" aria-label="Revenir à la bibliothèque" data-catalogue-back hidden><i class="navigation-icon" data-lucide="chevron-left" aria-hidden="true"></i></button>
         <button type="button" class="round toolbar-action cursor-interaction" aria-label="Ajouter un livre" data-view-choice="add"><svg class="navigation-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
       </div>
+      <button hidden type="button" data-acc-dice class="pal-dice cursor-interaction" aria-haspopup="dialog"><span aria-hidden="true"></span>Quel livre lire ensuite ?</button>
       <div class="toolbar-group">
         <button type="button" class="round toolbar-action cursor-interaction" data-book-edit hidden aria-label="Modifier la fiche du livre" title="Modifier la fiche du livre" aria-expanded="false"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
       <button type="button" class="round toolbar-action cursor-interaction" data-book-trash hidden aria-label="Supprimer le livre" aria-controls="delete-panel" aria-expanded="false" title="Supprimer le livre" aria-haspopup="dialog"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
@@ -347,7 +348,7 @@
       </section>
       <div class="accueil" data-accueil hidden>
         <section class="acc-row" data-acc-row="pile" aria-labelledby="acc-pile-title" hidden>
-          <header class="acc-head"><h2 class="acc-title" id="acc-pile-title">Ma pile à lire <span class="acc-count" data-acc-count></span></h2><button type="button" class="acc-link cursor-interaction" data-acc-more="pile">Voir ma pile</button><button type="button" class="acc-dice cursor-interaction" data-acc-dice aria-label="Tirer au sort ma prochaine lecture" aria-haspopup="dialog"><span class="acc-dice-art" aria-hidden="true"></span></button></header>
+          <header class="acc-head"><h2 class="acc-title" id="acc-pile-title">Ma pile à lire <span class="acc-count" data-acc-count></span></h2></header>
           <div class="acc-track" data-acc-track role="list"></div>
           <div class="acc-dots" data-acc-dots aria-hidden="true"></div>
         </section>

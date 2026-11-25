@@ -322,7 +322,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       }
     }
 
-    return {type: 'EPUB', title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
+    return {type: 'EPUB', publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
   async function fromPdf(bytes, track) {
@@ -2921,12 +2921,51 @@ async function activateLibrary(root) {
     card.addEventListener('click', target.open);
     return card;
   }
+  const pileTrack = find('[data-acc-row="pile"] [data-acc-track]',accueil);
+  let pileTimer, pileHeld = false;
+  function publicationRank(book) {
+    const volume = parutions?.series?.[book.saga]?.find(v => Number(v.position) === Number(book.volume) && book.volume);
+    const date = book.publicationDate || book.publishedDate || book.releaseDate || book.release_date || volume?.date;
+    return date ? Date.parse(date) || 0 : 0;
+  }
+  function schedulePile() {
+    clearTimeout(pileTimer);
+    if (document.hidden || pileHeld || matchMedia('(prefers-reduced-motion: reduce)').matches || !pileTrack.getClientRects().length) return;
+    pileTimer = setTimeout(() => {
+      const first = pileTrack.children[0], next = pileTrack.children[1];
+      if (!pileTrack.getClientRects().length) return;
+      if (first && next && pileTrack.scrollWidth > pileTrack.clientWidth+2 && !accMenuCard && !pileTrack.matches(':focus-within')) {
+        const end = pileTrack.scrollLeft >= pileTrack.scrollWidth-pileTrack.clientWidth-2;
+        pileTrack.scrollTo({left:end?0:pileTrack.scrollLeft+next.offsetLeft-first.offsetLeft,behavior:'smooth'});
+      }
+      schedulePile();
+    },4000);
+  }
+  new ResizeObserver(schedulePile).observe(pileTrack);
+  pileTrack.addEventListener('pointerdown',()=>{pileHeld=true;clearTimeout(pileTimer)});
+  for (const event of ['pointerup','pointercancel']) window.addEventListener(event,()=>{if(pileHeld){pileHeld=false;schedulePile()}});
+  pileTrack.addEventListener('scroll',schedulePile,{passive:true});
+  document.addEventListener('visibilitychange',schedulePile);
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',schedulePile);
+  function pileEndCard() {
+    const card = button('','acc-card pal-end',accOpenList('pile'));
+    card.append(el('span','acc-cover'),el('b','acc-name','Ma pile à lire'));
+    return card;
+  }
   function accFill(name, items, total, moreTarget, noun) {
     const row = find(`[data-acc-row="${name}"]`, accueil);
     row.hidden = items.length === 0;
     if (row.hidden) return;
     find('[data-acc-count]', row).textContent = String(total);
     const track = find('[data-acc-track]', row);
+    if (name === 'pile') {
+      find('[data-acc-count]',row).textContent = countLabel(total);
+      const previous = track.scrollLeft;
+      track.replaceChildren(...items,pileEndCard());
+      track.scrollLeft = previous;
+      schedulePile();
+      return;
+    }
     const cards = items.slice(0, ACC_MAX);
     if (total > cards.length && moreTarget) cards.push(accMore(total - cards.length, noun(total - cards.length), moreTarget));
     track.replaceChildren(...cards);
@@ -3057,9 +3096,9 @@ async function activateLibrary(root) {
       return await new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => resolve(''); reader.readAsDataURL(blob); });
     } catch { return ''; }
   }
-  async function addToPile({title, author, saga, volume, image}) {
+  async function addToPile({title, author, saga, volume, image, publicationDate}) {
     const now = Date.now();
-    const book = {id: 'paper:' + crypto.randomUUID(), title, author: author || '', saga: saga || '', volume: volume ? String(volume) : '',
+    const book = {id: 'paper:' + crypto.randomUUID(), title, author: author || '', saga: saga || '', publicationDate, volume: volume ? String(volume) : '',
       status: 'À lire', format: 'Papier', genres: [], subgenres: [], tropes: [], addedAt: now, updatedAt: now};
     const cover = image ? await imageAsData(image) : '';
     if (cover) book.coverData = cover;
@@ -3088,7 +3127,7 @@ async function activateLibrary(root) {
       status.append(el('span', 'acc-pill-tag buy', 'À acheter'), accTicks(lastRead, Math.max(volumes.length, next.position), next.position));
       out.push({readAt: Math.max(...read.map(accFinishedAt)), card: remoteCard({
         key: `${group.name}#${next.position}`, label: group.name, sub: `tome ${next.position}`, image: next.image, extra: status,
-        onAdd: () => addToPile({title: next.title || `${group.name}, tome ${next.position}`, author: group.author, saga: group.name, volume: next.position, image: next.image}),
+        onAdd: () => addToPile({title: next.title || `${group.name}, tome ${next.position}`, author: group.author, saga: group.name, volume: next.position, publicationDate: next.date, image: next.image}),
       })});
     }
     return out;
@@ -3129,16 +3168,14 @@ async function activateLibrary(root) {
   const DAY_MS = 86400000;
 
   function renderAccueil(show) {
+    accDice.hidden = !show;
     accueil.hidden = !show;
     if (!show) return;
     loadParutions();
     const nextVolumes = accNextVolumes();
-    const sagaIds = new Set(nextVolumes.map(item => item.book.id));
-    const pile = books.filter(book => book.status === 'À lire' && !sagaIds.has(book.id))
-      .sort((a, b) => accAddedRank(b) - accAddedRank(a));
-    const pileTotal = books.filter(book => book.status === 'À lire').length;
-    accFill('pile', pile.map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : '', menu: true})),
-      pileTotal, {label: 'Voir ma pile', open: accOpenList('pile')}, n => n === 1 ? 'autre livre' : 'autres livres');
+    const pile = books.filter(book => book.status === 'À lire').sort((a,b) =>
+      publicationRank(b) - publicationRank(a) || accAddedRank(b) - accAddedRank(a));
+    accFill('pile', pile.slice(0,10).map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : '', menu:true})), pile.length);
     const sagaCards = nextVolumes.map(({book, lastRead, total, readAt}) => {
       const status = el('span', 'acc-status');
       const pill = el('span', `acc-pill-tag ${book.status === 'À lire' ? 'pile' : 'buy'}`, book.status === 'À lire' ? 'Dans ta pile' : 'Dans ta bibliothèque');

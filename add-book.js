@@ -972,7 +972,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       if (!current(version)) return;
       const title=matched?.title || info.title || fileName;
       const code=isbn(info.isbn || matched?.isbns?.[0]);
-      digitalBook={...matched,title,author:matched?.author || info.author || "",series:matched?.series || info.series || "",
+      digitalBook={...matched,publicationDate:matched?.publicationDate || matched?.publishedDate || info.publicationDate,title,author:matched?.author || info.author || "",series:matched?.series || info.series || "",
         volume:matched?.volume || info.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
       prepareMetadata(digitalBook);
