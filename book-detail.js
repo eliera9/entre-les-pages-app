@@ -72,14 +72,31 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   const setText = (selector, value) => { q(selector).textContent = value || ''; };
   const focus = node => node.focus({preventScroll:true});
 
-  if (book.format==='EPUB' && !book.promesse?.pages && !book.pageCount &&
-      /^red for us(?:\s*\(|$)/i.test(book.title || '') && /borowski/i.test(book.author || '')) {
+  const hasPages=()=>Boolean(book.promesse?.pages || book.pages || book.pageCount);
+  if (!hasPages() && ['EPUB','Papier'].includes(book.format)) {
     (async()=>{
-      const file=await storage.getDocument(book.id);
-      if (!file || scope.signal.aborted) return;
-      const found=await engine.readEditionPages(new Uint8Array(await file.arrayBuffer()));
-      if (found.pageCount && !scope.signal.aborted && !book.promesse?.pages && !book.pageCount) {
-        if (await save({pageCount:found.pageCount,...(!book.isbn ? {isbn:found.isbn} : {})})) render();
+      let code=book.isbn || '';
+      let pages=engine.editionPages(code);
+      if (!pages && book.format==='EPUB') {
+        try {
+          const file=await storage.getDocument(book.id);
+          if (scope.signal.aborted) return;
+          if (file) {
+            const embedded=await engine.readEditionPages(new Uint8Array(await file.arrayBuffer()));
+            code=embedded.isbn || code;
+            pages=embedded.pageCount || engine.editionPages(code);
+          }
+        } catch { /* Une notice peut compléter un fichier indisponible. */ }
+      }
+      if (!pages && !scope.signal.aborted && (code || book.title && book.author)) {
+        const {createCatalogue}=await import('./catalogue-engine.js?v=pages-tous');
+        const query=new URLSearchParams({id:book.catalogueId || '',isbn:code,title:book.title || '',
+          author:book.author || '',volume:book.volume || '',publisher:book.publisher || '',format:book.format});
+        const edition=await createCatalogue([],scope.signal).details(query);
+        pages=edition.pageCount;
+      }
+      if (Number.isInteger(pages) && pages>0 && !scope.signal.aborted && !hasPages()) {
+        if (await save({pageCount:pages,...(!book.isbn && code ? {isbn:code} : {})})) render();
       }
     })().catch(()=>{});
   }

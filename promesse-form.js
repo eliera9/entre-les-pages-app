@@ -453,5 +453,5 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   }
 
   render();
-  return {collect, prefill, retry, clear, values, setVisible};
+  return {pagesEdited:()=>touched.has("pages"),collect, prefill, retry, clear, values, setVisible};
 }

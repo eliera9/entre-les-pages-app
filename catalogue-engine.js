@@ -308,7 +308,8 @@ export function createCatalogue(localRows=[], signal) {
   async function googleEditions(title,author,code) {
     const term=code ? "isbn:"+code : 'intitle:"'+title+'" inauthor:"'+author+'"';
     const data=await json("https://www.googleapis.com/books/v1/volumes?"+new URLSearchParams({q:term,maxResults:"10"}));
-    return (data.items || []).map(({volumeInfo:row={}})=>({
+    return (data.items || []).map(({volumeInfo:row={},saleInfo={}})=>({
+      ebook:saleInfo.isEbook,
       title:text(row.title), author:text(row.authors?.[0]), authors:list(row.authors),
       isbns:(row.industryIdentifiers || []).map(item=>isbn(item.identifier)).filter(Boolean),
       subjects:list(row.categories), summary:summary(row.description),
@@ -357,6 +358,15 @@ export function createCatalogue(localRows=[], signal) {
         if (!edition[name] && row[name]) edition[name]=row[name];
       }
       if (!edition.isbn) edition.isbn=code || row.isbns[0];
+    }
+    if (!code && !edition.pageCount && author && title) {
+      const publisher=normal(params.get("publisher") || "");
+      const format=params.get("format");
+      const counts=new Set([...national,...google].filter(row=>sameWork(requested,row) &&
+        (!publisher || normal(row.publisher)===publisher) &&
+        (format==="EPUB" ? row.ebook===true : format==="Papier" ? row.ebook!==true : true))
+        .map(row=>row.pageCount).filter(n=>Number.isInteger(n) && n>0));
+      if (counts.size===1) edition.pageCount=[...counts][0];
     }
     const matched=[...editions,...candidates];
     const first=name=>matched.find(row=>row[name])?.[name];

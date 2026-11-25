@@ -572,7 +572,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=relance-01");
+  const analysisModule=import("./promesse-form.js?v=pages-tous");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
@@ -758,7 +758,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       // The same catalogue adapters can reach the public sources from the device.
       if (action==="details") return serverData || {};
-      const {createCatalogue}=await import("./catalogue-engine.js?v=ajout-01");
+      const {createCatalogue}=await import("./catalogue-engine.js?v=pages-tous");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
@@ -809,12 +809,12 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
           if (literary.epoque) book.epoque=literary.epoque;
         }
         const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
-          isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1"};
+          isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1",format:book.format || "",publisher:book.publisher || ""};
         const request=AbortSignal.any([signal,AbortSignal.timeout(36000)]);
         const sample=false;
         const eligible=book.id || query.isbn || query.author;
         const server=eligible ? queryCatalogues("details",query,request) : {};
-        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=ajout-01").then(({createCatalogue})=>
+        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pages-tous").then(({createCatalogue})=>
           createCatalogue([],request).details(new URLSearchParams(query))) : {};
         const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
         const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
@@ -1230,6 +1230,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         await pendingPromesse;
         const promesse=promesseForm?.values();
         if (promesse) reading.promesse=promesse;
+        reading.pagesEdited=promesseForm?.pagesEdited();
       }
       if (!signal.aborted && book===currentBook) await saveBook(book,reading,collection,()=>!signal.aborted && book===currentBook);
     } catch {

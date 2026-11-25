@@ -326,7 +326,11 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
   async function epubPagination(archive,opf,opfPath) {
     const meta=named(opf,'metadata')[0] || opf;
     const declared=named(meta,'meta').find(el=>['schema:numberOfPages','calibre:user_metadata:#pages','calibre:pages'].includes(el.getAttribute('property') || el.getAttribute('name')));
-    const count=Number(declared?.getAttribute('content') || declared?.textContent);
+    let value=declared?.getAttribute('content') || declared?.textContent;
+    if (declared?.getAttribute('name')==='calibre:user_metadata:#pages') {
+      try { value=JSON.parse(value)['#value#'] ?? value; } catch { /* Valeur numérique simple. */ }
+    }
+    const count=Number(value);
     const pageCount=Number.isInteger(count) && count>0 && count<=5000 ? count : undefined;
     const ids=named(meta,'identifier');
     let isbn=ids.map(node=>findIsbn(node.textContent)).find(Boolean);
@@ -2654,7 +2658,7 @@ async function activateLibrary(root) {
 
   async function saveAddedBook(data, reading, folderId, isCurrent) {
     const {file, id: catalogueId, isbns, ...details} = data;
-    const {statusChosen, promesse, ...readingFields} = reading;
+    const {statusChosen, promesse, pagesEdited, ...readingFields} = reading;
     let fingerprint;
     if (file) {
       const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
@@ -2668,7 +2672,8 @@ async function activateLibrary(root) {
     const imported = {
       genres: [], subgenres: [], tropes: [],
       ...existing, ...details, ...(existing && !statusChosen ? {} : readingFields),
-      ...(promesse ? {promesse} : {}),
+      pageCount:pagesEdited ? promesse?.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || existing?.pageCount,
+      ...(promesse ? {promesse:{...promesse,pages:pagesEdited ? promesse.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || promesse.pages}} : {}),
       id: existing?.id ?? documentId ?? (catalogueId ? 'catalogue:' + catalogueId : 'paper:' + crypto.randomUUID()),
       isbn: code || existing?.isbn || '',
       catalogueId: catalogueId || existing?.catalogueId,
