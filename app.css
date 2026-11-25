@@ -2205,7 +2205,12 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app[data-accueil-page][data-format="tablet"] .acc-goal-copy small { font-size: 14px; }
 
 #app-lecture .search-caption {display:flex;align-items:center;gap:7px;margin:12px 0 5px;color:var(--title);font:small-caps 25px/1.2 var(--heading)}
-#app-lecture .search-caption svg {width:.4em;height:.7em}
+#app-lecture .search-caption .search-book-art {
+  flex:none; width:1.25em; aspect-ratio:192/121;
+  background-color:light-dark(#784B5B,#D4C5EE);
+  -webkit-mask:url('./art/livre-titre.png') center / contain no-repeat;
+  mask:url('./art/livre-titre.png') center / contain no-repeat;
+}
 #app-lecture .search-caption small {margin-inline-start:auto;color:var(--muted);font:20px var(--heading);white-space:nowrap}
 #app-lecture .search-bookmark {position:fixed;z-index:90;box-sizing:border-box;width:156px;max-width:calc(100vw - 10px);margin:0;padding:5px 7px;background:var(--paper);color:var(--text);border:1px solid var(--rule);border-radius:8px;box-shadow:0 4px 14px var(--shadow);font:14px/1.2 var(--heading)}
 #app-lecture [data-format="tablet"] .search-bookmark {width:204px}
