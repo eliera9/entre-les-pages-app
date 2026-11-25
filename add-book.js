@@ -546,7 +546,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const formReady=import("./promesse-form.js?v=ajout-01").then(module=>{
+  const analysisModule=import("./promesse-form.js?v=gemini-01");
+  const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
       const next=following.querySelector(".ep-folder-zone") || head;
@@ -612,7 +613,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     nextBook.replaceChildren(drawRecap(book));
     summary.textContent=book.summary || (editedSummaries.has(book) ? "Résumé indisponible." : "Recherche du résumé…");
     lookupStatus.hidden=completedMetadata.has(book);
-    lookupStatus.textContent=lookupStatus.hidden ? "" : "Recherche des informations du livre…";
+    lookupStatus.textContent=lookupStatus.hidden ? "" : "Analyse du livre et recherche des informations de l’édition…";
     prepareMetadata(book).then(()=>{
       if (signal.aborted || currentBook!==book) return;
       nextBook.replaceChildren(drawRecap(book));
@@ -753,33 +754,51 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return data;
   }
 
-  function prepareMetadata(book) {
+  function analyse(book,context) {
+    return analysisModule.then(module=>module.beginAnalysis(book,context,signal)).catch(()=>null);
+  }
+
+  function prepareMetadata(book,started) {
     if (!pendingMetadata.has(book)) {
       classify(book,{});
-      const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
-        isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1"};
-      const request=AbortSignal.any([signal,AbortSignal.timeout(36000)]);
-      const sample=false;
-      const eligible=book.id || query.isbn || query.author;
-      const server=eligible ? queryCatalogues("details",query,request) : {};
-      const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=ajout-01").then(({createCatalogue})=>
-        createCatalogue([],request).details(new URLSearchParams(query))) : {};
-      const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
-      const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
-      pendingMetadata.set(book,sources.then(notices=>{
-        if (!signal.aborted) {
-          for (const data of notices) {
-            classify(book,data);
-            if (!editedSummaries.has(book) && !book.summary && data.summary) book.summary=data.summary;
-            for (const name of ["title","author","series","volume","isbn","coverData","publisher","publicationDate","language","pageCount"]) {
-              if (book[name] || editedFields.get(book)?.has(name) || !data[name]) continue;
-              if (name==="pageCount" && (!Number.isInteger(data[name]) || data[name]<1)) continue;
-              book[name]=data[name];
-            }
+      const primary=started || analyse(book);
+      pendingMetadata.set(book,primary.then(result=>{
+        if (signal.aborted) return book.summary;
+        const literary=result?.literature;
+        if (literary) {
+          for (const name of ["genres","subgenres","tropes"]) {
+            if (!editedTags.get(book)?.has(name) && Array.isArray(literary[name]) && literary[name].length)
+              book[name]=[...new Set([...literary[name],...(book[name] || [])])];
           }
-          completedMetadata.add(book);
+          if (literary.summary && !editedSummaries.has(book)) book.summary=literary.summary;
+          if (literary.ambiance) book.ambiance=literary.ambiance;
+          if (literary.epoque) book.epoque=literary.epoque;
         }
-        return book.summary;
+        const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
+          isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1"};
+        const request=AbortSignal.any([signal,AbortSignal.timeout(36000)]);
+        const sample=false;
+        const eligible=book.id || query.isbn || query.author;
+        const server=eligible ? queryCatalogues("details",query,request) : {};
+        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=ajout-01").then(({createCatalogue})=>
+          createCatalogue([],request).details(new URLSearchParams(query))) : {};
+        const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
+        const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
+        return sources.then(notices=>{
+          if (!signal.aborted) {
+            for (const data of notices) {
+              classify(book,data);
+              if (!editedSummaries.has(book) && !book.summary && data.summary) book.summary=data.summary;
+              for (const name of ["title","author","series","volume","isbn","coverData","publisher","publicationDate","language","pageCount"]) {
+                if (book[name] || editedFields.get(book)?.has(name) || !data[name]) continue;
+                if (name==="pageCount" && (!Number.isInteger(data[name]) || data[name]<1)) continue;
+                book[name]=data[name];
+              }
+            }
+            completedMetadata.add(book);
+          }
+          return book.summary;
+        });
       }));
     }
     return pendingMetadata.get(book);
@@ -1001,6 +1020,13 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       else throw new Error("Choisis un fichier EPUB ou PDF reconnu.");
       if (!current(version)) return;
       const fileName=file.name.replace(/\.(epub|pdf)$/i,"").trim();
+      let started;
+      if (format==="EPUB") {
+        message("Gemini analyse le résumé, le sommaire et les extraits disponibles…");
+        started=analyse({...info,title:info.title || fileName},info.analysisContext);
+        await started;
+        if (!current(version)) return;
+      }
       message("Recherche dans le catalogue…");
       const matched=await matchDocument(info,fileName);
       if (!current(version)) return;
@@ -1011,7 +1037,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
       const imported=digitalBook;
-      const ready=prepareMetadata(imported);
+      if (started) await analysisModule.then(module=>module.reuseAnalysis(imported,started)).catch(()=>{});
+      const ready=prepareMetadata(imported,started);
       formReady.then(()=>{
         if (current(version) && digitalBook===imported && selectedStatus==="to-read")
           promesseForm?.collect(imported,ready);

@@ -37,25 +37,34 @@ function make(tag, className, text) {
   return node;
 }
 
-async function askServer(book, signal) {
-  // compteLecture est déclaré avec const dans compte.js : il n'est pas sur window, on le lit par son nom
-  const db = typeof compteLecture !== "undefined" ? compteLecture?.db : null;
-  if (!db?.functions) return null;
-  const {data, error} = await db.functions.invoke("catalogue", {
-    body: {action: "promesse", params: {title: book.title || "", author: book.author || "", isbn: book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),
-      genres: [...(book.genres || []), ...(book.subgenres || [])].slice(0, 20).join("|"), summary: (book.summary || "").slice(0, 3000)}},
-    signal,
-  });
-  if (error || !data?.promesse) return null;
-  return data;
+const analyses=new WeakMap();
+
+async function askServer(book, context, signal) {
+  const params={title:book.title || "",author:book.author || "",isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : "") || "",
+    genres:[...(book.genres || []),...(book.subgenres || []),...(book.subjects || [])].slice(0,20).join("|"),
+    summary:(book.summary || "").slice(0,4000),toc:context?.toc,opening:context?.opening,ending:context?.ending};
+  const {data,error}=await compteLecture.db.functions.invoke("catalogue",{body:{action:"promesse",params},signal});
+  return error ? null : data;
 }
 
-// Ce que promet un livre : la fonction Supabase d'abord (Hardcover + Gemini), sinon l'appareil seul
+export function beginAnalysis(book, context, signal) {
+  if (!analyses.has(book)) {
+    const deadline=AbortSignal.timeout(60000);
+    const active=signal ? AbortSignal.any([signal,deadline]) : deadline;
+    analyses.set(book,askServer(book,context,active).catch(()=>null));
+  }
+  return analyses.get(book);
+}
+
+export function reuseAnalysis(book,pending) {
+  analyses.set(book,pending);
+}
+
 export async function findPromesse(book, signal) {
   let server = null;
   const sources = {};
   try {
-    server = await askServer(book, signal);
+    server = await beginAnalysis(book,null,signal);
     if (server?.sources) Object.assign(sources, server.sources);
     else sources.serveur = server ? "ancienne version" : "pas de réponse";
     if (server && !Object.values(server.promesse || {}).some(value => Array.isArray(value) ? value.length : value != null)) sources.serveur = "rien trouvé";

@@ -266,6 +266,59 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     }};
   }
 
+  async function readingSample(archive,opf,opfPath) {
+    const items=named(opf,'item');
+    const path=item=>archivePath(opfPath,item?.getAttribute('href'));
+    const byId=new Map(items.map(item=>[item.getAttribute('id'),item]));
+    const clean=value=>(value || '').replace(/\s+/gu,' ').trim();
+    const chapterPaths=[...new Set(named(opf,'itemref').filter(ref=>ref.getAttribute('linear')!=='no')
+      .map(ref=>byId.get(ref.getAttribute('idref'))).filter(item=>item && /html/i.test(item.getAttribute('media-type'))
+        && !item.getAttribute('properties')?.split(/\s+/).includes('nav')).map(path).filter(Boolean))];
+    const load=async p=>{
+      if (!p) return null;
+      try { const data=await readEntry(archive,p,2*MiB); return data ? readText(data) : null; }
+      catch { return null; }
+    };
+    let toc='';
+    for (const item of [items.find(el=>el.getAttribute('properties')?.split(/\s+/).includes('nav')),items.find(el=>/ncx/.test(el.getAttribute('media-type')))]) {
+      const doc=await load(path(item));
+      if (!doc) continue;
+      const nav=named(doc,'nav').find(el=>/\btoc\b/.test(el.getAttribute('epub:type') || el.getAttribute('role') || ''));
+      const labels=(nav ? named(nav,'a') : named(doc,'navLabel')).map(el=>clean(el.textContent)).filter(Boolean);
+      if (labels.length) { toc=labels.join(' · ').slice(0,4500);break; }
+    }
+    const visited=new Set();
+    async function sample(paths,tail) {
+      const passages=[];
+      let length=0;
+      for (const p of paths.slice(0,10)) {
+        if (visited.has(p)) continue;
+        const doc=await load(p), body=doc && named(doc,'body')[0];
+        if (!body) continue;
+        for (const el of body.querySelectorAll('script,style,nav,aside')) el.remove();
+        const role=[body,...body.querySelectorAll('section,article')].slice(0,5).map(el=>el.getAttribute('epub:type') || '').join(' ');
+        const heading=clean(body.querySelector('h1,h2')?.textContent);
+        if (/\b(cover|copyright-page|titlepage|toc|acknowledgments|bibliography|colophon)\b/i.test(role) ||
+            /^(remerciements|sommaire|table des matières|copyright|à propos de l.aut|also by|acknowledg)/i.test(heading)) continue;
+        const lines=[...body.querySelectorAll('p,blockquote')].map(el=>clean(el.textContent)).filter(Boolean);
+        const prose=lines.length ? lines.join('\n') : clean(body.textContent);
+        if (prose.length<100) continue;
+        visited.add(p);
+        const left=16000-length;
+        const part=tail ? prose.slice(-left) : prose.slice(0,left);
+        if (tail) passages.unshift(part); else passages.push(part);
+        length+=part.length+1;
+        if (length>=16000 || passages.length>=2) break;
+      }
+      return passages.join('\n').slice(0,16000);
+    }
+    // Réserver la fin même si tous les chapitres se trouvent dans un seul fichier XHTML.
+    const opening=await sample(chapterPaths,false);
+    if (chapterPaths.length<=4) visited.clear();
+    const ending=await sample([...chapterPaths].reverse(),true);
+    return {toc,opening,ending:ending===opening?'':ending};
+  }
+
   async function fromEpub(bytes) {
     const {archive, opf, opfPath} = await epubPackage(bytes);
     const metadata = named(opf, 'metadata')[0] || opf;
@@ -322,7 +375,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       }
     }
 
-    return {type: 'EPUB', publisher: named(metadata,'publisher')[0]?.textContent.trim(),
+    return {type: 'EPUB', analysisContext:await readingSample(archive,opf,opfPath), publisher: named(metadata,'publisher')[0]?.textContent.trim(),
       language: named(metadata,'language')[0]?.textContent.trim(), publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
