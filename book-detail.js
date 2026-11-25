@@ -190,8 +190,8 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     const choice = event.target.closest('[data-pick-status]');
     if (!choice) return;
     const status = statuses[choice.dataset.pickStatus][0];
-    const finishing = status === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {};
-    if (await save({status, updatedAt: Date.now(), ...finishing})) { render(); setPopup(false, true); }
+    const changes = readingStatusChange(book,status);
+    if (await save(changes)) { render(); setPopup(false, true); }
   });
   on(q('[data-status-disclosure]'), 'focusout', event => {
     if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setPopup(false);

@@ -1870,6 +1870,88 @@ async function activateLibrary(root) {
     return cover;
   }
 
+  const bookmark = el('section','search-bookmark');
+  bookmark.hidden = true;
+  bookmark.setAttribute('aria-label','Actions du livre');
+  root.append(bookmark);
+  let bookmarkId, statusView = false;
+  function anchorBook() {
+    return bookmarkId && document.getElementById('library-book-' + bookmarkId);
+  }
+  function dismissBookmark(focus = false) {
+    if (focus) anchorBook()?.focus({preventScroll:true});
+    bookmark.hidden = true;
+    bookmarkId = null;
+  }
+  function placeBookmark() {
+    if (bookmark.hidden) return;
+    const anchor = anchorBook();
+    if (!anchor?.getClientRects().length) return dismissBookmark();
+    const rect = (anchor.querySelector('img,.elp-cover') || anchor).getBoundingClientRect();
+    const vv = window.visualViewport;
+    const left = vv?.offsetLeft || 0, top = vv?.offsetTop || 0;
+    const right = left + (vv?.width || innerWidth), bottom = top + (vv?.height || innerHeight);
+    if (rect.bottom <= top || rect.top >= bottom) return dismissBookmark();
+    const width = bookmark.offsetWidth, height = bookmark.offsetHeight;
+    const x = right - rect.right >= rect.left - left ? rect.right - width * .25 : rect.left - width * .75;
+    bookmark.style.left = Math.max(left + 5, Math.min(right - width - 5, x)) + 'px';
+    bookmark.style.top = Math.max(top + 5, Math.min(bottom - height - 5, rect.bottom - height * .28)) + 'px';
+  }
+  function showBookmark(book, choosing = false, takeFocus = true) {
+    bookmarkId = book.id;
+    statusView = choosing;
+    bookmark.replaceChildren();
+    bookmark.hidden = false;
+    const status = book.status || 'À lire';
+    const label = value => value === 'Terminé' ? 'Lu' : value;
+    if (choosing) {
+      const heading = el('div','bookmark-status');
+      const back = button('', 'bookmark-back', () => showBookmark(book));
+      back.setAttribute('aria-label','Revenir aux actions'); back.append(icon('chevron-left'));
+      heading.append(back, el('span','', 'Statut actuel · ' + label(status)));
+      bookmark.append(heading);
+      for (const next of ['À lire','En cours','Terminé']) {
+        if (status === 'Terminé' && next === 'À lire') continue;
+        const pick = button(label(next),'bookmark-choice', async () => {
+          if (next === status) return;
+          for (const item of bookmark.querySelectorAll('button')) item.disabled = true;
+          try {
+            const updated = await storage.patchBook(book.id,readingStatusChange(book,next));
+            Object.assign(book,updated);
+            if (bookmarkId === book.id && statusView) showBookmark(book,true);
+            renderAnnualGoal(new Date());
+            announce(book.title + ' · ' + label(next));
+          } catch {
+            if (bookmarkId === book.id && statusView) showBookmark(book,true);
+            showStorageError();
+          }
+        });
+        pick.setAttribute('aria-pressed',String(status === next)); bookmark.append(pick);
+      }
+    } else {
+      bookmark.append(el('p','bookmark-title',book.title));
+      const fiche = button('Voir la fiche','bookmark-action',() => {
+        const anchor = anchorBook(); dismissBookmark();
+        openSecondary('book',book,anchor,{fromLibrary:true});
+      });
+      const change = button('Changer le statut','bookmark-action',() => showBookmark(book,true));
+      fiche.prepend(icon('file-text')); change.prepend(icon('check'));
+      bookmark.append(fiche,change);
+    }
+    refreshIcons(); placeBookmark();
+    if (takeFocus) (bookmark.querySelector('[aria-pressed="true"]') || bookmark.querySelector('button'))?.focus({preventScroll:true});
+  }
+  document.addEventListener('pointerdown', event => {
+    if (!bookmark.hidden && !bookmark.contains(event.target)) dismissBookmark();
+  },true);
+  document.addEventListener('keydown', event => {
+    if (!bookmark.hidden && event.key === 'Escape') {event.preventDefault();dismissBookmark(true);}
+  });
+  document.addEventListener('scroll',placeBookmark,true);
+  window.addEventListener('resize',placeBookmark);
+  window.visualViewport?.addEventListener('resize',placeBookmark);
+  window.visualViewport?.addEventListener('scroll',placeBookmark);
+
   function bindBookGesture(control, getBook) {
     let press;
     let suppressClick = false;
@@ -1879,6 +1961,9 @@ async function activateLibrary(root) {
     };
     const open = read => {
       const book = getBook();
+      if (!read && scope === 'home' && control.closest('[data-library-search-results]')) {
+        return showBookmark(book);
+      }
       if (book) openSecondary('book', book, control, {
         read, fromLibrary: true, openReadingSheet: !read && Boolean(book.readingSheet),
       });
@@ -2120,8 +2205,7 @@ async function activateLibrary(root) {
     label.append(select);
     const favorite = button('', 'plain', () => save({coupDeCoeur: !book.coupDeCoeur}));
     favorite.append(icon('heart'), document.createTextNode(' Coup de cœur'));
-    select.addEventListener('change', () => save({status: select.value, updatedAt: Date.now(),
-      ...(select.value === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {})}));
+    select.addEventListener('change', () => save(readingStatusChange(book,select.value)));
     const folderLabel = el('label', '', 'Ajouter à un dossier');
     const folderSelect = el('select');
     folderLabel.append(folderSelect);
@@ -2217,8 +2301,7 @@ async function activateLibrary(root) {
           return;
         }
         choice.disabled = true;
-        const updated = {...book, status, updatedAt: Date.now(),
-          ...(status === 'Terminé' && !book.finishedAt ? {finishedAt: Date.now()} : {})};
+        const updated = {...book,...readingStatusChange(book,status)};
         try {
           await storage.putBook(updated);
         } catch {
@@ -2270,7 +2353,10 @@ async function activateLibrary(root) {
     find('[data-results-count]').textContent = countLabel(matching.length);
     const noMatch = query && !matching.length;
     results.toggleAttribute('data-library-search-results', query);
-    resultsHeader.hidden = noMatch;
+    const caption = find('[data-search-caption]');
+    caption.hidden = !(scope === 'home' && query);
+    if (!caption.hidden) caption.querySelector('small').textContent = countLabel(matching.length);
+    resultsHeader.hidden = noMatch || !caption.hidden;
     renderSearchEmpty(searchEmpty, noMatch, query, countFilters(applied) > 0);
     bookList.hidden = noMatch;
     const ordered = query ? sortedCatalogueEntries(matching, bookSort).flatMap(entry => entry.volumes)
@@ -2284,7 +2370,9 @@ async function activateLibrary(root) {
           showSaga: false,
           linkId: `library-book-${book.id}`,
         })));
+        [...mosaic.children].forEach((tile,i) => tile.style.setProperty('--arrival', Math.min(i,8)*40+'ms'));
         bookList.replaceChildren(mosaic);
+        if (!bookmark.hidden) placeBookmark();
       }
     } else bookList.replaceChildren(...ordered.map(bookRow));
     if (!matching.length && !query) {
@@ -2303,6 +2391,8 @@ async function activateLibrary(root) {
   }
 
   function renderContent() {
+    find('[data-search-caption]').hidden = true;
+    if (scope !== 'home' || !search.value.trim()) dismissBookmark();
     markBottomPage(scope === 'all' ? 'library' : 'home');
     refreshSidebarPage();
     syncCatalogueView();
@@ -2469,7 +2559,7 @@ async function activateLibrary(root) {
       updatedAt: Date.now(),
       addedAt: existing?.addedAt ?? Date.now(),
     };
-    if (imported.status === 'Terminé' && !imported.finishedAt) imported.finishedAt = Date.now();
+    if (imported.status === 'Terminé' && !imported.finishedAt && !imported.finishDateUnknown) imported.finishedAt = Date.now();
     const position = reading.readingPosition;
     if (position?.unit === 'chapter') imported.chapter = position.value;
     if (position?.unit === 'percent') imported.progress = position.value;
@@ -2575,7 +2665,7 @@ async function activateLibrary(root) {
   function accFinishedAt(book) {
     const end = book.readingEnd;
     if (end?.year) return new Date(Number(end.year), Number(end.month || 12) - 1, Number(end.day || 1)).getTime();
-    return book.finishedAt || (book.status === 'Terminé' ? book.updatedAt || 0 : 0);
+    return book.finishedAt || (!book.finishDateUnknown && book.status === 'Terminé' ? book.updatedAt || 0 : 0);
   }
   function accAgo(time) {
     const days = Math.max(0, Math.floor((Date.now() - time) / 86400000));
@@ -2636,9 +2726,7 @@ async function activateLibrary(root) {
 
   // Commencer un livre : statut « En cours », date du jour, puis la liseuse (avec fichier) ou la fiche
   async function accStartBook(book, before) {
-    const now = new Date();
-    const updated = {...book, status: 'En cours', updatedAt: Date.now(),
-      ...(book.readingStart?.year ? {} : {readingStart: {day: String(now.getDate()), month: String(now.getMonth() + 1), year: String(now.getFullYear())}})};
+    const updated = {...book,...readingStatusChange(book,'En cours')};
     try { await storage.putBook(updated); }
     catch { showStorageError(); return false; }
     Object.assign(book, updated);
@@ -3121,7 +3209,7 @@ async function activateLibrary(root) {
 
   function renderAnnualGoal(now) {
     const year = now.getFullYear();
-    const count = books.filter(book => book.status === 'Terminé' && new Date(accFinishedAt(book)).getFullYear() === year).length;
+    const count = books.filter(book => finishedInYear(book, year)).length;
     const percent = Math.min(count / annualReadingGoal, 1) * 100;
     find('[data-acc-goal-count]', accGoal).textContent = `${count} / ${annualReadingGoal}`;
     find('[data-acc-goal-ring]', accGoal).setAttribute('stroke-dasharray', `${percent} 100`);
@@ -3220,7 +3308,7 @@ async function activateLibrary(root) {
   recentBox.addEventListener('pointerdown', event => event.preventDefault());
   find('[data-recent-clear]').addEventListener('click', () => { writeRecent([]); renderContent(); });
   search.addEventListener('focus', () => { searchFocused = true; if (recentOpen()) renderContent(); });
-  search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (scope === 'home') renderContent(); });
+  search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (scope === 'home' && !search.value.trim()) renderContent(); });
   search.addEventListener('keydown', event => { if (event.key === 'Enter') { rememberSearch(); search.blur(); } });
 
   // En-tête : se réduit en barre compacte collée en haut quand on fait défiler
