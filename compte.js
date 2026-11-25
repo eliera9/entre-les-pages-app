@@ -65,20 +65,6 @@ const compteLecture = (() => {
     } catch { showMessage('Impossible de joindre Supabase. Vérifie ta connexion.'); }
     finally {button.disabled = alternate.disabled = false;}
   });
-  function showOpening() {
-    const screen = document.createElement('div');
-    screen.className = 'elp-ouverture';
-    screen.setAttribute('aria-hidden', 'true');
-    screen.innerHTML = '<div class="salutation"><span class="bonjour">Bonjour Elisa</span><span class="souhait">Bonne lecture.</span></div><span class="nom">ENTRE LES PAGES</span>';
-    document.body.append(screen);
-    libraryScreen.inert = true;
-    const finish = () => {
-      screen.remove();
-      libraryScreen.inert = false;
-    };
-    setTimeout(finish, matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 2900);
-  }
-
   async function start(openLibrary) {
     const adapt = () => {
       accountScreen.dataset.format = matchMedia('(min-width: 650px)').matches ? 'tablet' : 'phone';
@@ -90,6 +76,7 @@ const compteLecture = (() => {
     setMode(true);
     window.lucide?.createIcons();
     auth.onAuthStateChange((_event, session) => {
+      if (!owner && !session?.user) accountScreen.hidden = false;
       if (owner && owner !== session?.user.id) {
         libraryScreen.hidden = true;
         location.reload();
@@ -97,7 +84,7 @@ const compteLecture = (() => {
         owner = session.user.id;
         accountScreen.hidden = true;
         libraryScreen.hidden = false;
-        showOpening();
+
         setTimeout(openLibrary, 0);
       }
     });
