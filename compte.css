@@ -218,3 +218,19 @@ body:has(#elp-connexion[data-theme="dark"]) { background:#211d20; color-scheme:d
 #elp-connexion {max-width:none;padding:0;background:var(--paper)}
 #elp-connexion .stage {border:0;border-radius:0;min-height:100dvh}
 #elp-connexion .welcome {width:min(100%,480px);margin:auto}
+
+/* L'ouverture conserve la composition claire, quel que soit le thème de lecture. */
+@font-face{font-family:OuvertureManuscrite;src:url('./fonts/italianno-fiche.ttf')}
+@font-face{font-family:OuvertureRoman;src:url('./fonts/cormorant-garamond.woff2')}
+.elp-ouverture{position:fixed;inset:0;z-index:2147483600;overflow:hidden;isolation:isolate;box-sizing:border-box;background:#432732;color:#ffebe7;color-scheme:light;animation:elp-sortie .5s 2.4s ease-out both}
+.elp-ouverture::before{content:"";position:absolute;inset:25% 0 0;background:url('./art/livre-imprime.webp') center/cover no-repeat;mask-image:linear-gradient(transparent,#000 28%);animation:elp-recul 1.05s ease-out both}
+.elp-ouverture::after{content:"";position:absolute;inset:43% 0 0;background:linear-gradient(transparent 25%,rgba(37,21,30,.9));pointer-events:none}
+.elp-ouverture .salutation{position:absolute;left:9%;top:max(6%,env(safe-area-inset-top));display:grid;gap:min(1.7vw,1.5vh)}
+.elp-ouverture .bonjour{font:400 min(12vw,9vh)/1.1 OuvertureManuscrite,cursive;animation:elp-plume .82s .12s ease-out both}
+.elp-ouverture .souhait{font:400 min(8vw,6vh)/1.1 OuvertureRoman,serif;color:#eeb4bc;animation:elp-mots .55s .88s ease-out both}
+.elp-ouverture .nom{position:absolute;z-index:1;left:9%;bottom:max(6%,env(safe-area-inset-bottom));font:400 min(4.6vw,3.45vh)/1.2 Georgia,serif;letter-spacing:.09em;animation:elp-mots .55s .22s ease-out both}
+@keyframes elp-recul{from{transform:scale(1.08)}}
+@keyframes elp-plume{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
+@keyframes elp-mots{from{opacity:0;transform:translateY(5px)}}
+@keyframes elp-sortie{to{opacity:0;transform:translateY(-8%)}}
+@media(prefers-reduced-motion:reduce){.elp-ouverture,.elp-ouverture::before,.elp-ouverture .salutation span,.elp-ouverture .nom{animation:none}}
