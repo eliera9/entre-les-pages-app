@@ -1,6 +1,6 @@
 // Le dé de la pile et le questionnaire « Ta prochaine lecture ».
 // Validé slide par slide le 24 novembre (cahier des charges, zone 3).
-import {findPromesse} from "./promesse-form.js?v=6";
+import {findPromesse} from "./promesse-form.js?v=7";
 
 const ART = name => `./art/questionnaire/${name}.webp`;
 const DAY = 86400000;

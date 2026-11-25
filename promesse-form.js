@@ -21,6 +21,14 @@ const SLIDES = [
   {key: "pages", title: "Il me prendra combien de temps\u00a0?"},
 ];
 const PAGES_PER_HOUR = 50;
+// Ta vitesse mesurée dans la liseuse, dès qu'il y a au moins une heure de lecture
+function readingSpeed() {
+  try {
+    const stats = JSON.parse(localStorage.getItem("elp-vitesse") || "{}");
+    if (Number(stats.minutes) >= 60 && Number(stats.pages) > 0) return {perHour: Math.round(stats.pages / stats.minutes * 60), measured: true};
+  } catch {}
+  return {perHour: PAGES_PER_HOUR, measured: false};
+}
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
@@ -293,11 +301,14 @@ export function mountPromesse(section, {onDone} = {}) {
     field.append(input, make("span", "", "pages"));
     const said = make("p", "ep-promesse-said");
     said.setAttribute("aria-live", "polite");
-    const speed = make("p", "ep-promesse-speed", `Estimé à ${PAGES_PER_HOUR} pages par heure, le temps d'avoir assez de lectures pour connaître ton rythme.`);
+    const pace = readingSpeed();
+    const speed = make("p", "ep-promesse-speed", pace.measured
+      ? `À ta vitesse : ${pace.perHour} pages par heure, mesurée dans la liseuse.`
+      : `Estimé à ${PAGES_PER_HOUR} pages par heure, le temps d'avoir assez de lectures pour connaître ton rythme.`);
     const describe = () => {
       const count = state.pages;
       if (!count) { said.replaceChildren(make("b", "", "Pas encore réglé")); return; }
-      const hours = count / PAGES_PER_HOUR;
+      const hours = count / pace.perHour;
       const time = hours < 1 ? "moins d'une heure" : `environ ${Math.round(hours)} h`;
       said.replaceChildren(`${count} pages · ${time} de lecture`);
     };

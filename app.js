@@ -556,7 +556,7 @@ async function activateLibrary(root) {
   const statuses = ['À lire', 'En cours', 'En pause', 'Terminé', 'Abandonné'];
   const libraryLists = {
     all: {
-      title: 'Tous les livres', action: 'Afficher tous mes livres', back: 'Revenir à Tous les livres',
+      title: 'Ma bibliothèque', action: 'Afficher tous mes livres', back: 'Revenir à ma bibliothèque',
       empty: 'Aucun livre dans la bibliothèque.', emptyDescription: 'Ajoute ton premier livre à ta bibliothèque.',
       includes: () => true,
     },
@@ -2304,7 +2304,7 @@ async function activateLibrary(root) {
   }
 
   function renderContent() {
-    markBottomPage('home');
+    markBottomPage(scope === 'all' ? 'library' : 'home');
     refreshSidebarPage();
     syncCatalogueView();
     root.toggleAttribute('data-accueil-page', scope === 'home');
@@ -2656,7 +2656,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=5');
+        const module = await import('./questionnaire.js?v=6');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,
@@ -2840,9 +2840,193 @@ async function activateLibrary(root) {
   }
   window.addEventListener('resize', () => { if (!accueil.hidden) accDotsFit(); });
   const accOpenList = view => () => openCatalogue(view);
+  function accTicks(lastRead, total, current) {
+    const ticks = el('span', 'acc-ticks');
+    ticks.setAttribute('aria-hidden', 'true');
+    for (let volume = 1; volume <= Math.min(total, 12); volume += 1) {
+      ticks.append(el('i', volume <= lastRead ? 'read' : volume === current ? 'next' : ''));
+    }
+    return ticks;
+  }
+
+  /* ---------- Parutions (Hardcover) : tomes à acheter et « Bientôt en librairie » ---------- */
+  const PARU_KEY = 'elp-parutions';
+  const PREVENIR_KEY = 'elp-prevenir';
+  let parutions = null;
+  let parutionsRequestKey = '';
+  try {
+    const cached = JSON.parse(localStorage.getItem(PARU_KEY) || 'null');
+    if (cached?.data) { parutions = cached.data; parutionsRequestKey = cached.key || ''; }
+  } catch {}
+  function accSagaGroups() {
+    const groups = new Map();
+    for (const book of books) {
+      const saga = (book.saga || '').trim();
+      if (!saga) continue;
+      const key = saga.toLocaleLowerCase('fr');
+      if (!groups.has(key)) groups.set(key, {name: saga, author: book.author || '', books: []});
+      groups.get(key).books.push(book);
+    }
+    return [...groups.values()];
+  }
+  function parutionsQuery() {
+    const sagas = accSagaGroups()
+      .map(group => ({name: group.name, author: group.author, last: Math.max(0, ...group.books.map(book => book.status === 'Terminé' ? Number(accFinishedAt(book)) || 0 : 0))}))
+      .sort((a, b) => b.last - a.last).slice(0, 10).map(({name, author}) => ({name, author}));
+    const authors = [...new Set(books.filter(book => book.coupDeCoeur && book.author).map(book => book.author.trim()))].slice(0, 6);
+    return {sagas, authors};
+  }
+  let parutionsLoading = false;
+  async function loadParutions() {
+    if (parutionsLoading || typeof compteLecture === 'undefined' || !compteLecture?.db?.functions) return;
+    const query = parutionsQuery();
+    if (!query.sagas.length && !query.authors.length) return;
+    const key = JSON.stringify(query);
+    let fresh = false;
+    try { fresh = Date.now() - (JSON.parse(localStorage.getItem(PARU_KEY) || 'null')?.at || 0) < 12 * 3600000; } catch {}
+    if (fresh && key === parutionsRequestKey) return;
+    parutionsLoading = true;
+    try {
+      const {data, error} = await compteLecture.db.functions.invoke('catalogue', {body: {action: 'parutions', params: query}});
+      if (!error && data?.series) {
+        parutions = data;
+        parutionsRequestKey = key;
+        try { localStorage.setItem(PARU_KEY, JSON.stringify({at: Date.now(), key, data})); } catch {}
+        if (!accueil.hidden) renderContent();
+      }
+    } catch {} finally { parutionsLoading = false; }
+  }
+  const prevenir = () => { try { return new Set(JSON.parse(localStorage.getItem(PREVENIR_KEY) || '[]')); } catch { return new Set(); } };
+  const dayStart = date => { const d = new Date(date); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const parseDay = value => { const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime() : null; };
+  function remoteCard({key, label, sub, image, extra, onAdd, soon}) {
+    const card = el('div', 'acc-card acc-remote');
+    card.setAttribute('role', 'listitem');
+    const cover = el('span', 'acc-cover');
+    if (image) {
+      const img = el('img', 'elp-cover');
+      img.src = image; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+      img.addEventListener('error', () => img.replaceWith(Object.assign(el('span', 'elp-cover elp-cover-placeholder'), {textContent: ''})));
+      cover.append(img);
+    } else cover.append(el('span', 'elp-cover elp-cover-placeholder acc-remote-title', label));
+    if (soon) {
+      cover.classList.add('is-soon');
+      cover.append(el('i', 'acc-band', soon.out ? 'Sorti !' : 'À paraître'));
+      const bell = el('button', 'acc-bell cursor-interaction');
+      bell.type = 'button';
+      const on = () => prevenir().has(key);
+      const draw = () => {
+        bell.setAttribute('aria-pressed', String(on()));
+        bell.setAttribute('aria-label', on() ? `Ne plus me prévenir pour ${label}` : `Me prévenir de la sortie de ${label}`);
+        bell.innerHTML = `<svg viewBox="0 0 24 24" fill="${on() ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
+      };
+      bell.addEventListener('click', () => {
+        const set = prevenir();
+        set.has(key) ? set.delete(key) : set.add(key);
+        try { localStorage.setItem(PREVENIR_KEY, JSON.stringify([...set])); } catch {}
+        draw();
+        announce(set.has(key) ? `Je te préviendrai à la sortie de ${label}.` : `Plus de rappel pour ${label}.`);
+      });
+      draw();
+      cover.append(bell);
+    }
+    if (onAdd) {
+      const plus = el('button', 'acc-plus cursor-interaction');
+      plus.type = 'button';
+      plus.setAttribute('aria-label', `Ajouter ${label}${sub ? `, ${sub}` : ''} à ma pile`);
+      plus.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+      plus.addEventListener('click', () => { plus.disabled = true; onAdd().finally(() => { plus.disabled = false; }); });
+      cover.append(plus);
+    }
+    card.append(cover, el('b', 'acc-name', label));
+    if (sub) card.append(el('small', 'acc-sub', sub));
+    if (extra) card.append(extra);
+    return card;
+  }
+  async function imageAsData(url) {
+    try {
+      const response = await fetch(url, {referrerPolicy: 'no-referrer'});
+      if (!response.ok) return '';
+      const blob = await response.blob();
+      if (!/^image\//.test(blob.type) || blob.size > 3_000_000) return '';
+      return await new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => resolve(''); reader.readAsDataURL(blob); });
+    } catch { return ''; }
+  }
+  async function addToPile({title, author, saga, volume, image}) {
+    const now = Date.now();
+    const book = {id: 'paper:' + crypto.randomUUID(), title, author: author || '', saga: saga || '', volume: volume ? String(volume) : '',
+      status: 'À lire', format: 'Papier', genres: [], subgenres: [], tropes: [], addedAt: now, updatedAt: now};
+    const cover = image ? await imageAsData(image) : '';
+    if (cover) book.coverData = cover;
+    try { await storage.putBook(book); } catch { showStorageError(); return; }
+    books.push(book);
+    renderContent();
+    announce(`${title} ajouté à ta pile.`);
+  }
+  // Tomes déjà sortis des sagas commencées, qu'elle n'a pas encore
+  function accToBuy() {
+    if (!parutions?.series) return [];
+    const today = dayStart(Date.now());
+    const out = [];
+    for (const group of accSagaGroups()) {
+      const read = group.books.filter(book => book.status === 'Terminé');
+      if (!read.length || group.books.some(book => book.status === 'En cours')) continue;
+      const lastRead = Math.max(...read.map(accVolume).filter(Number.isFinite), 0);
+      const owned = new Set(group.books.map(accVolume).filter(Number.isFinite));
+      if ([...owned].some(volume => volume > lastRead)) continue; // le tome suivant est déjà chez elle
+      const volumes = parutions.series[group.name] || [];
+      const next = volumes.find(item => item.position > lastRead);
+      if (!next) continue;
+      const date = parseDay(next.date);
+      if (date == null || date > today) continue; // pas encore sorti : il ira dans « Bientôt »
+      const status = el('span', 'acc-status');
+      status.append(el('span', 'acc-pill-tag buy', 'À acheter'), accTicks(lastRead, Math.max(volumes.length, next.position), next.position));
+      out.push({readAt: Math.max(...read.map(accFinishedAt)), card: remoteCard({
+        key: `${group.name}#${next.position}`, label: group.name, sub: `tome ${next.position}`, image: next.image, extra: status,
+        onAdd: () => addToPile({title: next.title || `${group.name}, tome ${next.position}`, author: group.author, saga: group.name, volume: next.position, image: next.image}),
+      })});
+    }
+    return out;
+  }
+  // « Bientôt en librairie » : les 3 prochains mois, et « Sorti ! » pendant 7 jours
+  function accSoon() {
+    if (!parutions) return [];
+    const today = dayStart(Date.now());
+    const items = [];
+    const ownedTitles = new Set(books.map(book => (book.title || '').toLocaleLowerCase('fr').trim()));
+    for (const group of accSagaGroups()) {
+      const owned = new Set(group.books.map(accVolume).filter(Number.isFinite));
+      for (const volume of parutions.series?.[group.name] || []) {
+        const date = parseDay(volume.date);
+        if (date == null || owned.has(volume.position) || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
+        items.push({key: `${group.name}#${volume.position}`, label: group.name, title: volume.title, sub: `tome ${volume.position}`, date, image: volume.image, heart: false});
+      }
+    }
+    for (const book of parutions.upcoming || []) {
+      const date = parseDay(book.date);
+      if (date == null || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
+      if (ownedTitles.has((book.title || '').toLocaleLowerCase('fr').trim())) continue;
+      const key = book.saga && book.position ? `${book.saga}#${book.position}` : `titre:${book.title}`;
+      if (items.some(item => item.key === key)) continue;
+      items.push({key, label: book.saga || book.title, title: book.title, sub: book.saga && book.position ? `tome ${book.position}` : book.author, date, image: book.image, heart: true});
+    }
+    items.sort((a, b) => a.date - b.date);
+    return items.slice(0, 8).map(item => {
+      const days = Math.round((item.date - today) / DAY_MS);
+      const out = days <= 0;
+      const when = el('small', `acc-when${out ? ' is-out' : ''}`, out ? 'Sorti !' : days === 1 ? 'demain' : `dans ${days} jours`);
+      const extra = el('span', 'acc-status');
+      extra.append(when);
+      if (item.heart) { const heart = el('span', 'acc-follow', '♥'); heart.title = 'Une autrice de tes coups de cœur'; extra.append(heart); }
+      return remoteCard({key: item.key, label: item.label, sub: item.sub, image: item.image, extra, soon: {out}});
+    });
+  }
+  const DAY_MS = 86400000;
+
   function renderAccueil(show) {
     accueil.hidden = !show;
     if (!show) return;
+    loadParutions();
     const nextVolumes = accNextVolumes();
     const sagaIds = new Set(nextVolumes.map(item => item.book.id));
     const pile = books.filter(book => book.status === 'À lire' && !sagaIds.has(book.id))
@@ -2850,17 +3034,17 @@ async function activateLibrary(root) {
     const pileTotal = books.filter(book => book.status === 'À lire').length;
     accFill('pile', pile.map(book => accCard(book, {stamp: book.addedAt ? accAgo(book.addedAt) : '', menu: true})),
       pileTotal, {label: 'Voir ma pile', open: accOpenList('pile')}, n => n === 1 ? 'autre livre' : 'autres livres');
-    accFill('sagas', nextVolumes.map(({book, lastRead, total}) => {
+    const sagaCards = nextVolumes.map(({book, lastRead, total, readAt}) => {
       const status = el('span', 'acc-status');
       const pill = el('span', `acc-pill-tag ${book.status === 'À lire' ? 'pile' : 'buy'}`, book.status === 'À lire' ? 'Dans ta pile' : 'Dans ta bibliothèque');
-      const ticks = el('span', 'acc-ticks');
-      ticks.setAttribute('aria-hidden', 'true');
-      for (let volume = 1; volume <= Math.max(total, accVolume(book)); volume += 1) {
-        ticks.append(el('i', volume <= lastRead ? 'read' : volume === accVolume(book) ? 'next' : ''));
-      }
-      status.append(pill, ticks);
-      return accCard(book, {label: book.saga, sub: `tome\u00a0${String(book.volume).replace('.', ',')}`, extra: status});
-    }), nextVolumes.length, {label: 'Voir mes sagas', open: accOpenList('all')}, n => n === 1 ? 'autre saga' : 'autres sagas');
+      status.append(pill, accTicks(lastRead, Math.max(total, accVolume(book)), accVolume(book)));
+      return {readAt, card: accCard(book, {label: book.saga, sub: `tome\u00a0${String(book.volume).replace('.', ',')}`, extra: status})};
+    });
+    for (const item of accToBuy()) sagaCards.push(item);
+    sagaCards.sort((a, b) => b.readAt - a.readAt);
+    accFill('sagas', sagaCards.map(item => item.card), sagaCards.length, {label: 'Voir mes sagas', open: accOpenList('all')}, n => n === 1 ? 'autre saga' : 'autres sagas');
+    const soonCards = accSoon();
+    accFill('bientot', soonCards, soonCards.length, null, () => '');
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     const lus = books.filter(book => book.status === 'Terminé' && accFinishedAt(book) >= monthStart)
