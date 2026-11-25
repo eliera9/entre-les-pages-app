@@ -6,8 +6,8 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#211D20",
-  "theme_color": "#211D20",
+  "background_color": "#432732",
+  "theme_color": "#432732",
   "icons": [
     {
       "src": "./icons/app-192.png?v=entre-les-pages",
