@@ -2839,7 +2839,7 @@ async function activateLibrary(root) {
     const row = find(`[data-acc-row="${name}"]`, accueil);
     row.hidden = items.length === 0;
     if (row.hidden) return;
-    find('[data-acc-count]', row).textContent = String(total);
+    find('[data-acc-count]', row).textContent = name === 'bientot' ? countLabel(total) : String(total);
     const track = find('[data-acc-track]', row);
     if (homeCarousels.has(name)) {
       find('[data-acc-count]',row).textContent = name === 'pile' ? countLabel(total) : total + (total > 1 ? ' sagas' : ' saga');
@@ -2849,7 +2849,7 @@ async function activateLibrary(root) {
       homeCarousels.get(name)();
       return;
     }
-    const cards = items.slice(0, ACC_MAX);
+    const cards = name === 'bientot' ? items : items.slice(0, ACC_MAX);
     if (total > cards.length && moreTarget) cards.push(accMore(total - cards.length, noun(total - cards.length), moreTarget));
     track.replaceChildren(...cards);
     const dots = find('[data-acc-dots]', row);
@@ -2881,7 +2881,6 @@ async function activateLibrary(root) {
 
   /* ---------- Parutions (Hardcover) : tomes à acheter et « Bientôt en librairie » ---------- */
   const PARU_KEY = 'elp-parutions';
-  const PREVENIR_KEY = 'elp-prevenir';
   let parutions = null;
   let parutionsRequestKey = '';
   try {
@@ -2926,10 +2925,9 @@ async function activateLibrary(root) {
       }
     } catch {} finally { parutionsLoading = false; }
   }
-  const prevenir = () => { try { return new Set(JSON.parse(localStorage.getItem(PREVENIR_KEY) || '[]')); } catch { return new Set(); } };
   const dayStart = date => { const d = new Date(date); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const parseDay = value => { const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime() : null; };
-  function remoteCard({key, label, sub, image, extra, onAdd, onOpen, soon}) {
+  function remoteCard({label, sub, image, extra, onAdd, onOpen, releaseDays}) {
     const card = el('div', 'acc-card acc-remote');
     card.setAttribute('role', 'listitem');
     const cover = el('span', 'acc-cover');
@@ -2939,26 +2937,12 @@ async function activateLibrary(root) {
       img.addEventListener('error', () => img.replaceWith(Object.assign(el('span', 'elp-cover elp-cover-placeholder'), {textContent: ''})));
       cover.append(img);
     } else cover.append(el('span', 'elp-cover elp-cover-placeholder acc-remote-title', label));
-    if (soon) {
+    if (releaseDays !== undefined) {
       cover.classList.add('is-soon');
-      cover.append(el('i', 'acc-band', soon.out ? 'Sorti !' : 'À paraître'));
-      const bell = el('button', 'acc-bell cursor-interaction');
-      bell.type = 'button';
-      const on = () => prevenir().has(key);
-      const draw = () => {
-        bell.setAttribute('aria-pressed', String(on()));
-        bell.setAttribute('aria-label', on() ? `Ne plus me prévenir pour ${label}` : `Me prévenir de la sortie de ${label}`);
-        bell.innerHTML = `<svg viewBox="0 0 24 24" fill="${on() ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
-      };
-      bell.addEventListener('click', () => {
-        const set = prevenir();
-        set.has(key) ? set.delete(key) : set.add(key);
-        try { localStorage.setItem(PREVENIR_KEY, JSON.stringify([...set])); } catch {}
-        draw();
-        announce(set.has(key) ? `Je te préviendrai à la sortie de ${label}.` : `Plus de rappel pour ${label}.`);
-      });
-      draw();
-      cover.append(bell);
+      if (releaseDays >= 0) {
+        const text = releaseDays === 0 ? 'Sort aujourd’hui' : releaseDays === 1 ? 'Sort demain' : `Sort dans ${releaseDays} jours`;
+        cover.append(el('span', 'acc-band', text));
+      }
     }
     if (onOpen) {
       const hit = el('button','acc-remote-open cursor-interaction');
@@ -3021,7 +3005,7 @@ async function activateLibrary(root) {
       const status = sagaProgress(new Set(read.map(accVolume)), total, number);
       const sub = 'Tome ' + String(next.position).replace('.', ',');
       out.push({readAt: Math.max(...read.map(accFinishedAt)), card: remoteCard({
-        key: group.name+'#'+next.position, label:group.name, sub, image:next.image, extra:status,
+        label:group.name, sub, image:next.image, extra:status,
         onOpen(read, anchor) {
           const dialog = find('[data-saga-details]');
           find('h2', dialog).textContent = next.title || group.name;
@@ -3035,7 +3019,7 @@ async function activateLibrary(root) {
     }
     return out;
   }
-  // « Bientôt en librairie » : les 3 prochains mois, et « Sorti ! » pendant 7 jours
+  // Les prochaines sorties, avec une semaine de visibilité après parution.
   function accSoon() {
     if (!parutions) return [];
     const today = dayStart(Date.now());
@@ -3046,7 +3030,7 @@ async function activateLibrary(root) {
       for (const volume of parutions.series?.[group.name] || []) {
         const date = parseDay(volume.date);
         if (date == null || owned.has(volume.position) || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
-        items.push({key: `${group.name}#${volume.position}`, label: group.name, title: volume.title, sub: `tome ${volume.position}`, date, image: volume.image, heart: false});
+        items.push({key: `${group.name}#${volume.position}`, title: volume.title || group.name, author: volume.author || group.author, date, image: volume.image});
       }
     }
     for (const book of parutions.upcoming || []) {
@@ -3054,18 +3038,18 @@ async function activateLibrary(root) {
       if (date == null || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
       if (ownedTitles.has((book.title || '').toLocaleLowerCase('fr').trim())) continue;
       const key = book.saga && book.position ? `${book.saga}#${book.position}` : `titre:${book.title}`;
-      if (items.some(item => item.key === key)) continue;
-      items.push({key, label: book.saga || book.title, title: book.title, sub: book.saga && book.position ? `tome ${book.position}` : book.author, date, image: book.image, heart: true});
+      const seriesItem = items.find(item => item.key === key);
+      if (seriesItem) {
+        if (book.author) seriesItem.author = book.author;
+        if (book.title) seriesItem.title = book.title;
+        continue;
+      }
+      items.push({key, title: book.title, author: book.author, date, image: book.image});
     }
     items.sort((a, b) => a.date - b.date);
     return items.slice(0, 8).map(item => {
       const days = Math.round((item.date - today) / DAY_MS);
-      const out = days <= 0;
-      const when = el('small', `acc-when${out ? ' is-out' : ''}`, out ? 'Sorti !' : days === 1 ? 'demain' : `dans ${days} jours`);
-      const extra = el('span', 'acc-status');
-      extra.append(when);
-      if (item.heart) { const heart = el('span', 'acc-follow', '♥'); heart.title = 'Une autrice de tes coups de cœur'; extra.append(heart); }
-      return remoteCard({key: item.key, label: item.label, sub: item.sub, image: item.image, extra, soon: {out}});
+      return remoteCard({label: item.title, sub: item.author, image: item.image, releaseDays: days});
     });
   }
   const DAY_MS = 86400000;
