@@ -1,0 +1,49 @@
+/* The status area, overscroll canvas and app pages share the same paper. */
+:root {
+  --page-paper: light-dark(#F7EEEB, #211D20);
+}
+
+.mobile-top-surface {
+  display: none;
+}
+
+@media (width < 650px), (height < 500px) {
+  :root:has(#app-lecture:not([hidden])),
+  :root:has(#elp-connexion:not([hidden])) {
+    color-scheme: light;
+    background-color: var(--page-paper);
+
+    & > body {
+      color-scheme: inherit;
+      background-color: inherit;
+    }
+  }
+
+  :root:has(#app-lecture:not([hidden]) #bibliotheque-app[data-theme="dark"]),
+  :root:has(#elp-connexion[data-theme="dark"]:not([hidden])),
+  :root:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) {
+    color-scheme: dark;
+  }
+
+  /* Give Safari a solid colour to sample even when it reports a zero top inset.
+     Only the first 6px of the page are painted when the clock sits outside it. */
+  .mobile-top-surface {
+    display: block;
+    position: fixed;
+    inset: -6px 0 auto;
+    height: calc(6px + max(6px, env(safe-area-inset-top, 0px)));
+    z-index: 21;
+    background-color: inherit;
+    pointer-events: none;
+  }
+
+  /* The open drawer and its scrim paint the top edge themselves. */
+  body:has([data-sidebar-layer]:not([hidden])) > .mobile-top-surface {
+    z-index: 0;
+  }
+
+  #app-lecture #bibliotheque-app .library-main > .toolbar,
+  #bibliotheque-app #elp-add-book .ep-top-nav {
+    background-color: var(--paper);
+  }
+}

@@ -17,7 +17,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <link rel="manifest" href="./app.webmanifest?v=accueil-direct" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
 <link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="./app.css?v=pal-complete-2">
+<link rel="stylesheet" href="./app.css?v=haut-mobile-1">
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css?v=accueil-direct">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
@@ -41,8 +41,11 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./reading-status.js"></script>
 <script defer src="./veille-parutions.js?v=pal-fiche-lire-1"></script>
 <script defer src="./app.js?v=pal-complete-2"></script>
+<link rel="stylesheet" href="./mobile-surface.css?v=1">
+<script defer src="./mobile-surface.js?v=1"></script>
 </head>
 <body>
+<div class="mobile-top-surface" aria-hidden="true"></div>
 <main hidden id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
         data-heading="ample" data-eye="pastille" data-hint="pastille" data-look="plein" data-symbol="enveloppe">
 

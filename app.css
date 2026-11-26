@@ -2,7 +2,7 @@
 
 #app-lecture .eli-bibliotheque {
   color-scheme: light;
-  --paper: light-dark(#F7EEEB, #211D20);
+  --paper: var(--page-paper, light-dark(#F7EEEB, #211D20));
   --card: light-dark(#F2E6E2, #2D2630);
   --tint: light-dark(#EADBD8, #3B303F);
   --rule: light-dark(#D6C0BD, #57445D);
@@ -1941,7 +1941,6 @@ body { margin: 0; }
   margin-block: calc(-1 * max(var(--library-padding, 12px), env(safe-area-inset-top))) 6px;
   padding: max(var(--library-padding, 12px), env(safe-area-inset-top)) var(--library-right, 16px) 8px var(--library-left, 16px);
   border-block-end: 1px solid transparent;
-  background: transparent;
   transition: padding 220ms cubic-bezier(.23,1,.32,1), background-color 180ms ease, border-color 180ms ease;
 }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar .round::before {
@@ -1949,9 +1948,11 @@ body { margin: 0; }
 }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar.is-compact {
   padding-block: max(6px, env(safe-area-inset-top)) 6px;
+  border-block-end-color: var(--rule);
+}
+#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar.is-compact {
   background: color-mix(in srgb, var(--paper) 92%, transparent);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  border-block-end-color: var(--rule);
 }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar.is-compact .round::before { transform: scale(.86); }
 
