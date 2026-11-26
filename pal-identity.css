@@ -192,7 +192,7 @@
   font-size: clamp(16px, 2.15vw, 19px);
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .valeurs {
-  font-size: clamp(17px, 2.35vw, 21px);
+  font-size: 16px;
   line-height: 1.35;
   gap: 4px 8px;
 }
@@ -262,7 +262,11 @@
   --rail-priorite: light-dark(#d6c1cb,#655164);
   display: grid;
   align-content: center;
-  justify-items: center;
+  justify-items: start;
+  box-sizing: border-box;
+  padding: 8px clamp(6px, 1.3vw, 12px);
+  border-radius: 10px;
+  background: light-dark(#efe2e7, #352c35);
   min-width: 0;
   color: var(--prune);
 }
@@ -329,7 +333,7 @@
   z-index: 1;
 }
 #bibliotheque-app #elp-add-book .glissiere:has(:focus-visible) .poignee-priorite { outline:2px solid var(--teinte-priorite);outline-offset:3px; }
-#bibliotheque-app #elp-add-book .priorite-lecture output { font:14px/1.2 "Baskervville Formulaire",Georgia,serif; text-align:center; }
+#bibliotheque-app #elp-add-book .priorite-lecture output { grid-row:2; font:16px/1.2 "Baskervville Formulaire",Georgia,serif; text-align:center; }
 #bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .rangee-genre-date { gap:clamp(6px,3cqw,18px); }
 #bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .priorite-lecture { flex:0 0 clamp(64px,25cqw,98px); }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .rangee-genre-date {
@@ -341,7 +345,7 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .bloc-parution { grid-column:1/-1; grid-row:1; }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .recherche-genre { grid-column:1; grid-row:2; }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .priorite-lecture { grid-column:2; grid-row:2; width:min(100%,132px); }
-#bibliotheque-app[data-format="tablet"] #elp-add-book .priorite-lecture output { font-size:clamp(17px,2.5cqw,21px); }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .priorite-lecture output { font-size:19px; }
 #bibliotheque-app #elp-add-book .ep-pal-identity .couverture .ep-cover:has(img:not([hidden])) {
   aspect-ratio:auto; background:transparent; border:0; border-radius:0; box-shadow:none; padding:0;
 }
@@ -352,9 +356,7 @@
 #bibliotheque-app #elp-add-book .ep-pal-summary:not([hidden]) ~ .ep-next-summary {display:none!important}
 #bibliotheque-app #elp-add-book .ep-pal-summary{width:100%;min-width:0;margin:32px 0 0}
 #bibliotheque-app #elp-add-book .ep-pal-summary h3{margin:0}
-#bibliotheque-app #elp-add-book .ep-pal-summary #ep-pal-summary-toggle{width:100%;min-height:44px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;gap:8px}
-#bibliotheque-app #elp-add-book #ep-pal-summary-toggle::before,
-#bibliotheque-app #elp-add-book #ep-pal-summary-toggle::after{flex:1;background:light-dark(#997986,#AB8DAA)}
+#bibliotheque-app #elp-add-book .ep-pal-summary #ep-pal-summary-toggle{width:100%;min-height:44px;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
 #ep-pal-summary-toggle svg{width:25px;flex:none;color:var(--ep-accent)}
 #ep-pal-summary-panel{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .32s ease,opacity .26s ease}
 #ep-pal-summary-panel[inert]{grid-template-rows:0fr;opacity:0}
