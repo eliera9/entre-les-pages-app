@@ -11,7 +11,7 @@
 #bibliotheque-app #elp-add-book[data-pal] .ep-top-nav .ep-close span{position:relative}
 #bibliotheque-app[data-format=tablet] #elp-add-book[data-pal] .ep-top-nav .ep-icon-button::before{width:42px;height:42px}
 #bibliotheque-app #elp-add-book[data-pal] .ep-form{max-width:none}
-#bibliotheque-app #elp-add-book[data-pal] .ep-top-group{gap:3px}
+#bibliotheque-app:where(:not([data-format="tablet"])) #elp-add-book[data-pal] .ep-top-group{gap:3px}
 @media(max-width:360px){#bibliotheque-app #elp-add-book .pal-nav-title{font-size:13px}#bibliotheque-app #elp-add-book[data-pal] .ep-top-group{gap:0}#bibliotheque-app #elp-add-book[data-pal] .ep-top-nav{grid-template-columns:max-content minmax(0,1fr) max-content}}
 #bibliotheque-app #elp-add-book .ep-pal-identity{container:palBook / inline-size;--papier:var(--paper);--feuille:var(--ep-card);--encre:var(--text);--prune:var(--ep-accent);--second:var(--ep-muted);--filet:var(--ep-line);--lavis:light-dark(#ecd9db,#493647);--actif:light-dark(#674153,#d0aecf);--inverse:light-dark(#fff7f4,#382637);--ui:"Source Sans 3 Formulaire",sans-serif;text-align:left}
 #bibliotheque-app #elp-add-book .ep-pal-identity *{box-sizing:border-box}
@@ -114,3 +114,88 @@
 #bibliotheque-app #elp-add-book .ep-pal-identity .options-date{z-index:10}
 #bibliotheque-app #elp-add-book .ep-pal-identity .livre .titre-livre{font-family:PalCormorant,Georgia,serif}
 @container palBook (min-width:600px){#bibliotheque-app #elp-add-book .ep-pal-identity .palette{--taille-multiple:14;--taille-genre:17}}
+
+/* Le premier rang est centré. Les listes suivent les marges de la page. */
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity {
+  inline-size: 100%;
+  margin-inline: auto;
+  margin-block-start: clamp(6px, 1.3vw, 16px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .livre {
+  --pal-book-gap: clamp(30px, 5.4cqw, 54px);
+  --pal-copy-width: min(56%, clamp(308px, 45cqw, 440px));
+  grid-template-columns:
+    minmax(0, 1fr) [cover] min(var(--cover), 34%)
+    [spine] var(--pal-book-gap) [copy] minmax(0, var(--pal-copy-width))
+    [end-copy] minmax(0, 1fr);
+  gap: clamp(12px, 1.7vw, 18px) 0;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .couverture { grid-column: cover / spine; grid-row: 1; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .ep-cover:has(img:not([hidden])) {
+  aspect-ratio: auto;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .ep-cover img {
+  height: auto;
+  object-fit: contain;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .couverture::after {
+  right: calc(var(--pal-book-gap) / -2);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .identite { grid-column: copy / end-copy; grid-row: 1; align-self: center; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .titre-livre {
+  font-size: clamp(37px, 6cqw, 53px);
+  line-height: 1.14;
+  margin-bottom: .18em;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .autrice {
+  font-size: clamp(23px, 3.55cqw, 31px);
+  margin-bottom: .28em;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity :is(.saga, .saga [data-texte], .spin) {
+  font-size: clamp(21px, 3.12cqw, 27px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .rangee-genre-date {
+  margin-top: clamp(14px, 2vw, 22px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(7px, 1.3vw, 13px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .bloc-parution {
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(5px, 1vw, 12px);
+  white-space: nowrap;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .recherche-genre { max-width: 100%; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .jeton {
+  font-size: clamp(22px, 3.15cqw, 27px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .intitule-sortie {
+  font-size: clamp(16px, 2.3cqw, 19px);
+  gap: .35em;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .icone-agenda { width: clamp(16.5px, 2.145vw, 18.7px); height: clamp(16.5px, 2.145vw, 18.7px); }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity :is(.declencheur, .barre-oblique, .option-val, .recherche-an) {
+  font-size: clamp(18px, 2.7cqw, 23px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .partie-date[data-col="mois"] > .options-date { min-width: 6.4rem; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .collection {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  width: 100%;
+  padding: .48em .85em;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .libelle-groupe {
+  font-size: clamp(16px, 2.15vw, 19px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .valeurs {
+  font-size: clamp(17px, 2.35vw, 21px);
+  line-height: 1.35;
+  gap: 4px 8px;
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .item { column-gap: 7px; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .palette { --taille-genre: 19; --taille-multiple: 16; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .saisie-genre { font-size: 18px; }

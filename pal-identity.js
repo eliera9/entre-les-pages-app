@@ -303,7 +303,12 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   const etoile=getComputedStyle(boutonGenre,'::before');
   const largeurEtoile=parseFloat(etoile.width)+parseFloat(etoile.marginRight);
   const cadre=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2+(largeurEtoile||0);
-  const libre=ligneGenreDate.clientWidth-blocDate.getBoundingClientRect().width-parseFloat(getComputedStyle(ligneGenreDate).columnGap);
+  const disposition=getComputedStyle(ligneGenreDate);
+  const empiles=disposition.flexDirection==='column';
+  const premier=empiles?blocDate:boutonGenre.parentElement;
+  if(ligneGenreDate.firstElementChild!==premier)ligneGenreDate.prepend(premier);
+  const largeurDate=empiles?0:blocDate.getBoundingClientRect().width+parseFloat(disposition.columnGap);
+  const libre=ligneGenreDate.clientWidth-largeurDate;
   const base=parseFloat(style.fontSize);
   mesures.font=style.fontWeight+' '+base+'px '+style.fontFamily;
   const motLarge=Math.max(...(donnees.genre||'Ajouter un genre').split(/\s+/).map(v=>mesures.measureText(v).width+v.length*parseFloat(style.letterSpacing||0)));
