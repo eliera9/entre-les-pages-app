@@ -3446,6 +3446,7 @@ async function activateLibrary(root) {
         sidebarToggle.focus({preventScroll:true});
       }
       disposeBook = mountSavedBook({
+        releaseWatch, folderChoices: () => folders.map(folder => ({id:folder.id,name:folderPath(folder)})),
         root, host: bookHost, book, storage, engine: coverReader, bookTagOptions, refreshIcons, home: fromLibrary ? returnFromSecondary : home,
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
         startInNote: openReadingSheet,

@@ -133,7 +133,7 @@ const EbookReleases = (() => {
       void refresh(true);setInterval(tick,60000);document.addEventListener('visibilitychange',tick);
       window.addEventListener('online',()=>refresh(true));window.addEventListener('pageshow',tick);
     }
-    return {feed,authorSettings,start};
+    return {feed,authorSettings,start,has,follow,refresh};
   }
   return {visible,today,accountApi,mount};
 })();

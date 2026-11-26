@@ -21,7 +21,7 @@ function trackSpeed(printedPage, percent) {
 }
 let speedBook = null;
 
-function mountSavedBook({root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
   speedBook = book;
   speedLast = null;
   const scope = new AbortController();
@@ -241,7 +241,51 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
   fit();
   on(window, 'resize', fit);
   on(window, 'scroll', anchorDelete);
-  on(trash, 'click', () => {setPopup(false); setDelete(bubble.hidden, true);});
+  const actions = document.createElement('div');
+  actions.className = 'pal-book-actions';
+  actions.setAttribute('popover','auto');
+  host.append(actions);
+  function action(label, handler) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.onclick = handler;
+    actions.append(button);
+    return button;
+  }
+  on(trash, 'click', async () => {
+    if (actions.matches(':popover-open')) { actions.hidePopover(); return; }
+    setPopup(false); setDelete(false);
+    actions.replaceChildren();
+    if (book.author) {
+      const label = () => releaseWatch.has(book.author) ? 'Ne plus suivre l’auteur' : 'Suivre l’auteur';
+      const follow = action(label(), async () => {
+        follow.disabled = true;
+        try { await releaseWatch.follow(book.author,!releaseWatch.has(book.author)); actions.hidePopover(); }
+        catch { onError(); }
+        finally { follow.disabled = false; }
+      });
+      void releaseWatch.refresh().then(() => { follow.textContent = label(); });
+    }
+    action('Gérer les dossiers', () => {
+      actions.replaceChildren();
+      const choices = folderChoices();
+      if (!choices.length) actions.textContent = 'Aucun dossier';
+      for (const folder of choices) {
+        const button = action(folder.name, async () => {
+          const ids = new Set(book.folderIds || []);
+          if (ids.has(folder.id)) ids.delete(folder.id); else ids.add(folder.id);
+          if (await save({folderIds:[...ids]})) actions.hidePopover();
+        });
+        button.setAttribute('aria-pressed', String(book.folderIds?.includes(folder.id) || false));
+      }
+    });
+    action('Supprimer', () => { actions.hidePopover(); setDelete(true,true); });
+    const box = trash.getBoundingClientRect();
+    actions.style.top = (box.bottom+6)+'px';
+    actions.style.right = Math.max(8,innerWidth-box.right)+'px';
+    actions.showPopover();
+  });
   on(q('[data-cancel]'), 'click', () => setDelete(false, true));
   on(q('[data-delete]'), 'click', async () => {
     const button = q('[data-delete]');

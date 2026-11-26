@@ -698,3 +698,9 @@
 }
 /* Tablette : texte de la fiche un peu plus grand */
 #bibliotheque-app[data-format="tablet"] #elp-saved-book .ep-following { --ep-summary-size: 19px; --ep-label-size: 18px; }
+
+.pal-book-actions{position:fixed;inset:auto;margin:0;max-height:55vh;overflow:auto;padding:5px;background:var(--card);color:var(--title);border:1px solid var(--rule);border-radius:9px}
+.pal-book-actions button{display:block;width:100%;padding:10px 14px;text-align:left;background:none;color:inherit;border:0;font:inherit}
+.pal-book-actions [aria-pressed=true]::before{content:'✓ '}
+#bibliotheque-app #elp-saved-book .ep-reader-access{width:100%;max-width:none;margin:24px 0 0}
+#bibliotheque-app #elp-saved-book .ep-reader-access button.ep-read-book{width:100%;max-width:none;min-height:54px;border:0;border-radius:9px;background:light-dark(#dfc9cd,#503848);color:light-dark(#51334d,#ebdcef);font:600 20px/1.2 "Baskervville Formulaire",Georgia,serif;animation:none;justify-content:center}

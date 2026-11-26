@@ -17,7 +17,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <link rel="manifest" href="./app.webmanifest?v=accueil-direct" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
 <link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="./app.css?v=veille-balayage-1">
+<link rel="stylesheet" href="./app.css?v=pal-fiche-lire-1">
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css?v=accueil-direct">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
@@ -34,13 +34,13 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <link rel="stylesheet" href="./pal-identity.css?v=pal-collection-finale-1">
 <script defer src="./pal-identity.js?v=reperes-aquarelles"></script>
 <script defer src="./add-book.js?v=pal-collection-finale-1"></script>
-<link rel="stylesheet" href="./book-detail.css?v=7">
+<link rel="stylesheet" href="./book-detail.css?v=pal-fiche-lire-1">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=edition-officielle-1"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=pal-fiche-lire-1"></script>
 <script defer src="./reading-status.js"></script>
-<script defer src="./veille-parutions.js?v=1"></script>
-<script defer src="./app.js?v=veille-balayage-1"></script>
+<script defer src="./veille-parutions.js?v=pal-fiche-lire-1"></script>
+<script defer src="./app.js?v=pal-fiche-lire-1"></script>
 </head>
 <body>
 <main hidden id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
@@ -155,7 +155,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
       </button>
       <div class="toolbar-group">
         <button type="button" class="round toolbar-action cursor-interaction" data-book-edit hidden aria-label="Modifier la fiche du livre" title="Modifier la fiche du livre" aria-expanded="false"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg></button>
-      <button type="button" class="round toolbar-action cursor-interaction" data-book-trash hidden aria-label="Supprimer le livre" aria-controls="delete-panel" aria-expanded="false" title="Supprimer le livre" aria-haspopup="dialog"><svg class="navigation-icon" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+      <button type="button" class="round toolbar-action cursor-interaction" data-book-trash hidden aria-label="Actions du livre" aria-haspopup="true"><span aria-hidden="true">•••</span></button>
         <button type="button" class="round toolbar-action cursor-interaction" data-create-folder aria-label="Créer un dossier" aria-haspopup="dialog" aria-expanded="false" aria-controls="elp-folder-dialog">
           <svg class="navigation-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17V7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v2"/><path d="M5 19h12a2 2 0 0 0 1.9-1.4l1.8-5.6a1 1 0 0 0-.9-1.3h-12a2 2 0 0 0-1.9 1.4L4 17.7A1 1 0 0 0 5 19z"/><path d="M12.5 12.5v4M10.5 14.5h4"/></svg>
         </button>
@@ -507,8 +507,8 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
           <div class="ep-reader-access" data-reader-access data-read-art="reader" data-art-place="left" data-read-chevron="no" data-read-rules="no" data-read-surface="soft" data-read-border="yes" data-reader-motion="running">
             <button class="ep-read-book cursor-interaction" type="button" data-open-reader>
               <span class="ep-read-content">
-                <span class="ep-read-art" aria-hidden="true"></span>
-                <span class="ep-read-caption"><span class="ep-read-label" data-reader-label>Lire ce livre</span></span>
+                <svg aria-hidden="true" width="28" height="28" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13 9Q8 6 2 8v13q6-2 11 1 5-3 11-1V8q-6-2-11 1v13M13 1l.9 2.4L16 4l-2.1.8L13 7l-.9-2.2L10 4l2.1-.6z"/></svg>
+                <span class="ep-read-caption"><span class="ep-read-label" data-reader-label>Lire le livre</span></span>
               </span>
               <span class="ep-read-arrow" aria-hidden="true"></span>
             </button>
