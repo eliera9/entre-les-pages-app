@@ -10,7 +10,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
    <span class="titre-livre" data-texte="title" data-vide="Ajouter un titre" role="textbox" contenteditable="plaintext-only" aria-label="Titre du livre"></span>
    <span class="autrice" data-texte="author" data-vide="Ajouter un nom" role="textbox" contenteditable="plaintext-only" aria-label="Autrice ou auteur"></span>
    <div class="saga"><span data-texte="series" data-vide="Ajouter une saga" role="textbox" contenteditable="plaintext-only" aria-label="Saga"></span><span aria-hidden="true"> · </span><span class="prefixe-tome">Tome </span><span data-texte="volume" data-vide="…" role="textbox" contenteditable="plaintext-only" aria-label="Tome"></span></div>
-   <small class="spin" hidden></small>
+   <div class="saga spin" hidden>Spin-Off de <span data-texte="spinOffOf" role="textbox" contenteditable="plaintext-only" aria-label="Livre ou saga d’origine"></span></div>
   </div>
   <div class="rangee-genre-date">
    <div class="recherche-genre"><button type="button" class="jeton" data-champ="genre" aria-label="Modifier le genre"></button></div>
@@ -419,7 +419,9 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   afficherPriorite(book.readingPriority);
   if(document.activeElement!==pages)pages.value=book.pageCount??'';
   for(const field of champsTexte)if(document.activeElement!==field)field.textContent=String(book[field.dataset.texte]??'');
-  const spin=livre.querySelector('.spin');spin.hidden=!book.spinOffOf;spin.textContent=spin.hidden?'':'Spin-off de '+book.spinOffOf;
+  const spin=livre.querySelector('.spin');
+  spin.hidden=!String(book.spinOffOf || '').trim();
+  livre.querySelector('.saga:not(.spin)').hidden=!spin.hidden;
   const currentKey=JSON.stringify([book.title,book.coverData]);
   if(coverKey!==currentKey){cover.replaceChildren(coverOf(book));coverKey=currentKey}
   donnees.genre=book.genres?.[0]||'';

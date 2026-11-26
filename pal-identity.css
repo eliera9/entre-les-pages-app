@@ -411,3 +411,5 @@
 #bibliotheque-app #elp-add-book .ep-promesse-dots i { pointer-events:none; }
 
 #bibliotheque-app #elp-add-book .ep-results li:has(.ep-result[aria-expanded=true]) { grid-column:1/-1; }
+
+#elp-add-book .ep-pal-identity .saga[hidden] { display: none; }

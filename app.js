@@ -2723,6 +2723,7 @@ async function activateLibrary(root) {
       summary:summaryRecord?.summary ?? '',
       summarySource:summaryRecord?.summarySource,
       saga: details.series ?? details.saga ?? existing?.saga ?? existing?.series ?? "",
+      spinOffOf: details.spinOffOf ?? existing?.spinOffOf ?? "",
       pageCount:pagesEdited ? promesse?.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || existing?.pageCount,
       ...(promesse ? {promesse:{...promesse,pages:pagesEdited ? promesse.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || promesse.pages}} : {}),
       id: existing?.id ?? documentId ?? (catalogueId ? 'catalogue:' + catalogueId : 'paper:' + crypto.randomUUID()),

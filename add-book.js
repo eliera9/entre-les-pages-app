@@ -444,14 +444,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     fragment.querySelector(".ep-book-name").textContent = book.title;
     fragment.querySelector(".ep-book-author").textContent = book.author;
     const series = fragment.querySelector(".ep-book-series");
-    series.textContent = showSeries ? seriesLine(book) : "";
+    series.textContent = showSeries ? (book.spinOffOf ? "Spin-Off de "+book.spinOffOf : seriesLine(book)) : "";
     series.hidden = !series.textContent;
-    if (showSeries && book.spinOffOf) {
-      const spin=document.createElement("span");
-      spin.className="ep-book-spin";
-      spin.textContent="Spin-off de "+book.spinOffOf;
-      series.after(spin);
-    }
     return fragment;
   }
 

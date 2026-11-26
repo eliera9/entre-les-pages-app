@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de quatre slides.
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=edition-officielle-1";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, guessPromesse, fillGaps} from "./promesse.js?v=edition-officielle-1";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -68,7 +68,7 @@ export async function findPromesse(book, signal) {
   }
   if (signal?.aborted) return null;
   const fromServer = server ? fillGaps(emptyPromesse(), server.promesse) : emptyPromesse();
-  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null && (!server?.romance || fromServer.spice != null);
+  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null && fromServer.spice != null;
   if (full) return {promesse: fromServer, romance: Boolean(server.romance), sources};
   // Ce qui manque encore : l'appareil cherche aussi de son côté (Google Books + Open Library)
   try {
@@ -84,7 +84,6 @@ export async function findPromesse(book, signal) {
 export function mountPromesse(section, {onPages, signal} = {}) {
   let state = emptyPromesse();
   let touched = new Set();
-  let romance = true;
   let loading = false;
   let notFound = false;
   let request = null;
@@ -304,10 +303,8 @@ export function mountPromesse(section, {onPages, signal} = {}) {
       if (slide.list) checklist(slide, index, node);
       else {
         darkness(slide, index, node);
-        if (romance) {
-          node.append(slideHeading(SPICE_SLIDE));
-          spice(SPICE_SLIDE, index, node);
-        }
+        node.append(slideHeading(SPICE_SLIDE));
+        spice(SPICE_SLIDE, index, node);
       }
       return node;
     }));
@@ -370,7 +367,6 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     request?.abort();
     const controller = new AbortController();
     request = controller;
-    romance = isRomance(book);
     if (book.promesse) {
       state = {...emptyPromesse(), ...book.promesse};
       onPages?.(book,state.pages);
@@ -388,9 +384,7 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     sources = result?.sources || null;
     const found = {...result?.promesse};
     if (globalThis.BookMetadata.editionPages(book.pageCount)) found.pages=book.pageCount;
-    const romanceFound = Boolean(result?.romance);
     if (controller.signal.aborted) return;
-    romance = romance || romanceFound;
     const kept = Object.fromEntries([...touched].map(name => [name, state[name]]));
     state = {...fillGaps(emptyPromesse(), found || {}), ...kept};
     onPages?.(book,state.pages);
@@ -414,7 +408,6 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     notFound = false;
     bookKey = "";
     sources = null;
-    romance = true;
     setOpen(true);
     render();
   }
@@ -427,7 +420,6 @@ export function mountPromesse(section, {onPages, signal} = {}) {
 
   function values() {
     const result = {...state};
-    if (!romance) result.spice = null;
     const filled = result.humeur.length || result.emotions.length || result.decor.length ||
       result.noirceur != null || result.spice != null || result.pages != null;
     return filled ? result : null;
