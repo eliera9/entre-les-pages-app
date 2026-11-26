@@ -367,6 +367,27 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return {clear,values};
   }
 
+  function separateSeriesTitle(book) {
+    const title=book.title?.trim();
+    if (!title) return;
+    const norm=value=>String(value || "").trim().toLocaleLowerCase("fr").replace(/\s+/g," ");
+    const number=value=>norm(value).replace(/^(?:tome|volume)\s*/,"").replace(",",".");
+    const prefix=title.match(/^(.+?)(?:\s*[-–—:,·]\s*|\s+)(?:tome|volume)\s+(\d+(?:[.,]\d+)?)(?:\s*[-–—:.·]\s*|\s+)(\S[\s\S]*)$/i);
+    if (prefix && (!book.series || norm(book.series)===norm(prefix[1])) &&
+        (!book.volume || number(book.volume)===number(prefix[2]))) {
+      book.series ||= prefix[1].trim();
+      book.volume ||= prefix[2];
+      book.title=prefix[3].trim();
+      return;
+    }
+    const suffix=title.match(/^(.+?)(?:\s*\(\s*|\s+[-–—·]\s+)(.+?)(?:\s*[,·–—:-]\s*|\s+)(?:tome|volume)\s+(\d+(?:[.,]\d+)?)\s*\)?$/i);
+    if (suffix && norm(book.series)===norm(suffix[2]) &&
+        (!book.volume || number(book.volume)===number(suffix[3]))) {
+      book.volume ||= suffix[3];
+      book.title=suffix[1].trim();
+    }
+  }
+
   function seriesLine(book) {
     return [book.series,book.volume && /^(?:tome|volume|hors[- ]série)/i.test(book.volume) ? book.volume : book.volume ? "Tome "+book.volume : ""].filter(Boolean).join(" · ");
   }
@@ -838,6 +859,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
                 book[name]=data[name];
               }
             }
+            if (!editedFields.get(book)?.has("title")) separateSeriesTitle(book);
             completedMetadata.add(book);
           }
           return book.summary;
@@ -1085,12 +1107,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         digitalBook.spinOffOf=spin[1].trim();
         digitalBook.title=title.replace(spinPattern,"").trim() || title;
       }
-      const parts=digitalBook.title.match(/^(.+?)(?:\s*[-–—:,]\s*|\s+)tome\s+(\d+(?:[.,]\d+)?)\s*[-–—:.\n]\s*(.+)$/is);
-      if (parts && (!info.volume || String(info.volume)===parts[2])) {
-        digitalBook.series ||= parts[1].trim();
-        digitalBook.volume ||= parts[2];
-        digitalBook.title=parts[3].trim();
-      }
+      separateSeriesTitle(digitalBook);
       const imported=digitalBook;
       if (info.analysisContext) ebookSamples.set(imported,info.analysisContext);
       if (started) await analysisModule.then(module=>module.reuseAnalysis(imported,started)).catch(()=>{});
@@ -1100,7 +1117,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         if (current(version) && digitalBook===imported && selectedStatus==="to-read")
           promesseForm?.collect(imported,ready);
       });
-      manualTitle.value=title;
+      manualTitle.value=digitalBook.title;
       titleField.hidden=Boolean(title);
       if (!title) recovery.hidden=false;
       message();

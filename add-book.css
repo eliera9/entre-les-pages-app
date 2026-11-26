@@ -832,7 +832,7 @@
 #bibliotheque-app #elp-add-book .ep-digital {--cover:86px;--name:23px;--author:15px;--series:14px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital {--cover:116px;--name:26px;--author:16px;--series:15px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book {width:100%;max-width:none}
-#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-form {max-width:1060px;margin-inline:auto;--space-x:clamp(12px,3vw,30px);padding-inline:max(var(--space-x),env(safe-area-inset-left)) max(var(--space-x),env(safe-area-inset-right))}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-form {max-width:none;margin-inline:auto;--space-x:clamp(12px,3vw,30px);padding-inline:max(var(--space-x),env(safe-area-inset-left)) max(var(--space-x),env(safe-area-inset-right))}
 #bibliotheque-app #elp-add-book .ep-digital .ep-book-snapshot {grid-template-columns:min(var(--cover),34%) minmax(0,1fr);gap:16px}
 #bibliotheque-app #elp-add-book .ep-digital .ep-cover:has(img:not([hidden])) {border:0;padding:0;margin:0;background:transparent;border-radius:0;aspect-ratio:auto;block-size:auto;box-shadow:none}
 #bibliotheque-app #elp-add-book .ep-digital .ep-cover img {height:auto}
@@ -866,9 +866,9 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-start-statuses {--rd:62px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-start-status {font-size:16px}
 @media(prefers-reduced-motion:no-preference){
-  #bibliotheque-app #elp-add-book .ep-start-status {animation:ep-status-arrival .58s both cubic-bezier(.16,.7,.28,1)}
-  #bibliotheque-app #elp-add-book .ep-start-status:nth-child(2){animation-delay:.14s}
-  #bibliotheque-app #elp-add-book .ep-start-status:nth-child(3){animation-delay:.28s}
+  #bibliotheque-app #elp-add-book .ep-start-status {animation:ep-status-arrival 1s .18s both ease-in-out}
+  #bibliotheque-app #elp-add-book .ep-start-status:nth-child(2){animation-delay:.65s}
+  #bibliotheque-app #elp-add-book .ep-start-status:nth-child(3){animation-delay:1.12s}
 }
 @keyframes ep-status-arrival{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 #bibliotheque-app #elp-add-book .ep-start-statuses .reader{width:var(--rd);aspect-ratio:.72;flex:none;display:block;position:relative;border-radius:9% / 7%;border:1px solid var(--edge);background:linear-gradient(123deg,color-mix(in srgb,var(--device) 76%,#a9a1a4),var(--device) 32%,color-mix(in srgb,var(--device) 75%,#201d22));box-shadow:1px 2px 0 color-mix(in srgb,var(--color) 24%,transparent),inset 1px 1px 0 #ffffff32;container-type:inline-size}
