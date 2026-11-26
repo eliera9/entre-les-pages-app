@@ -482,7 +482,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const searchMessage=get("[data-scan-message]");
   const retrySearch=get("[data-retry-paper]");
   const moreSearch=get("[data-more-paper]");
-  const nextButton=get("[data-ep-continue]");
+  const startButtons=[...stage.querySelectorAll("[data-start-status]")];
   const addButton=get("[data-confirm-book]");
   const saveStatus=document.createElement("p");
   saveStatus.className="ep-message";
@@ -972,7 +972,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     digitalPreview.hidden=!digitalBook;
     if (digitalBook) {
       get("[data-ep-snapshot]").replaceChildren(drawBook(digitalBook,true));
-      nextButton.disabled=!digitalBook.title;
+      for (const button of startButtons) button.disabled=!digitalBook.title;
     }
   }
   function showCover(canvas) {
@@ -1085,7 +1085,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         digitalBook.spinOffOf=spin[1].trim();
         digitalBook.title=title.replace(spinPattern,"").trim() || title;
       }
-      const parts=digitalBook.title.match(/^(.+?)\s*[-–—:,]\s*tome\s+(\d+(?:[.,]\d+)?)\s*[-–—:.\n]\s*(.+)$/is);
+      const parts=digitalBook.title.match(/^(.+?)(?:\s*[-–—:,]\s*|\s+)tome\s+(\d+(?:[.,]\d+)?)\s*[-–—:.\n]\s*(.+)$/is);
       if (parts && (!info.volume || String(info.volume)===parts[2])) {
         digitalBook.series ||= parts[1].trim();
         digitalBook.volume ||= parts[2];
@@ -1212,7 +1212,13 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   retrySearch.addEventListener("click",()=>showSearch({page:retryPage,delay:0}));
   moreSearch.addEventListener("click",()=>showSearch({page:searchPage+1,delay:0}));
   for (const card of cards) card.addEventListener("click",()=>showStep(card.dataset.book));
-  nextButton.addEventListener("click",()=>{if (digitalBook?.title) openBook(digitalBook,"digital",nextButton);});
+  for (const button of startButtons) {
+    button.addEventListener("click",()=>{
+      if (!digitalBook?.title) return;
+      openBook(digitalBook,"digital",button);
+      following.querySelector('input[name="ep-statut-lecture"][value="'+button.dataset.startStatus+'"]').click();
+    });
+  }
   function returnToResults() {
     if (addButton.disabled || !applyBookEdits()) return;
     showStep(lastStep);

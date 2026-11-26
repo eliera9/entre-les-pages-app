@@ -26,11 +26,11 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=import-direct">
+<link rel="stylesheet" href="./add-book.css?v=statuts-liseuses-1">
 <link rel="stylesheet" href="./questionnaire.css?v=3">
 <script defer src="./book-scan.js?v=1"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<script defer src="./add-book.js?v=import-direct"></script>
+<script defer src="./add-book.js?v=statuts-liseuses-1"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
@@ -883,7 +883,8 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <p class="ep-message" data-ep-import-status role="status" hidden></p>
         <div data-ep-digital-preview hidden>
           <div data-ep-snapshot></div>
-          <button type="button" class="ep-access ep-access-primary cursor-interaction" data-ep-continue>Continuer</button>
+          <p id="ep-reading-question" class="ep-reading-question">Où en es-tu dans ta lecture&nbsp;?</p>
+          <div class="ep-start-statuses" role="group" aria-labelledby="ep-reading-question"><button class="ep-start-status cursor-interaction" type="button" data-start-status="to-read" aria-label="À lire"><span class="reader" role="img" aria-label="Bibliothèque sur la liseuse"><span class="escreen" aria-hidden="true"><span class="eminor">Rayons</span><span class="eshelf"><i></i><i></i><i></i><i></i><i></i><i></i></span></span></span><span class="label">À LIRE</span></button><button class="ep-start-status cursor-interaction" type="button" data-start-status="reading" aria-label="En cours"><span class="reader" role="img" aria-label="Anneau de progression à 42 %"><span class="escreen" aria-hidden="true"><span class="earing"><b>42 %</b></span></span></span><span class="label">EN COURS</span></button><button class="ep-start-status cursor-interaction" type="button" data-start-status="finished" aria-label="Lu"><span class="reader" role="img" aria-label="Dernières lignes et mot Fin"><span class="escreen" aria-hidden="true"><span class="last-page"><span class="final-lines"><i></i><i></i><i></i></span><b>Fin</b><i class="end-rule"></i></span></span></span><span class="label">LU</span></button></div>
         </div>
         <div class="ep-import-recovery" data-ep-recovery hidden>
           <label data-ep-title-field hidden>Titre <input type="text" data-ep-manual-title maxlength="220"></label>
