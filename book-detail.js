@@ -89,9 +89,9 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
         } catch { /* Une notice peut compléter un fichier indisponible. */ }
       }
       if (!pages && !scope.signal.aborted && (code || book.title && book.author)) {
-        const {createCatalogue}=await import('./catalogue-engine.js?v=pal-priorite-isbn');
+        const {createCatalogue}=await import('./catalogue-engine.js?v=edition-officielle-1');
         const query=new URLSearchParams({id:book.catalogueId || '',isbn:code,title:book.title || '',
-          author:book.author || '',volume:book.volume || '',publisher:book.publisher || '',format:book.format});
+          author:book.author || '',volume:book.volume || '',publisher:book.publisher || '',format:book.format,language:book.language || ''});
         const edition=await createCatalogue([],scope.signal).details(query);
         pages=edition.pageCount;
       }
@@ -297,6 +297,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
     if (!title) {focus(form.elements.title); return;}
     const changes = {title, author:value('author'), saga:value('series'), volume:value('volume'),
       ...tags.values(), summary:q('#saved-summary-editor').value.trim(), coverData:pendingCover};
+    if (changes.summary!==(book.summary || '')) changes.summarySource='manual';
     if ('series' in book) changes.series = changes.saga;
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });

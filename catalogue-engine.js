@@ -7,19 +7,9 @@ const bnf="https://catalogue.bnf.fr";
 const text=(value,limit=240)=>typeof value==="string" ? value.trim().slice(0,limit) : "";
 const list=(value)=>Array.isArray(value) ? [...new Set(value.map(item=>text(item,120)).filter(Boolean))].slice(0,30) : [];
 const normal=(value)=>text(value,3000).normalize("NFKD").replace(/\p{M}/gu,"").replace(/œ/gi,"oe").replace(/æ/gi,"ae").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
-const compact=(value)=>text(value).replace(/[\s-]/g,"").toUpperCase();
-const isbnPattern=/^(?:97[89]\d{10}|\d{9}[\dX])$/;
 const volumeMarker=/\b(?:tome|livre|book|vol(?:ume)?\.?|t(?=\d))\s*(\d+(?:[.,]\d+)?)/i;
 
-function isbn(value) {
-  const code=compact(value);
-  if (!isbnPattern.test(code)) return "";
-  const sum=[...code].reduce((total,digit,i)=>total+(digit==="X" ? 10 : Number(digit))*(code.length===10 ? 10-i : i%2 ? 3 : 1),0);
-  if (code.length===13) return sum%10===0 ? code : "";
-  if (sum%11!==0) return "";
-  const base="978"+code.slice(0,9);
-  return base+(10-[...base].reduce((total,digit,i)=>total+Number(digit)*(i%2 ? 3 : 1),0)%10)%10;
-}
+const isbn=metadata.editionIsbn;
 
 function artworkIsbn(cover) {
   const url=coverUrl(cover);
@@ -34,14 +24,7 @@ export function coverUrl(value) {
 
 function summary(value) {
   if (value && typeof value==="object") value=value.value;
-  return text(value,7000)
-    .replace(/<(?:br\s*\/?|\/p)>/gi,"\n").replace(/<[^>]*>/g,"")
-    .replace(/&#(x[\da-f]+|\d+);/gi,(entity,digits)=>{
-      const value=digits[0].toLowerCase()==="x" ? Number.parseInt(digits.slice(1),16) : Number(digits);
-      return value>0 && value<=0x10ffff && !(value>=0xd800 && value<=0xdfff) ? String.fromCodePoint(value) : entity;
-    })
-    .replace(/&(?:amp|quot|apos|nbsp|lt|gt|#39|#8217);/gi,entity=>({"&amp;":"&","&quot;":'"',"&apos;":"'","&nbsp;":" ","&lt;":"<","&gt;":">","&#39;":"'","&#8217;":"’"})[entity.toLowerCase()])
-    .replace(/[\t ]+/g," ").replace(/\n{3,}/g,"\n\n").trim().slice(0,1800);
+  return metadata.editorialText(value);
 }
 
 
@@ -66,7 +49,7 @@ function catalogueScore(book,query) {
   return words.every(word=>index.includes(word)) ? 400+20*words.filter(word=>title.includes(word)).length : 0;
 }
 
-export function createCatalogue(localRows=[], signal) {
+export function createCatalogue(localRows=[], signal, googleKey="") {
   async function readSource(url, format, timeout=8000) {
     const controller=new AbortController();
     const abort=()=>controller.abort();
@@ -94,7 +77,7 @@ export function createCatalogue(localRows=[], signal) {
       // Keep identifiers stable for books already imported before the app had its own catalogue.
       id:"monde:"+row.id,title:text(row.title),author:text(row.author),authors:list(row.authors),
       series:text(row.series),volume:text(row.volume,50),genres:list(row.genres?.length ? row.genres : [row.genre]),subgenres:list(row.subgenres),
-      tropes:list(row.tropes),summary:summary(row.summary),
+      tropes:list(row.tropes),summary:"",
       publicationDate:metadata.publicationDate(row.publicationDate || row.publishedDate),
       coverData:coverUrl(row.cover),
       isbns:[...new Set([row.isbn,...list(row.isbns),artworkIsbn(row.cover)].map(isbn).filter(Boolean))],
@@ -136,7 +119,7 @@ export function createCatalogue(localRows=[], signal) {
       return metadata.separateTitle({
         id:"apple:"+row.trackId,title,aliases:[title],author:text(row.artistName),authors:list(text(row.artistName).split(/\s+&\s+/)),series:"",volume:"",
         publicationDate:metadata.publicationDate(row.releaseDate),format:"EPUB",ebook:true,
-        genres:list(row.genres),subgenres:[],tropes:[],isbns:[...new Set([lookupIsbn,artworkIsbn(artwork)].filter(Boolean))],summary:summary(row.description),
+        genres:list(row.genres),subgenres:[],tropes:[],isbns:[...new Set([lookupIsbn,artworkIsbn(artwork)].filter(Boolean))],summary:summary(row.description),summarySource:"Apple Books", language:text(row.languageCodesISO2A?.[0]),
         coverData:coverUrl(artwork),
       });
   }
@@ -166,6 +149,8 @@ export function createCatalogue(localRows=[], signal) {
     const row=await readSource(openLibrary+"/isbn/"+code+".json","edition",8500);
     if (!row) return [];
     if (!text(row.title)) return [];
+    const returnedCodes=[...(row.isbn_10 || []),...(row.isbn_13 || [])].map(isbn).filter(Boolean);
+    if (returnedCodes.length && !returnedCodes.includes(code)) return [];
     const author=row.authors?.[0]?.key;
     const work=row.works?.[0]?.key;
     const [person,workData]=await Promise.all([
@@ -176,7 +161,7 @@ export function createCatalogue(localRows=[], signal) {
       id:text(row.key).replace("/books/","ol-edition:") || "isbn:"+code,
       title:text(row.title),author:text(person.name || row.by_statement),series:text(Array.isArray(row.series) ? row.series[0] : row.series),
       publisher:text(row.publishers?.[0]),language:text(row.languages?.[0]?.key).split("/").pop(),
-      publicationDate:metadata.publicationDate(row.publish_date),pageCount:row.number_of_pages,volume:"",genres:[],subjects:list([...(row.subjects || []), ...(workData.subjects || [])]),subgenres:[],tropes:[],isbns:[code],summary:summary(row.description || workData.description),
+      publicationDate:metadata.publicationDate(row.publish_date),pageCount:metadata.editionPages(row.number_of_pages),volume:"",genres:[],subjects:list([...(row.subjects || []), ...(workData.subjects || [])]),subgenres:[],tropes:[],isbns:[code],summary:"",
       coverData:openLibraryCover(row) || coverUrl(covers+"/b/isbn/"+code+"-L.jpg"),
     }];
   }
@@ -235,13 +220,14 @@ export function createCatalogue(localRows=[], signal) {
       });
       return [{
         id:"bnf:"+id,title,author,authors,
-        publisher:sub(field("214") || field("210"),"c"), publicationDate:metadata.publicationDate(imprintDate) || (/^\D{0,15}(\d{4})\D{0,5}$/.exec(imprintDate)?.[1] || ""),
+        ebook:/ressource électronique|en ligne|numérique|epub|\bpdf\b/i.test(sub(field("200"),"b")+" "+sub(field("215"),"a")) || Boolean(field("135")),publisher:sub(field("214") || field("210"),"c"), publicationDate:metadata.publicationDate(imprintDate) || (/^\D{0,15}(\d{4})\D{0,5}$/.exec(imprintDate)?.[1] || ""),
         pageCount:Number(sub(field("215"),"a").match(/(\d+)\s*p(?:ages|\.)/i)?.[1]) || undefined,
         language:sub(field("101"),"a"),aliases:[sub(field("454"),"t"),sub(field("500"),"a")].filter(Boolean),series:sub(field("461"),"t"),volume:sub(field("461"),"v") || sub(field("200"),"h"),
         genres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"a"))),
         subgenres:list(fields.filter(([,tag])=>tag==="608").map(([, ,value])=>sub(value,"x"))),tropes:[],
         isbns:[...new Set(seen.filter(Boolean))],
-        summary:sub(field("330"),"a",1800),coverData:coverUrl(image),
+        summary:/(?:quatri[eè]me|4e|4ème) de couverture|(?:source|fourni par|texte de)\s*:?\s*(?:l[’']?)?[eé]diteur/i.test(field("330"))
+          ? sub(field("330"),"a",100000) : "",summarySource:"BnF · éditeur",coverData:coverUrl(image),
       }];
     });
   }
@@ -260,9 +246,9 @@ export function createCatalogue(localRows=[], signal) {
       row.author=row.author || book.author;
       row.series=row.series || book.series;
       row.volume=row.volume || book.volume;
-      row.summary=row.summary || book.summary;
       const sameEdition=row.id===book.id || (row.isbns.length===1 && book.isbns.length===1 && row.isbns[0]===book.isbns[0]);
       if (sameEdition) {
+        if (!row.summary && book.summarySource) {row.summary=book.summary;row.summarySource=book.summarySource;}
         row.publicationDate=metadata.refineDate(row.publicationDate,book.publicationDate);
         row.coverCandidates=[...new Set([...(row.coverCandidates || []),row.coverData,book.coverData].filter(Boolean))];
         row.coverData ||= book.coverData;
@@ -325,8 +311,9 @@ export function createCatalogue(localRows=[], signal) {
 
   async function googleEditions(title,author,code) {
     const term=code ? "isbn:"+code : 'intitle:"'+title+'" inauthor:"'+author+'"';
-    const data=await json("https://www.googleapis.com/books/v1/volumes?"+new URLSearchParams({q:term,maxResults:"10"}));
-    return (data.items || []).map(({volumeInfo:row={},saleInfo={}})=>({
+    const data=await json("https://www.googleapis.com/books/v1/volumes?"+new URLSearchParams({q:term,maxResults:"10",...(googleKey?{key:googleKey}:{})}));
+    return (data.items || []).map(({id,volumeInfo:row={},saleInfo={}})=>({
+      id:"google:"+id,summarySource:"Google Books",
       ebook:saleInfo.isEbook,
       title:text(row.title), author:text(row.authors?.[0]), authors:list(row.authors),
       isbns:(row.industryIdentifiers || []).map(item=>isbn(item.identifier)).filter(Boolean),
@@ -359,20 +346,13 @@ export function createCatalogue(localRows=[], signal) {
     const requested={title,author,volume};
     const nearby=[...alternatives,...national,...google].filter(book=>sameWork(requested,book));
     const sameVolume=nearby.filter(book=>!bookVolume(requested) || bookVolume(book)===bookVolume(requested));
-    const exact=nearby.find(book=>book.summary && code && book.isbns.includes(code));
-    const uniqueSummary=rows=>{
-      const texts=[...new Set(rows.map(book=>book.summary).filter(Boolean))];
-      return texts.length===1 ? texts[0] : "";
-    };
-    const description=summary(work.description) || exact?.summary || uniqueSummary(sameVolume) ||
-      known.find(book=>book.summary && sameWork(requested,book))?.summary || (!volume ? uniqueSummary(nearby) : "");
     const local = localRows.map(fromAppCatalogue).filter(book => (code && book.isbns.includes(code)) || sameWork(requested,book));
     const curated = local.length === 1 ? local[0] : null;
     const candidates = [...known,...sameVolume].filter(book =>
       (code && book.isbns.includes(code)) || sameWork(requested,book));
     // Une œuvre peut regrouper plusieurs éditions. Réserver les données physiques à la notice identifiée.
     const editions=[...national,...known,...appleEdition,...google,...alternatives].filter(row=>
-      (code && row.isbns.includes(code)) || (!code && /^(?:bnf|apple|ol-edition):/.test(id) && row.id===id));
+      (code && row.isbns.includes(code)) || (!code && /^(?:bnf|apple|google|ol-edition):/.test(id) && row.id===id));
     const edition={};
     for (const row of editions) {
       edition.publicationDate=metadata.refineDate(edition.publicationDate,row.publicationDate);
@@ -381,20 +361,33 @@ export function createCatalogue(localRows=[], signal) {
       }
       if (!edition.isbn) edition.isbn=code || row.isbns[0];
     }
-    if (!code && !edition.pageCount && author && title) {
-      const publisher=normal(params.get("publisher") || "");
-      const format=params.get("format");
-      const counts=new Set([...national,...google].filter(row=>sameWork(requested,row) &&
-        (!publisher || normal(row.publisher)===publisher) &&
-        (format==="EPUB" ? row.ebook===true : format==="Papier" ? row.ebook!==true : true))
-        .map(row=>row.pageCount).filter(n=>Number.isInteger(n) && n>0));
-      if (counts.size===1) edition.pageCount=[...counts][0];
-    }
+    // Les exemplaires d’une même œuvre peuvent avoir des paginations et des textes de couverture différents.
+    const publisher=normal(params.get("publisher"));
+    const language=metadata.language(params.get("language"));
+    const format=normal(params.get("format"));
+    const confirmed=editions.filter(row=> !volume || !bookVolume(row) || bookVolume(row)===bookVolume(requested));
+    const byIdentity=code || confirmed.length ? [] : sameVolume.filter(row=>{
+      const lang=metadata.language(row.language);
+      if (language && language!==lang) return false;
+      if (publisher && normal(row.publisher)!==publisher) return false;
+      if (!volume && bookVolume(row)) return false;
+      if (format==="papier") return row.ebook===false || row.id?.startsWith("bnf:") && row.ebook!==true;
+      if (["epub","pdf","numerique"].includes(format)) return row.ebook===true;
+      return Boolean(publisher);
+    });
+    const editionKeys=new Set(byIdentity.map(row=>row.isbns?.[0] || row.id).filter(Boolean));
+    const physical=confirmed.length ? confirmed : editionKeys.size===1 && (publisher || language) ? byIdentity : [];
+    const counts=new Set(physical.map(row=>metadata.editionPages(row.pageCount)).filter(Boolean));
+    edition.pageCount=counts.size===1 ? [...counts][0] : undefined;
+    const notices=(confirmed.length ? confirmed : byIdentity).filter(row=>row.summarySource && row.summary &&
+      (!language || !row.language || metadata.language(row.language)===language));
+    const texts=new Set(notices.map(row=>row.summary));
+    const official=confirmed.length ? notices[0] : texts.size===1 ? notices[0] : undefined;
     const coverCandidates=[...new Set(editions.map(row=>coverUrl(row.coverData)).filter(Boolean))];
     const matched=[...editions,...candidates];
     const first=name=>matched.find(row=>row[name])?.[name];
     return {...edition, title:first("title"),author:first("author"),series:first("series"),volume:first("volume"),
-      coverData:coverCandidates[0] || "",coverCandidates, summary:curated?.summary || description || first("summary") || "", genres:curated?.genres || [],
+      coverData:coverCandidates[0] || "",coverCandidates, summary:official?.summary || "",summarySource:official?.summarySource || "", genres:curated?.genres || [],
       subgenres:list([...(curated?.subgenres || []), ...candidates.flatMap(row => row.subgenres || [])]),
       tropes:curated?.tropes || [],
       subjects:list([...(Array.isArray(work.subjects) ? work.subjects : []), ...matched.flatMap(row => [...(row.subjects || []), ...(row.genres || [])])])};

@@ -1,3 +1,5 @@
+import "./book-metadata.js";
+const metadata=globalThis.BookMetadata;
 // « Ce qu'il me promet » : les réponses possibles, et comment l'app les devine.
 // Ce module sert à la fois dans l'app et dans la fonction Supabase « catalogue ».
 
@@ -120,7 +122,7 @@ export function mapSignals(signals = {}) {
   if (darkest) result.noirceur = /cosy|cozy|feel[- ]?good|doudou|wholesome/i.test(text) ? Math.min(darkest, 2) : darkest;
   for (const [pattern, label] of WARNINGS) if (pattern.test(text) && !result.avertissements.includes(label)) result.avertissements.push(label);
   const pages = Number(signals.pages);
-  if (Number.isFinite(pages) && pages > 20 && pages < 5000) result.pages = Math.round(pages);
+  if (metadata.editionPages(pages)) result.pages = pages;
   result.humeur = result.humeur.slice(0, 2);
   result.emotions = result.emotions.slice(0, 3);
   result.decor = result.decor.slice(0, 2);
@@ -156,41 +158,45 @@ async function getJson(url, signal, init) {
 
 // Google Books : genres, nombre de pages (sans clé, ou avec GOOGLE_BOOKS_KEY côté serveur)
 export async function fromGoogleBooks(book, signal, key = "") {
-  const isbn = clean(book.isbn).replace(/[^0-9X]/gi, "");
+  const isbn = metadata.editionIsbn(book.isbn);
   const q = /^97[89]\d{10}$/.test(isbn) ? `isbn:${isbn}` : `intitle:${clean(book.title)}${book.author ? ` inauthor:${clean(book.author)}` : ""}`;
   const params = new URLSearchParams({q, maxResults: "3", printType: "books", fields: "items(volumeInfo(title,authors,industryIdentifiers,categories,pageCount,description,language,publisher,publishedDate),saleInfo(isEbook))"});
   if (key) params.set("key", key);
   const data = await getJson("https://www.googleapis.com/books/v1/volumes?" + params, signal);
   const info = (data.items || []).map(item => ({...item.volumeInfo, ebook:item.saleInfo?.isEbook})).filter(item =>
     sameNotice(book, item.title, item.authors || [], (item.industryIdentifiers || []).map(id => id.identifier)));
-  const compact = value => String(value || "").replace(/[\s-]/g, "").toUpperCase();
-  const code = compact(book.isbn);
   const edition = info.filter(item => {
-    if (code) return (item.industryIdentifiers || []).some(id => compact(id.identifier) === code);
-    const format = String(book.format || "").toLowerCase();
+    if (isbn) return (item.industryIdentifiers || []).some(id=>metadata.editionIsbn(id.identifier)===isbn);
+    const format = normalized(book.format);
     return Boolean(book.publisher && book.language &&
-      normalized(book.publisher) === normalized(item.publisher) && normalized(book.language) === normalized(item.language) &&
-      (["epub", "pdf", "numérique"].includes(format) ? item.ebook === true : format === "papier" && item.ebook === false));
+      normalized(book.publisher) === normalized(item.publisher) && metadata.language(book.language) === metadata.language(item.language) &&
+      (["epub","pdf","numerique"].includes(format) ? item.ebook===true : format==="papier" && item.ebook===false) &&
+      (!book.volume || metadata.separateTitle({title:item.title}).volume===String(book.volume)));
   });
-  const dates = [...new Set(edition.map(item => item.publishedDate).filter(Boolean))];
-  const publicationDate = dates.length === 1 ? dates[0] : "";
-  if (info.length !== 1) return {words: [], publicationDate};
-  return {
-    publicationDate,
-    words: info.flatMap(item => item.categories || []),
-    pages: info.find(item => item.pageCount)?.pageCount,
-    description: info.find(item => item.language === "fr" && item.description)?.description || "",
-  };
+  const unique = values => {const found=[...new Set(values.filter(Boolean))];return found.length===1?found[0]:undefined;};
+  const selected=isbn || edition.length===1 ? edition : [];
+  const description=unique(selected.filter(row=>!book.language || metadata.language(row.language)===metadata.language(book.language))
+    .map(row=>metadata.editorialText(row.description))) || "";
+  return {publicationDate:unique(edition.map(row=>row.publishedDate)) || "",
+    words:info.length===1 ? info[0].categories || [] : [],
+    pages:unique(selected.map(row=>metadata.editionPages(row.pageCount))),description};
 }
 
 // Open Library : sujets donnés par les lecteurs et bibliothèques
 export async function fromOpenLibrary(book, signal) {
-  const params = new URLSearchParams({title: clean(book.title), limit: "2", fields: "title,author_name,isbn,subject,number_of_pages_median"});
-  if (book.author) params.set("author", clean(book.author));
-  const data = await getJson("https://openlibrary.org/search.json?" + params, signal);
-  const docs = (data.docs || []).filter(item => sameNotice(book, item.title, item.author_name || [], item.isbn || []));
-  if (docs.length !== 1) return {words: []};
-  return {words: docs.flatMap(doc => (doc.subject || []).slice(0, 40)), pages: docs.find(doc => doc.number_of_pages_median)?.number_of_pages_median};
+  const code=metadata.editionIsbn(book.isbn);
+  const params = new URLSearchParams({title:clean(book.title),limit:"2",fields:"title,author_name,isbn,subject"});
+  if (book.author) params.set("author",clean(book.author));
+  const [work,edition]=await Promise.allSettled([
+    getJson("https://openlibrary.org/search.json?"+params,signal),
+    code ? getJson("https://openlibrary.org/isbn/"+code+".json",signal) : null
+  ]);
+  if (work.status==="rejected" && (edition.status==="rejected" || !edition.value)) throw work.reason;
+  const docs=(work.status==="fulfilled"?work.value.docs || []:[]).filter(item=>sameNotice(book,item.title,item.author_name || [],item.isbn || []));
+  const row=edition.status==="fulfilled"?edition.value:null;
+  const ids=[...(row?.isbn_10||[]),...(row?.isbn_13||[])].map(metadata.editionIsbn).filter(Boolean);
+  return {words:docs.length===1?(docs[0].subject || []).slice(0,40):[],
+    pages:code && row && (!ids.length || ids.includes(code)) ? metadata.editionPages(row.number_of_pages):undefined};
 }
 
 // Devine tout ce qu'on peut sans IA : genres de l'app + Google Books + Open Library
@@ -204,7 +210,8 @@ export async function guessPromesse(book, signal, {googleKey = ""} = {}) {
   const found = sources.filter(source => source.status === "fulfilled").map(source => source.value);
   // Le titre compte aussi : « Unknown (dark romance) », « Noël à… »
   const words = [book.title || "", book.series || book.saga || "", ...(book.genres || []), ...(book.subgenres || []), ...(book.tropes || []), ...found.flatMap(item => item.words || [])];
-  const pages = found.find(item => item.pages)?.pages;
-  const description = book.summary || found.find(item => item.description)?.description || "";
+  const counts=[...new Set(found.map(item=>item.pages).filter(Boolean))];
+  const pages=counts.length===1?counts[0]:undefined;
+  const description = found.find(item => item.description)?.description || "";
   return {promesse: mapSignals({words, pages}), words, description, catalogueWords:found.flatMap(item=>item.words || []), publicationDate:found.find(item=>item.publicationDate)?.publicationDate || "", romance: isRomance({genres: words}), sources: status};
 }

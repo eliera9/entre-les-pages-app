@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de quatre slides.
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=pal-priorite-edition";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=edition-officielle-1";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -387,7 +387,7 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     if (controller.signal.aborted) return;
     sources = result?.sources || null;
     const found = {...result?.promesse};
-    if (Number.isInteger(book.pageCount) && book.pageCount>0 && book.pageCount<=5000) found.pages=book.pageCount;
+    if (globalThis.BookMetadata.editionPages(book.pageCount)) found.pages=book.pageCount;
     const romanceFound = Boolean(result?.romance);
     if (controller.signal.aborted) return;
     romance = romance || romanceFound;

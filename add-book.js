@@ -641,7 +641,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=reperes-aquarelles");
+  const analysisModule=import("./promesse-form.js?v=edition-officielle-1");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onPages(book,pages) {
@@ -711,6 +711,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   summaryCopy.addEventListener('input',()=>{
     if (!currentBook) return;
     currentBook.summary=summaryCopy.innerText.trim();
+    currentBook.summarySource='manual';
     editedSummaries.add(currentBook);
   });
   function updatePalSummary(book){
@@ -858,6 +859,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     Object.assign(currentBook,tags.values());
     if (editSummaryChanged) {
       currentBook.summary=editSummary.value.trim();
+      currentBook.summarySource='manual';
       editedSummaries.add(currentBook);
     }
     if (editCoverCanvas) selectedCovers.add(currentBook);
@@ -893,7 +895,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       // The same catalogue adapters can reach the public sources from the device.
       if (action==="details") return serverData || {};
-      const {createCatalogue}=await import("./catalogue-engine.js?v=pal-priorite-isbn");
+      const {createCatalogue}=await import("./catalogue-engine.js?v=edition-officielle-1");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
@@ -956,17 +958,21 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
             }
           }
           classify(book,literary,true);
-          if (literary.summary && !editedSummaries.has(book)) book.summary=literary.summary;
+          if (!book.summarySource && literary.summarySource && literary.summary && !editedSummaries.has(book) && book.summarySource!=='manual') {
+            book.summary=literary.summary;
+            book.summarySource=literary.summarySource;
+          }
+          if (!book.pageCount && !changed?.has('pageCount') && meta.editionPages(literary.pageCount)) book.pageCount=literary.pageCount;
           if (literary.ambiance) book.ambiance=literary.ambiance;
           if (literary.epoque) book.epoque=literary.epoque;
         }
         const query={id:book.id || "",title:book.title,author:book.author || "",volume:book.volume || "",
-          isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1",format:book.format || "",publisher:book.publisher || ""};
+          isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : ""),metadata:"1",format:book.format || "",publisher:book.publisher || "",language:book.language || ""};
         const request=AbortSignal.any([signal,AbortSignal.timeout(36000)]);
         const sample=false;
         const eligible=book.id || query.isbn || query.author;
         const server=eligible ? queryCatalogues("details",query,request) : {};
-        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pal-priorite-isbn").then(({createCatalogue})=>
+        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=edition-officielle-1").then(({createCatalogue})=>
           createCatalogue([],request).details(new URLSearchParams(query))) : {};
         const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
         const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
@@ -975,7 +981,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
             for (const data of notices) {
               classify(book,data);
               if (!editedFields.get(book)?.has("publicationDate")) book.publicationDate=meta.refineDate(book.publicationDate,data.publicationDate);
-              if (!editedSummaries.has(book) && !book.summary && data.summary) book.summary=data.summary;
+              if (!editedSummaries.has(book) && !book.summarySource && data.summarySource && data.summary) {
+                book.summary=data.summary;book.summarySource=data.summarySource;
+              }
               for (const name of ["title","author","series","volume","isbn","publisher","language","pageCount"]) {
                 if (book[name] || editedFields.get(book)?.has(name) || !data[name]) continue;
                 if (name==="pageCount" && (!Number.isInteger(data[name]) || data[name]<1)) continue;
@@ -1047,7 +1055,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       const typed=isbn(query.value.trim());
       const known=info.isbns || [];
       const selectedIsbn=info.isbn || (known.includes(typed) ? typed : known.length===1 ? known[0] : "");
-      const book={...info,isbn:selectedIsbn,format:"Papier"};
+      const book={...info,isbn:selectedIsbn,format:"Papier",summary:info.summarySource ? info.summary : ""};
       const item=document.createElement("li");
       item.dataset.catalogueId=book.id;
       const button=document.createElement("button");
@@ -1264,7 +1272,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         coverData:edition.coverData || "",coverCandidates:edition.coverCandidates || [],
         pageCount:info.pageCount || edition.pageCount,publisher:info.publisher || edition.publisher,language:info.language || edition.language,
         publicationDate:meta.refineDate(info.publicationDate,edition.publicationDate || edition.publishedDate),title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
-        volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
+        volume:info.volume || matched?.volume || "",isbn:code,format,file,
+        summary:info.summarySource ? info.summary : edition.summarySource ? edition.summary : "",
+        summarySource:info.summarySource || edition.summarySource || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
       const spinPattern=/\s*\(spin[- ]off\s+de\s+([^()]+)\)/i;
       const spin=title.match(spinPattern) || fileName.match(spinPattern);

@@ -107,5 +107,35 @@
       return u.href;
     } catch { return ""; }
   }
-  globalThis.BookMetadata = Object.freeze({separateTitle,publicationDate,refineDate,coverUrl});
+  function editionPages(value) {
+    if (typeof value !== "number" && !(typeof value === "string" && /^\d+$/.test(value.trim()))) return undefined;
+    const pages=Number(value);
+    return Number.isSafeInteger(pages) && pages>0 ? pages : undefined;
+  }
+  function editionIsbn(value) {
+    const raw=String(value || "").replace(/[\s-]/g,"").toUpperCase();
+    if (!/^(?:97[89]\d{10}|\d{9}[\dX])$/.test(raw)) return "";
+    const sum=[...raw].reduce((n,d,i)=>n+(d==="X"?10:Number(d))*(raw.length===10?10-i:i%2?3:1),0);
+    if (sum%(raw.length===10?11:10)) return "";
+    if (raw.length===13) return raw;
+    const base="978"+raw.slice(0,9);
+    const check=[...base].reduce((n,d,i)=>n+Number(d)*(i%2?3:1),0);
+    return base+(10-check%10)%10;
+  }
+  function language(value) {
+    const name=key(String(value || "").split(/[-_]/)[0]);
+    return ({fre:"fr",fra:"fr",francais:"fr",french:"fr",eng:"en",english:"en",anglais:"en",spa:"es",deu:"de",ger:"de",ita:"it"})[name] || name;
+  }
+  function editorialText(value) {
+    if (typeof value!=="string" || value.length>100000) return "";
+    const entities={amp:"&",lt:"<",gt:">",quot:'"',apos:"'",nbsp:" ",rsquo:"’",lsquo:"‘",ldquo:"“",rdquo:"”",hellip:"…",ndash:"–",mdash:"—",eacute:"é",egrave:"è",ecirc:"ê",agrave:"à",ccedil:"ç",oelig:"œ"};
+    return value.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
+      .replace(/<br\s*\/?\s*>/gi,"\n").replace(/<\/(?:p|div|li)>/gi,"\n\n").replace(/<\/?[a-z][^>]*>/gi,"")
+      .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,(whole,k)=>{
+        if(k[0]!=="#") return entities[k] ?? whole;
+        const n=k[1].toLowerCase()==="x"?parseInt(k.slice(2),16):Number(k.slice(1));
+        return n>0 && n<=0x10ffff && !(n>=0xd800 && n<=0xdfff)?String.fromCodePoint(n):whole;
+      }).replace(/\r\n?/g,"\n").replace(/\n[ \t]+/g,"\n").replace(/\n{3,}/g,"\n\n").trim();
+  }
+  globalThis.BookMetadata = Object.freeze({separateTitle,publicationDate,refineDate,coverUrl,editionPages,editionIsbn,language,editorialText});
 })();

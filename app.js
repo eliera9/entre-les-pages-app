@@ -331,7 +331,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       try { value=JSON.parse(value)['#value#'] ?? value; } catch { /* Valeur numérique simple. */ }
     }
     const count=Number(value);
-    const pageCount=Number.isInteger(count) && count>0 && count<=5000 ? count : undefined;
+    const pageCount=globalThis.BookMetadata.editionPages(count);
     const ids=named(meta,'identifier');
     let isbn=ids.map(node=>findIsbn(node.textContent)).find(Boolean);
     if (!isbn) {
@@ -364,6 +364,21 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     return epubPagination(archive,opf,opfPath);
   }
 
+  async function jacketCopy(archive,opfPath,items) {
+    const candidates=items.filter(item=>/html/i.test(item.getAttribute('media-type')) &&
+      /(?:back[-_ ]?cover|jacket[-_ ]?copy|quatri[eè]me[-_ ]?de[-_ ]?couverture|4e[-_ ]?de[-_ ]?couverture)/i.test(item.getAttribute('href')));
+    for (const item of candidates.slice(0,3)) {
+      try {
+        const bytes=await readEntry(archive,archivePath(opfPath,item.getAttribute('href')),256*1024);
+        if (!bytes) continue;
+        const body=named(readText(bytes),'body')[0];
+        const lines=body ? named(body,'p').map(node=>node.textContent.trim()).filter(Boolean) : [];
+        if (lines.length) return lines.join('\n\n');
+      } catch { /* Une quatrième de couverture facultative peut être une simple image. */ }
+    }
+    return '';
+  }
+
   async function fromEpub(bytes) {
     const {archive, opf, opfPath} = await epubPackage(bytes);
     const metadata = named(opf, 'metadata')[0] || opf;
@@ -390,7 +405,11 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
       || (collections.length === 1 && !refine(collections[0], 'collection-type') ? collections[0] : null);
     const series = seriesMeta?.textContent.trim() || calibre('series') || '';
     const volume = (seriesMeta && refine(seriesMeta, 'group-position')) || calibre('series_index') || '';
-    const summary = named(metadata, 'description')[0]?.textContent.replace(/<[^>]+>/g, ' ').trim().slice(0, 1800) || '';
+    const description=named(metadata,'description')[0];
+    const jacket=await jacketCopy(archive,opfPath,items);
+    const summary=jacket || globalThis.BookMetadata.editorialText(description?.textContent);
+    const attributed=Boolean(named(metadata,'publisher')[0]?.textContent.trim() && /(?:quatri[eè]me|4e) de couverture|(?:résumé|présentation|texte) de l[’']éditeur/i.test(summary));
+
     let cover = null;
     let coverArea = 0;
     const visited = new Set();
@@ -433,7 +452,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const publicationDate = (published.length ? published : dates.filter(node => !event(node)))
       .reduce((value, node) => globalThis.BookMetadata.refineDate(value, node.textContent), '');
     return {type: 'EPUB', pageCount, analysisContext:await readingSample(archive,opf,opfPath), publisher: named(metadata,'publisher')[0]?.textContent.trim(),
-      language: named(metadata,'language')[0]?.textContent.trim(), publicationDate, title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
+      language: named(metadata,'language')[0]?.textContent.trim(), publicationDate, title, author, isbn, series, volume, summary, summarySource:jacket || attributed?'Éditeur · EPUB':'', subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
   async function fromPdf(bytes, track) {
@@ -455,7 +474,7 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const title = clean(metadata?.info?.Title);
     const author = clean(metadata?.info?.Author);
     const isbn = findIsbn(metadata?.metadata?.get('dc:identifier'));
-    return {type: 'PDF', document, title, author, isbn,
+    return {type: 'PDF', document, title, author, isbn, pageCount:globalThis.BookMetadata.editionPages(document.numPages),
       publicationDate:globalThis.BookMetadata.publicationDate(metadata?.metadata?.get('prism:publicationdate')),
       subjects: String(metadata?.info?.Keywords || '').slice(0,5000).split(/[,;]/).map(item => item.trim()).filter(Boolean), TextLayer: pdf.TextLayer};
   }
@@ -2696,9 +2715,13 @@ async function activateLibrary(root) {
     const code = details.isbn || (isbns?.length === 1 ? isbns[0] : '');
     const existing = books.find(book => (documentId && (book.id === documentId || book.fileFingerprint === fingerprint)) ||
       (catalogueId && book.catalogueId === catalogueId) || (code && book.isbn === code));
+    const keepNewSummary=details.summarySource==='manual' || (details.summary && existing?.summarySource!=='manual');
+    const summaryRecord=keepNewSummary ? details : existing;
     const imported = {
       genres: [], subgenres: [], tropes: [],
       ...existing, ...details, ...(existing && !statusChosen ? {} : readingFields),
+      summary:summaryRecord?.summary ?? '',
+      summarySource:summaryRecord?.summarySource,
       saga: details.series ?? details.saga ?? existing?.saga ?? existing?.series ?? "",
       pageCount:pagesEdited ? promesse?.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || existing?.pageCount,
       ...(promesse ? {promesse:{...promesse,pages:pagesEdited ? promesse.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || promesse.pages}} : {}),
@@ -2896,7 +2919,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=pal-priorite-edition');
+        const module = await import('./questionnaire.js?v=edition-officielle-1');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,
