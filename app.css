@@ -1874,6 +1874,7 @@ body { margin: 0; }
 #app-lecture .acc-link { font: 500 13px var(--body); color: var(--accent); text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; padding: 10px 0; min-block-size: 44px; }
 #app-lecture .acc-track { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -20px; padding-inline: 20px; scroll-padding-inline: 20px; }
 #app-lecture .acc-track::-webkit-scrollbar { display: none; }
+#app-lecture .acc-track [data-book-gesture] { touch-action: manipulation; }
 #app-lecture .acc-card { flex: 0 0 96px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: none; color: inherit; text-align: center; transition: transform 160ms cubic-bezier(.23,1,.32,1); }
 #app-lecture .acc-card:active { transform: scale(.97); }
 #app-lecture .acc-cover { position: relative; display: block; inline-size: 96px; block-size: 144px; }
@@ -2356,3 +2357,11 @@ body { margin: 0; }
   letter-spacing: .005em;
 }
 #app-lecture #bibliotheque-app[data-format="tablet"] [data-acc-row="bientot"] .acc-band { font-size: 13px; }
+
+#app-lecture .veille-dialog button + button { margin-inline-start: .6rem; }
+#app-lecture .veille-settings form, #app-lecture .veille-settings li { display:flex; gap:.6rem; align-items:center; }
+#app-lecture .veille-settings input { min-width:0; flex:1; font:inherit; color:var(--title); background:var(--paper); border:1px solid var(--rule); border-radius:8px; padding:.65rem; }
+#app-lecture .veille-settings button { font:inherit; color:var(--button-text); background:var(--button); border:0; border-radius:8px; min-height:44px; padding-inline:12px; }
+#app-lecture .veille-settings ul { list-style:none; padding:0; }
+#app-lecture .veille-settings li { justify-content:space-between; padding-block:.35rem; }
+#app-lecture .veille-settings [role=status]:empty { display:none; }

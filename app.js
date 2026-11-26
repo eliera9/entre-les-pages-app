@@ -688,6 +688,10 @@ async function activateLibrary(root) {
   const preferences = initial.preferences;
   let folders = initial.folders ?? [];
   const books = initial.books.filter(book => !exampleBookIds.has(book.id));
+  const releaseWatch=EbookReleases.mount({
+    root, storage, books:()=>books, api:EbookReleases.accountApi(compteLecture),
+    changed:()=>{if(!accueil.hidden) accFill('bientot',accSoon(),releaseWatch.feed().length,null,()=> '');}
+  });
   const collator = new Intl.Collator('fr', {sensitivity: 'base', numeric: true});
   const key = value => value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr').replaceAll('œ','oe').replace(/[’']/g, ' ').trim();
   const unique = values => [...new Map(values.map(value => [key(value), value])).values()];
@@ -2158,6 +2162,9 @@ async function activateLibrary(root) {
     for (const type of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) {
       control.addEventListener(type, cancel);
     }
+    control.addEventListener('touchend', event => {
+      if (suppressClick && event.cancelable && control.closest('[data-acc-track]')) event.preventDefault();
+    }, {passive: false});
     control.addEventListener('contextmenu', event => {
       if (event.pointerType === 'touch' || suppressClick || press) event.preventDefault();
     });
@@ -3056,8 +3063,7 @@ async function activateLibrary(root) {
     const sagas = accSagaGroups()
       .map(group => ({name: group.name, author: group.author, last: Math.max(0, ...group.books.map(book => book.status === 'Terminé' ? Number(accFinishedAt(book)) || 0 : 0))}))
       .sort((a, b) => b.last - a.last).slice(0, 10).map(({name, author}) => ({name, author}));
-    const authors = [...new Set(books.filter(book => book.coupDeCoeur && book.author).map(book => book.author.trim()))].slice(0, 6);
-    return {sagas, authors};
+    return {sagas, authors:[]};
   }
   let parutionsLoading = false;
   async function loadParutions() {
@@ -3179,40 +3185,11 @@ async function activateLibrary(root) {
     }
     return out;
   }
-  // Les prochaines sorties, avec une semaine de visibilité après parution.
   function accSoon() {
-    if (!parutions) return [];
-    const today = dayStart(Date.now());
-    const items = [];
-    const ownedTitles = new Set(books.map(book => (book.title || '').toLocaleLowerCase('fr').trim()));
-    for (const group of accSagaGroups()) {
-      const owned = new Set(group.books.map(accVolume).filter(Number.isFinite));
-      for (const volume of parutions.series?.[group.name] || []) {
-        const date = parseDay(volume.date);
-        if (date == null || owned.has(volume.position) || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
-        items.push({key: `${group.name}#${volume.position}`, title: volume.title || group.name, author: volume.author || group.author, date, image: volume.image});
-      }
-    }
-    for (const book of parutions.upcoming || []) {
-      const date = parseDay(book.date);
-      if (date == null || date < today - 7 * DAY_MS || date > today + 92 * DAY_MS) continue;
-      if (ownedTitles.has((book.title || '').toLocaleLowerCase('fr').trim())) continue;
-      const key = book.saga && book.position ? `${book.saga}#${book.position}` : `titre:${book.title}`;
-      const seriesItem = items.find(item => item.key === key);
-      if (seriesItem) {
-        if (book.author) seriesItem.author = book.author;
-        if (book.title) seriesItem.title = book.title;
-        continue;
-      }
-      items.push({key, title: book.title, author: book.author, date, image: book.image});
-    }
-    items.sort((a, b) => a.date - b.date);
-    return items.slice(0, 8).map(item => {
-      const days = Math.round((item.date - today) / DAY_MS);
-      return remoteCard({label: item.title, sub: item.author, image: item.image, releaseDays: days});
-    });
+    return releaseWatch.feed().map(item => remoteCard({
+      label:item.title, sub:item.author, image:item.image, releaseDays:item.days
+    }));
   }
-  const DAY_MS = 86400000;
 
   function renderAccueil(show) {
     accDice.hidden = !show;
@@ -3496,7 +3473,7 @@ async function activateLibrary(root) {
       });
       theme.setAttribute('aria-pressed', String(root.dataset.theme === 'dark'));
       const settings = el('div', 'library-settings');
-      settings.append(theme, annualGoalSetting(), el('h3', '', 'Filtres enregistrés'));
+      settings.append(theme, annualGoalSetting(), releaseWatch.authorSettings(), el('h3', '', 'Filtres enregistrés'));
       for (const filters of savedFilters) {
         const label = filterLabelOrder.flatMap(name => filters[name]).filter(Boolean).join(' · ');
         settings.append(button(label, 'plain', () => {
@@ -3811,6 +3788,7 @@ async function activateLibrary(root) {
 
   renderContent();
   refreshIcons();
+  releaseWatch.start();
   delete root.dataset.storageState;
   toolbar.inert = false;
   const syncStatus = find('[data-library-sync-status]');
