@@ -347,18 +347,18 @@
 }
 #bibliotheque-app #elp-add-book .ep-pal-identity .couverture .ep-cover img { height:auto; object-fit:contain; border-radius:0; }
 
-#elp-add-book .ep-pal-summary[hidden],
-#elp-add-book .ep-pal-summary:not([hidden]) ~ #ep-summary-heading,
-#elp-add-book .ep-pal-summary:not([hidden]) ~ .ep-next-summary {display:none!important}
-#elp-add-book .ep-pal-summary{box-sizing:border-box;width:100%;min-width:0;margin:18px 0 0;padding:0 14px 15px;border:1px solid var(--ep-line);border-radius:8px}
-#elp-add-book .ep-pal-summary legend{margin-inline:auto;padding:0 8px}
-#elp-add-book .ep-pal-summary button{display:flex;align-items:center;gap:7px;min-height:44px;background:transparent;color:var(--ep-title);border:0;font:500 29px/1.1 "Cormorant Garamond",Georgia,serif;cursor:pointer}
-#elp-add-book .ep-pal-summary svg{width:29px;color:var(--ep-accent)}
-#elp-add-book .ep-pal-summary .chevron{width:12px}
-#elp-add-book .ep-pal-summary button[aria-expanded=false] .chevron{transform:rotate(-90deg)}
-#elp-add-book .ep-pal-summary:has([aria-expanded=false]){padding-bottom:0}
+#bibliotheque-app #elp-add-book .ep-pal-summary[hidden],
+#bibliotheque-app #elp-add-book .ep-pal-summary:not([hidden]) ~ #ep-summary-heading,
+#bibliotheque-app #elp-add-book .ep-pal-summary:not([hidden]) ~ .ep-next-summary {display:none!important}
+#bibliotheque-app #elp-add-book .ep-pal-summary{box-sizing:border-box;width:100%;min-width:0;margin:32px 0 0;padding:0 14px 15px;border:1px solid light-dark(#997986,#AB8DAA);border-radius:8px}
+#bibliotheque-app #elp-add-book .ep-pal-summary legend{margin-inline:auto;padding:0 8px}
+#bibliotheque-app #elp-add-book .ep-pal-summary button{display:flex;align-items:center;gap:7px;min-height:44px;background:transparent;color:var(--ep-title);border:0;font:500 29px/1.1 "Cormorant Garamond",Georgia,serif;cursor:pointer}
+#bibliotheque-app #elp-add-book .ep-pal-summary svg{width:29px;color:var(--ep-accent)}
+#bibliotheque-app #elp-add-book .ep-pal-summary .chevron{width:12px}
+#bibliotheque-app #elp-add-book .ep-pal-summary button[aria-expanded=false] .chevron{transform:rotate(-90deg)}
+#bibliotheque-app #elp-add-book .ep-pal-summary:has([aria-expanded=false]){padding-bottom:0}
 #ep-pal-summary-copy{font:400 16px/1.55 "Baskervville Formulaire",Georgia,serif;color:var(--ep-summary-text);text-align:start;white-space:pre-wrap;overflow-wrap:anywhere;cursor:text;outline:0;min-height:1.55em}
 #ep-pal-summary-copy:empty:before{content:attr(data-placeholder);color:var(--ep-muted)}
-#bibliotheque-app[data-format=tablet] .ep-pal-summary{padding-inline:25px}
-#bibliotheque-app[data-format=tablet] .ep-pal-summary button{font-size:34px}
+#bibliotheque-app[data-format=tablet] #elp-add-book .ep-pal-summary{margin-block-start:44px;padding-inline:25px}
+#bibliotheque-app[data-format=tablet] #elp-add-book .ep-pal-summary button{font-size:34px}
 #bibliotheque-app[data-format=tablet] #ep-pal-summary-copy{font-size:17px;line-height:1.6}
