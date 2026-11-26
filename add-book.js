@@ -608,7 +608,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }});
     syncPromesse();
   }).catch(()=>{promesseSection.hidden=true;});
-  for (const option of following.querySelectorAll('input[name="ep-statut-lecture"]')) option.addEventListener("change",syncPromesse);
+  for (const option of following.querySelectorAll('input[name="ep-statut-lecture"]')) option.addEventListener("change",()=>{syncPromesse();if(stage.dataset.step==='next')showStep('next',false)});
   let lastStep="";
   let currentBook;
   let origin;
@@ -637,11 +637,44 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return base+(10-[...base].reduce((sum,digit,index)=>sum+Number(digit)*(index%2 ? 3 : 1),0)%10)%10;
   };
 
+  const palHost=document.createElement('section');
+  palHost.hidden=true;
+  palHost.setAttribute('aria-label','Informations du livre à ajouter dans ma PAL');
+  nextBook.before(palHost);
+  const palTitle=document.createElement('h2');
+  palTitle.className='pal-nav-title';
+  palTitle.textContent='AJOUTER DANS MA PAL';
+  actions.before(palTitle);
+  const palIdentity=mountPalIdentity(palHost,{
+    tagOptions:bookTagOptions,defaultTropes:tropeNames,signal,
+    coverOf:book=>drawBook(book,true).querySelector('.ep-cover'),
+    editCover:startEditing,
+    change(book,name,value){
+      const edits=['genres','subgenres','tropes'].includes(name)?editedTags:editedFields;
+      if(!edits.has(book))edits.set(book,new Set());
+      edits.get(book).add(name);
+      book[name]=value;
+    }
+  });
+  function syncPal(){
+    const isPal=stage.dataset.step==='next' && selectedStatus==='to-read';
+    stage.toggleAttribute('data-pal',isPal);
+    palHost.hidden=!isPal||!editForm.hidden;
+    if(stage.dataset.step==='next')nextBook.hidden=isPal||!editForm.hidden;
+    if(!isPal){palIdentity.close();return}
+    nav.hidden=false;legacyHeader.hidden=true;decoration.hidden=true;back.hidden=true;
+    paperBack.hidden=false;paperBack.setAttribute('aria-label',lastStep==='digital'?'Retour aux trois cartes de statut':'Revenir aux résultats de recherche');
+    actions.append(exit);exit.hidden=false;
+    editToolbar.append(editButton);editToolbar.hidden=editForm.hidden;editButton.hidden=editForm.hidden;
+    if(!palHost.hidden)palIdentity.update(currentBook);
+  }
+
   function showStep(step,animate=true) {
     pickers.closeMenu();
     const pane={digital,paper,next:following}[step];
     const changed=pane?.hidden;
     stage.dataset.step=step;
+    paperBack.setAttribute("aria-label","Revenir aux résultats de recherche");
     const recap=step==="next";
     const paperRecap=recap && lastStep==="paper";
     const digitalRecap=recap && !paperRecap;
@@ -657,6 +690,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     editToolbar.hidden=!digitalRecap;
     for (const item of [digital,paper,following]) item.hidden=item!==pane;
     for (const card of cards) card.setAttribute("aria-expanded",String(card.dataset.book===step));
+    syncPal();
     if (changed && animate && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       pane.animate?.([{opacity:0,transform:"translateY(4px)"},{opacity:1,transform:"translateY(0)"}],{duration:260,easing:"ease"});
     }
@@ -665,12 +699,14 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   function renderBook(book) {
     retryAnalysis.hidden=true;
     nextBook.replaceChildren(drawRecap(book));
+    if (!palHost.hidden) palIdentity.update(book);
     summary.textContent=book.summary || (editedSummaries.has(book) ? "Résumé indisponible." : "Recherche du résumé…");
     lookupStatus.hidden=completedMetadata.has(book);
     lookupStatus.textContent=lookupStatus.hidden ? "" : "Analyse du livre et recherche des informations de l’édition…";
     prepareMetadata(book).then(()=>{
       if (signal.aborted || currentBook!==book) return;
       nextBook.replaceChildren(drawRecap(book));
+    if (!palHost.hidden) palIdentity.update(book);
       const issue=analysisIssue.get(book);
       lookupStatus.hidden=!issue;
       retryAnalysis.hidden=!issue;
@@ -701,7 +737,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     back.setAttribute("aria-label","Revenir à l’aperçu du livre");
     showStep("next");
     window.scrollTo({top:0,behavior:"instant"});
-    (step==="paper" ? paperBack : back).focus({preventScroll:true});
+    (stage.hasAttribute("data-pal") || step==="paper" ? paperBack : back).focus({preventScroll:true});
   }
 
   function setEditing(editing) {
@@ -713,6 +749,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     get("[data-edit-check]").hidden=!editing;
     editForm.hidden=editSummary.hidden=!editing;
     nextBook.hidden=summary.hidden=editing;
+    syncPal();
     if (!editing) {
       ++editCoverVersion;
       editCoverCanvas=null;
@@ -859,7 +896,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
                 book[name]=data[name];
               }
             }
-            if (!editedFields.get(book)?.has("title")) separateSeriesTitle(book);
+            if (!["title","series","volume"].some(key=>editedFields.get(book)?.has(key))) separateSeriesTitle(book);
             completedMetadata.add(book);
           }
           return book.summary;
@@ -1260,6 +1297,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   });
   addButton.addEventListener("click",async()=>{
     if (!currentBook || addButton.disabled || !applyBookEdits()) return;
+    if (selectedStatus==="to-read" && !currentBook.title?.trim()) {
+      saveStatus.textContent="Renseigne le titre du livre avant de l’ajouter.";palIdentity.focusTitle();return;
+    }
     const book=currentBook;
     const reading=readingFields.values();
     if (!reading) return;
