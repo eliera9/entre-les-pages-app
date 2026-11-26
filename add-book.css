@@ -808,7 +808,7 @@
   margin:4px 0 20px; min-block-size:0; text-align:center;
   font:400 var(--add-question)/1.35 "Baskervville Formulaire",Georgia,serif;
 }
-#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-question::before {
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-question::before {
   content:""; display:block; width:min(245px,65%); height:26px; margin:0 auto 8px;
   background:var(--add-ink); mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
   -webkit-mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
