@@ -779,7 +779,7 @@
 #bibliotheque-app .pal-detail-peppers .piment-body { fill:none; }
 #bibliotheque-app .pal-detail-peppers .on .piment-body { fill:currentColor; }
 .pal-detail-nav-title { display:none; }
-#bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title {
+#bibliotheque-app:not([data-format="phone"]):has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title {
   display:block; position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap;
   pointer-events:none;
 }
