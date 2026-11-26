@@ -298,6 +298,7 @@ export function mountPromesse(section, {onPages, signal} = {}) {
   function render() {
     const list = SLIDES;
     const keep = track.scrollLeft;
+    observer.disconnect();
     track.replaceChildren(...list.map((slide, index) => {
       const node = slideShell(slide, index, list.length);
       if (slide.list) checklist(slide, index, node);
@@ -322,6 +323,8 @@ export function mountPromesse(section, {onPages, signal} = {}) {
       trace.textContent = "Ce que j'ai consulté : " + Object.entries(sources).map(([name, value]) => `${name} · ${value}`).join(" — ");
       trace.hidden = false;
     }
+    observer.observe(track);
+    for (const slide of track.children) observer.observe(slide,{box:'border-box'});
     track.scrollLeft = keep;
     updateDots();
   }
@@ -334,7 +337,15 @@ export function mountPromesse(section, {onPages, signal} = {}) {
       dot.setAttribute("aria-current", i === index ? "step" : "false");
     });
     const active = track.children[index];
-    if (active?.offsetHeight) track.style.height = active.offsetHeight + "px";
+    if (!active?.offsetHeight) return;
+    let height = active.offsetHeight;
+    if (track.closest('[data-format="phone"]') && width > 0) {
+      const position = track.scrollLeft / width;
+      for (const i of [Math.floor(position), Math.ceil(position)]) {
+        height = Math.max(height, track.children[i]?.offsetHeight || 0);
+      }
+    }
+    track.style.height = height + "px";
   }
   track.addEventListener("scroll", updateDots, {passive: true});
 
