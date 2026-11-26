@@ -14,21 +14,24 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   </div>
   <div class="rangee-genre-date">
    <div class="recherche-genre"><button type="button" class="jeton" data-champ="genre" aria-label="Modifier le genre"></button></div>
-   <div class="bloc-parution"><span class="intitule-sortie"><i class="icone-agenda" aria-hidden="true"></i>Date de sortie</span><div class="champs-date" role="group" aria-label="Date de sortie"></div></div>
-   <div class="priorite-lecture">
-    <label class="intitule-sortie" for="ep-priorite">Priorité</label>
-    <span class="glissiere">
-     <span class="piste-priorite" aria-hidden="true"><span class="avancement-priorite"></span><i class="cran-central"></i><i class="poignee-priorite"></i></span>
-     <input id="ep-priorite" type="range" min="0" max="2" step="1" value="1" aria-label="Priorité de lecture" aria-valuetext="Bientôt">
-    </span>
-    <output for="ep-priorite" aria-live="off">Bientôt</output>
-   </div>
+
   </div>
  </div>
  <section class="palette" id="ep-pal-palette" hidden><label class="barre-ecrire"><input class="saisie-genre" type="text" autocomplete="off" enterkeyhint="done"></label>
   <div class="piste-genres" id="ep-pal-piste" role="region" aria-roledescription="carrousel"></div>
   <div class="pages-genres" hidden><span class="repere-points" role="group"></span><span class="lecture-page sr-only" aria-live="polite"></span></div>
   <button type="button" class="creer-genre" hidden></button><span class="annonce-genre sr-only" role="status"></span>
+ </section>
+ <section class="collection reperes" aria-labelledby="ep-reperes-title">
+  <h3 class="libelle-groupe" id="ep-reperes-title">Mes repères de lecture</h3>
+  <div class="reperes-champs">
+   <div class="bloc-parution"><span class="intitule-sortie">Date de sortie</span><div class="champs-date" role="group" aria-label="Date de sortie"></div></div>
+   <div class="repere-priorite"><span class="intitule-sortie" id="ep-priorite-label">Priorité de lecture</span>
+    <button type="button" class="priorite-valeur" aria-labelledby="ep-priorite-label ep-priorite-valeur" aria-expanded="false" aria-controls="ep-choix-priorite"><span id="ep-priorite-valeur"></span></button>
+    <div class="priorite-menu" id="ep-choix-priorite" role="group" aria-labelledby="ep-priorite-label" hidden></div>
+   </div>
+   <label class="repere-pages"><span class="intitule-sortie">Nombre de pages</span><input type="number" min="1" step="1" inputmode="numeric" placeholder="—"></label>
+  </div>
  </section>
  <button type="button" class="collection" data-champ="subgenres"><span class="libelle-groupe">Sous-genres</span><span class="valeurs"></span></button>
  <button type="button" class="collection" data-champ="tropes"><span class="libelle-groupe">Tropes</span><span class="valeurs"></span></button>
@@ -38,23 +41,51 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  const blocDate=livre.querySelector('.bloc-parution'),champs=blocDate.querySelector('.champs-date'),apercu=root;
  const donnees={genre:'',subgenres:[],tropes:[]};
  let book=null,coverKey='';
- const priorite=livre.querySelector('.priorite-lecture');
- const curseur=priorite.querySelector('input');
- const niveaux=['Plus tard','Bientôt','En premier'];
- function afficherPriorite(niveau){
-  const position=niveaux.indexOf(niveau);
-  const index=position<0?1:position;
-  curseur.value=String(index);
-  curseur.setAttribute('aria-valuetext',niveaux[index]);
-  priorite.style.setProperty('--position-priorite',index*50+'%');
-  priorite.querySelector('output').value=niveaux[index];
+ const priorite=livre.querySelector('.repere-priorite');
+ const valeurPriorite=priorite.querySelector('.priorite-valeur');
+ const menuPriorite=priorite.querySelector('.priorite-menu');
+ const pages=livre.querySelector('.repere-pages input');
+ const niveaux=[
+  ['Plus tard','À lire plus tard','<path d="M5 3h14M5 21h14M7 3c0 6 2 6 5 9-3 2-5 4-5 9m10-18c0 6-2 6-5 9 3 2 5 4 5 9M9 18l3-3 3 3Z"/>'],
+  ['Bientôt','À lire bientôt','<path d="M2 7c4-1 7 0 10 3 3-3 6-4 10-3v12c-4-1-7 0-10 2-3-2-6-3-10-2Zm10 3v11M4 10l5 2m6 0 5-2M14 2l.7 2 2 .7-2 .7L14 7l-.7-1.6-1.7-.7 1.7-.7Z"/>'],
+  ['En premier','À lire en priorité','<path d="m12 2 2.8 6.5 7 .7-5.2 4.8 1.5 7-6.1-3.6-6.1 3.6 1.4-7L2 9.2l7.2-.7Z M12 2v15.4M2 9.2l10 3 9.8-3"/>']
+ ];
+ function fermerPriorite(retour=false){
+  menuPriorite.hidden=true;
+  valeurPriorite.setAttribute('aria-expanded','false');
+  if(retour)valeurPriorite.focus({preventScroll:true});
  }
- curseur.addEventListener('input',()=>{
-  if(!book)return;
-  const niveau=niveaux[curseur.valueAsNumber];
-  change(book,'readingPriority',niveau);
-  afficherPriorite(niveau);
+ function afficherPriorite(valeur){
+  const niveau=niveaux.find(([cle,nom])=>cle===valeur||nom===valeur)||niveaux[1];
+  const choix=[...menuPriorite.children];
+  choix.forEach((option,i)=>option.setAttribute('aria-pressed',String(niveaux[i]===niveau)));
+  valeurPriorite.firstElementChild.replaceChildren(...Array.from(choix[niveaux.indexOf(niveau)].childNodes,n=>n.cloneNode(true)));
+ }
+ niveaux.forEach(([cle,nom,dessin])=>{
+  const option=bouton('','option-priorite',()=>{
+   change(book,'readingPriority',cle);afficherPriorite(cle);fermerPriorite(true);
+  });
+  option.innerHTML='<svg viewBox="-1 0 26 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round">'+dessin+'</svg>';
+  option.append(document.createTextNode(nom));menuPriorite.append(option);
  });
+ function ouvrirPriorite(focus=false){
+  replier();effacerOuverture();menuPriorite.hidden=false;valeurPriorite.setAttribute('aria-expanded','true');
+  if(focus)menuPriorite.querySelector('[aria-pressed=true]').focus();
+ }
+ valeurPriorite.addEventListener('click',()=>menuPriorite.hidden?ouvrirPriorite():fermerPriorite());
+ priorite.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!menuPriorite.hidden){e.preventDefault();e.stopPropagation();fermerPriorite(true);return}
+  if(!['ArrowDown','ArrowUp','Home','End'].includes(e.key))return;
+  e.preventDefault();if(menuPriorite.hidden){ouvrirPriorite(true);return}
+  const choix=[...menuPriorite.children],i=choix.indexOf(document.activeElement);
+  const suivant={Home:0,End:choix.length-1,ArrowDown:(i+1)%choix.length,ArrowUp:(i+choix.length-1)%choix.length};
+  choix[suivant[e.key]].focus();
+ });
+ priorite.addEventListener('focusout',e=>{if(e.relatedTarget&&!priorite.contains(e.relatedTarget))fermerPriorite()});
+ pages.addEventListener('input',()=>{
+  if(book&&pages.validity.valid)change(book,'pageCount',pages.value===''?null:pages.valueAsNumber);
+ });
+ pages.addEventListener('blur',()=>{if(book)pages.value=book.pageCount??''});
  function el(tag,cl,tx){const n=document.createElement(tag);if(cl)n.className=cl;if(tx!==undefined)n.textContent=tx;return n}
  function bouton(tx,cl,fn){const b=el('button',cl,tx);b.type='button';b.addEventListener('click',fn);return b}
  function afficher(c){
@@ -93,7 +124,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  }
  function peindre(){
   const d=morceaux();
-  Object.entries(rubriques).forEach(([k,x])=>{x.btn.textContent=nomValeur(k,d[k]);x.btn.setAttribute('aria-label',termes[k]+', '+x.btn.textContent)});
+  Object.entries(rubriques).forEach(([k,x])=>{x.btn.textContent=k==='mois'&&d[k]?String(d[k]).padStart(2,'0'):nomValeur(k,d[k]);x.btn.setAttribute('aria-label',termes[k]+', '+nomValeur(k,d[k]))});
  }
  function hauteur(){
   if(!listeOuverte){apercu.style.removeProperty('--hauteur-date');return}
@@ -328,14 +359,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   const etoile=getComputedStyle(boutonGenre,'::before');
   const largeurEtoile=parseFloat(etoile.width)+parseFloat(etoile.marginRight);
   const cadre=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight)+2+(largeurEtoile||0);
-  const disposition=getComputedStyle(ligneGenreDate);
-  const empiles=disposition.flexDirection==='column';
-  const premier=empiles?blocDate:boutonGenre.parentElement;
-  if(ligneGenreDate.firstElementChild!==premier)ligneGenreDate.prepend(premier);
-  const ecart=parseFloat(disposition.columnGap)||0;
-  const libre=empiles
-   ? Math.min(ligneGenreDate.clientWidth*.56,ligneGenreDate.clientWidth-priorite.offsetWidth-ecart)
-   : ligneGenreDate.clientWidth-blocDate.getBoundingClientRect().width-priorite.offsetWidth-2*ecart;
+  const libre=ligneGenreDate.clientWidth;
   const base=parseFloat(style.fontSize);
   mesures.font=style.fontWeight+' '+base+'px '+style.fontFamily;
   const motLarge=Math.max(...(donnees.genre||'Ajouter un genre').split(/\s+/).map(v=>mesures.measureText(v).width+v.length*parseFloat(style.letterSpacing||0)));
@@ -350,7 +374,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
    for(const prop of ['width','flex','transform','transform-origin','margin-right'])nom.style.removeProperty(prop);
   }
  }
- const suivreGenre=new ResizeObserver(ajusterGenreFerme);suivreGenre.observe(ligneGenreDate);suivreGenre.observe(blocDate);
+ const suivreGenre=new ResizeObserver(ajusterGenreFerme);suivreGenre.observe(ligneGenreDate);
  document.fonts.ready.then(()=>{if(!palette.hidden)rafraichir();ajusterGenreFerme()});
  for(const k of Object.keys(rubriquesTags)){
   const b=boutons[k];b.setAttribute('aria-controls',palette.id);b.setAttribute('aria-expanded','false');
@@ -384,15 +408,16 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   field.addEventListener('blur',()=>{if(book)field.textContent=String(book[key]||'')});
  }
  const cover=livre.querySelector('.couverture');cover.addEventListener('click',editCover);
- document.addEventListener('pointerdown',e=>{if(!blocDate.contains(e.target))replier();if(!root.contains(e.target)&&!palette.hidden)effacerOuverture()},{signal});
+ document.addEventListener('pointerdown',e=>{if(!priorite.contains(e.target))fermerPriorite();if(!blocDate.contains(e.target))replier();if(!root.contains(e.target)&&!palette.hidden)effacerOuverture()},{signal});
  blocDate.addEventListener('keydown',e=>{if(e.key==='Escape'&&listeOuverte){e.preventDefault();e.stopPropagation();replier(true)}});
  blocDate.addEventListener('focusout',e=>{if(e.relatedTarget&&!blocDate.contains(e.relatedTarget))replier()});
  signal.addEventListener('abort',()=>{suivreGenre.disconnect();voirTaille.disconnect()},{once:true});
  function update(next){
   if(!next)return;
-  if(book!==next){effacerOuverture();replier();coverKey=''}
+  if(book!==next){fermerPriorite();effacerOuverture();replier();coverKey=''}
   book=next;
   afficherPriorite(book.readingPriority);
+  if(document.activeElement!==pages)pages.value=book.pageCount??'';
   for(const field of champsTexte)if(document.activeElement!==field)field.textContent=String(book[field.dataset.texte]??'');
   const spin=livre.querySelector('.spin');spin.hidden=!book.spinOffOf;spin.textContent=spin.hidden?'':'Spin-off de '+book.spinOffOf;
   const currentKey=JSON.stringify([book.title,book.coverData]);
@@ -402,5 +427,5 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   Object.keys(boutons).forEach(afficher);ajusterGenreFerme();peindre();
   if(!palette.hidden){ordonner();rafraichir()}
  }
- return {update,close(){effacerOuverture();replier()},focusTitle(){champsTexte[0].focus()}};
+ return {update,close(){fermerPriorite();effacerOuverture();replier()},focusTitle(){champsTexte[0].focus()}};
 }

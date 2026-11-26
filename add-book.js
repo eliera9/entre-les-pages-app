@@ -641,12 +641,13 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=pal-priorite-edition");
+  const analysisModule=import("./promesse-form.js?v=reperes-aquarelles");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
-    promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
-      const next=following.querySelector(".ep-folder-zone") || head;
-      next.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"});
+    promesseForm=module.mountPromesse(promesseSection,{signal,onPages(book,pages) {
+      if (book!==currentBook || editedFields.get(book)?.has('pageCount') || !Number.isInteger(pages) || pages<1) return;
+      book.pageCount ||= pages;
+      if (!palHost.hidden) palIdentity.update(book);
     }});
     syncPromesse();
   }).catch(()=>{promesseSection.hidden=true;});
@@ -1014,6 +1015,30 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }
   }
 
+  // Les résultats papier proposent les mêmes trois statuts que l’aperçu numérique.
+  const paperQuestion=get('.ep-reading-question').cloneNode(true);
+  paperQuestion.id='ep-paper-reading-question';
+  const paperChoices=get('.ep-start-statuses').cloneNode(true);
+  paperChoices.setAttribute('aria-labelledby',paperQuestion.id);
+  const paperPreview=document.createElement('div');
+  paperPreview.append(paperQuestion,paperChoices);
+  let selectedPaper=null;
+  function choosePaper(book,button){
+    const previous=paperPreview.parentElement?.querySelector('.ep-result');
+    previous?.setAttribute('aria-expanded','false');
+    if (previous===button){paperPreview.remove();selectedPaper=null;return}
+    selectedPaper=book;
+    button.after(paperPreview);
+    button.setAttribute('aria-expanded','true');
+    paperChoices.querySelector('button').focus({preventScroll:true});
+  }
+  paperChoices.addEventListener('click',event=>{
+    const choice=event.target.closest('[data-start-status]');
+    if (!choice || !selectedPaper) return;
+    openBook(selectedPaper,'paper',choice);
+    following.querySelector('input[name="ep-statut-lecture"][value="'+choice.dataset.startStatus+'"]').click();
+  });
+
   function appendSearchResults(books) {
     const seen=new Set([...results.children].map(item=>item.dataset.catalogueId));
     for (const info of books) {
@@ -1029,7 +1054,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       button.type="button";
       button.className="ep-result cursor-interaction";
       button.append(drawBook(book,true));
-      button.addEventListener("click",()=>openBook(book,"paper",button));
+      button.setAttribute("aria-expanded","false");
+      button.addEventListener("click",()=>choosePaper(book,button));
       item.append(button);
       results.append(item);
     }
@@ -1047,6 +1073,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     searchMessage.textContent="";
     if (page===1) {
       searchPage=0;
+      paperPreview.remove();
+      selectedPaper=null;
       results.replaceChildren();
       results.hidden=true;
     }
@@ -1414,8 +1442,8 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         await formReady;
         await pendingPromesse;
         const promesse=promesseForm?.values();
-        if (promesse) reading.promesse=promesse;
-        reading.pagesEdited=promesseForm?.pagesEdited();
+        reading.pagesEdited=editedFields.get(book)?.has('pageCount') || false;
+        if (promesse || reading.pagesEdited) reading.promesse={...promesse,pages:book.pageCount ?? (reading.pagesEdited ? null : promesse?.pages)};
       }
       if (!signal.aborted && book===currentBook) await saveBook(book,reading,collection,()=>!signal.aborted && book===currentBook);
     } catch {

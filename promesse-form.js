@@ -1,4 +1,4 @@
-// Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de 6 questions (5 hors romance).
+// Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de quatre slides.
 import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=pal-priorite-edition";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
@@ -17,18 +17,9 @@ const SLIDES = [
   {key: "emotions", title: "En le refermant, je vais…", list: EMOTIONS, nothing: "Rien trouvé sur ce qu'il fait ressentir."},
   {key: "decor", title: "En le lisant, je serai…", list: DECORS, nothing: "Rien trouvé sur son décor."},
   {key: "noirceur", title: "Son côté sombre"},
-  {key: "spice", title: "Ça chauffe\u00a0?", romance: true},
-  {key: "pages", title: "Il me prendra combien de temps\u00a0?"},
 ];
-const PAGES_PER_HOUR = 50;
-// Ta vitesse mesurée dans la liseuse, dès qu'il y a au moins une heure de lecture
-function readingSpeed() {
-  try {
-    const stats = JSON.parse(localStorage.getItem("elp-vitesse") || "{}");
-    if (Number(stats.minutes) >= 60 && Number(stats.pages) > 0) return {perHour: Math.round(stats.pages / stats.minutes * 60), measured: true};
-  } catch {}
-  return {perHour: PAGES_PER_HOUR, measured: false};
-}
+const SPICE_SLIDE = {key: "spice", title: "Ça chauffe ?"};
+const moodArt = {reconfort:"calin",energie:"energie",melancolie:"coeur-lourd",tension:"secoue-moi",calme:"calme"};
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
@@ -90,7 +81,7 @@ export async function findPromesse(book, signal) {
   }
 }
 
-export function mountPromesse(section, {onDone, signal} = {}) {
+export function mountPromesse(section, {onPages, signal} = {}) {
   let state = emptyPromesse();
   let touched = new Set();
   let romance = true;
@@ -102,15 +93,15 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   let sources = null;
 
   section.replaceChildren();
-  const head = make("button", "ep-promesse-head cursor-interaction");
+  const heading = make("h3", "ep-promesse-heading");
+  const head = make("button", "ep-summary-heading ep-promesse-head cursor-interaction");
   head.type = "button";
   head.setAttribute("aria-expanded", "true");
-  const title = make("h3", "ep-promesse-title");
-  title.append(make("span", "ep-promesse-initial", "C"), "e qu'il me promet");
-  title.setAttribute("aria-label", "Ce qu'il me promet");
-  const chevron = make("span", "ep-promesse-chevron");
-  chevron.setAttribute("aria-hidden", "true");
-  head.append(title, chevron);
+  const title = make("span", "ep-promesse-title");
+  title.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c-3-2-6-2-10-1v13c4-1 7-1 10 1 3-2 6-2 10-1V7c-3-.7-5-.7-7 0M12 9v12"/><path d="m16 1 .8 2.3L19 4l-2.2.8L16 7l-.8-2.2L13 4l2.2-.7Z"/></svg>';
+  title.append(document.createTextNode("Ce qu’il me promet"));
+  head.append(title);
+  heading.append(head);
   const body = make("div", "ep-promesse-body");
   body.id = "ep-promesse-body";
   head.setAttribute("aria-controls", body.id);
@@ -119,36 +110,39 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   track.setAttribute("aria-roledescription", "carrousel");
   track.setAttribute("aria-label", "Questions sur ce que le livre promet");
   const dots = make("div", "ep-promesse-dots");
-  dots.setAttribute("aria-hidden", "true");
+  dots.setAttribute("role", "group");
+  dots.setAttribute("aria-label", "Questions du carrousel");
   const trace = make("p", "ep-promesse-trace");
   trace.hidden = true;
   body.append(track, dots, trace);
-  section.append(head, body);
+  section.append(heading, body);
 
   head.addEventListener("click", () => setOpen(!open));
 
-  function setOpen(next, scroll = false) {
+  function setOpen(next) {
     open = next;
     head.setAttribute("aria-expanded", String(open));
     body.hidden = !open;
     section.classList.toggle("is-closed", !open);
     if (open) { body.classList.remove("is-opening"); void body.offsetWidth; body.classList.add("is-opening"); }
-    if (!open && scroll) onDone?.(head);
   }
 
-  const slides = () => SLIDES.filter(slide => !slide.romance || romance);
+
 
   function slideShell(slide, index, total) {
     const node = make("section", `ep-promesse-slide slide-${slide.key}`);
     node.setAttribute("role", "group");
     node.setAttribute("aria-roledescription", "question");
     node.setAttribute("aria-label", `${index + 1} sur ${total} : ${slide.title}`);
+    node.append(slideHeading(slide));
+    return node;
+  }
+  function slideHeading(slide) {
     const top = make("header", "ep-promesse-slide-head");
     const icon = make("span", "ep-promesse-icon");
     icon.innerHTML = ICONS[slide.key];
-    top.append(icon, make("h4", "ep-promesse-question", slide.title), make("span", "ep-promesse-count", `${index + 1} / ${total}`));
-    node.append(top);
-    return node;
+    top.append(icon, make("h4", "ep-promesse-question", slide.title));
+    return top;
   }
 
   function goTo(index) {
@@ -188,7 +182,11 @@ export function mountPromesse(section, {onDone, signal} = {}) {
       const text = make("span", "ep-promesse-label");
       text.append(make("b", "", label));
       if (detail) text.append(make("small", "", detail));
-      option.append(input, box, text);
+      const art = make("img", "ep-choice-art");
+      art.alt = "";
+      art.src = slide.key === "decor" ? "./art/pal-decors/" + id + ".webp"
+        : "./art/questionnaire/" + (slide.key === "humeur" ? "humeur-" + moodArt[id] : "emo-" + id) + ".webp";
+      option.append(input, box, art, text);
       input.addEventListener("change", () => {
         touched.add(slide.key);
         const list = state[slide.key].filter(value => value !== id);
@@ -298,59 +296,29 @@ export function mountPromesse(section, {onDone, signal} = {}) {
     draw();
   }
 
-  function pages(slide, index, node) {
-    const line = nothingLine({...slide, nothing: "Rien trouvé sur son nombre de pages."});
-    if (line) node.append(line);
-    const field = make("label", "ep-promesse-pages");
-    const input = make("input");
-    input.type = "number";
-    input.min = "1";
-    input.max = "5000";
-    input.step = "1";
-    input.inputMode = "numeric";
-    input.placeholder = "—";
-    input.value = state.pages ?? "";
-    input.setAttribute("aria-label", "Nombre de pages");
-    field.append(input, make("span", "", "pages"));
-    const said = make("p", "ep-promesse-said");
-    said.setAttribute("aria-live", "polite");
-    const pace = readingSpeed();
-    const speed = make("p", "ep-promesse-speed", pace.measured
-      ? `À ta vitesse : ${pace.perHour} pages par heure, mesurée dans la liseuse.`
-      : `Estimé à ${PAGES_PER_HOUR} pages par heure, le temps d'avoir assez de lectures pour connaître ton rythme.`);
-    const describe = () => {
-      const count = state.pages;
-      if (!count) { said.replaceChildren(make("b", "", "Pas encore réglé")); return; }
-      const hours = count / pace.perHour;
-      const time = hours < 1 ? "moins d'une heure" : `environ ${Math.round(hours)} h`;
-      said.replaceChildren(`${count} pages · ${time} de lecture`);
-    };
-    input.addEventListener("input", () => {
-      touched.add("pages");
-      const count = Math.round(Number(input.value));
-      state = {...state, pages: Number.isFinite(count) && count > 0 && count <= 5000 ? count : null};
-      describe();
-    });
-    const done = make("button", "ep-promesse-done cursor-interaction", "C'est bon");
-    done.type = "button";
-    done.insertAdjacentHTML("beforeend", ICONS.check);
-    done.addEventListener("click", () => setOpen(false, true));
-    node.append(field, said, speed, done);
-    describe();
-  }
-
   function render() {
-    const list = slides();
+    const list = SLIDES;
     const keep = track.scrollLeft;
     track.replaceChildren(...list.map((slide, index) => {
       const node = slideShell(slide, index, list.length);
       if (slide.list) checklist(slide, index, node);
-      else if (slide.key === "noirceur") darkness(slide, index, node);
-      else if (slide.key === "spice") spice(slide, index, node);
-      else pages(slide, index, node);
+      else {
+        darkness(slide, index, node);
+        if (romance) {
+          node.append(slideHeading(SPICE_SLIDE));
+          spice(SPICE_SLIDE, index, node);
+        }
+      }
       return node;
     }));
-    dots.replaceChildren(...list.map(() => make("i")));
+    dots.replaceChildren(...list.map((slide,index) => {
+      const button = make("button");
+      button.type = "button";
+      button.setAttribute("aria-label", slide.title);
+      button.append(make("i"));
+      button.addEventListener("click", () => goTo(index));
+      return button;
+    }));
     trace.hidden = true;
     const empty = !state.humeur.length && !state.emotions.length && !state.decor.length && state.noirceur == null && state.pages == null;
     if (notFound && empty && sources) {
@@ -362,11 +330,20 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   }
 
   function updateDots() {
-    const width = track.clientWidth || 1;
+    const width = (track.children[1]?.offsetLeft - track.children[0]?.offsetLeft) || track.clientWidth || 1;
     const index = Math.round(track.scrollLeft / width);
-    [...dots.children].forEach((dot, i) => dot.classList.toggle("on", i === index));
+    [...dots.children].forEach((dot,i) => {
+      dot.firstChild.classList.toggle("on", i === index);
+      dot.setAttribute("aria-current", i === index ? "step" : "false");
+    });
+    const active = track.children[index];
+    if (active?.offsetHeight) track.style.height = active.offsetHeight + "px";
   }
   track.addEventListener("scroll", updateDots, {passive: true});
+
+  const observer = new ResizeObserver(updateDots);
+  observer.observe(track);
+  signal?.addEventListener("abort",()=>observer.disconnect(),{once:true});
 
   const collected=new WeakMap();
   function collect(book, metadata) {
@@ -396,6 +373,7 @@ export function mountPromesse(section, {onDone, signal} = {}) {
     romance = isRomance(book);
     if (book.promesse) {
       state = {...emptyPromesse(), ...book.promesse};
+      onPages?.(book,state.pages);
       loading = false;
       notFound = false;
       render();
@@ -415,6 +393,7 @@ export function mountPromesse(section, {onDone, signal} = {}) {
     romance = romance || romanceFound;
     const kept = Object.fromEntries([...touched].map(name => [name, state[name]]));
     state = {...fillGaps(emptyPromesse(), found || {}), ...kept};
+    onPages?.(book,state.pages);
     loading = false;
     notFound = true;
     render();
@@ -455,5 +434,5 @@ export function mountPromesse(section, {onDone, signal} = {}) {
   }
 
   render();
-  return {pagesEdited:()=>touched.has("pages"),collect, prefill, retry, clear, values, setVisible};
+  return {collect, prefill, retry, clear, values, setVisible};
 }
