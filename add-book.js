@@ -865,7 +865,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       // The same catalogue adapters can reach the public sources from the device.
       if (action==="details") return serverData || {};
-      const {createCatalogue}=await import("./catalogue-engine.js?v=pal-priorite-edition");
+      const {createCatalogue}=await import("./catalogue-engine.js?v=pal-priorite-isbn");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
@@ -938,7 +938,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         const sample=false;
         const eligible=book.id || query.isbn || query.author;
         const server=eligible ? queryCatalogues("details",query,request) : {};
-        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pal-priorite-edition").then(({createCatalogue})=>
+        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pal-priorite-isbn").then(({createCatalogue})=>
           createCatalogue([],request).details(new URLSearchParams(query))) : {};
         const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
         const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));

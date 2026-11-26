@@ -130,20 +130,31 @@ export function createCatalogue(localRows=[], signal) {
     return titles(b).some(title=>leftTitles.includes(title));
   }
 
-  function appleBook(row) {
+  function appleBook(row,lookupIsbn="") {
       const title=text(row.trackName);
       const artwork=text(row.artworkUrl100,1100);
       return metadata.separateTitle({
-        id:"apple:"+row.trackId,title,aliases:[title],author:text(row.artistName),series:"",volume:"",
+        id:"apple:"+row.trackId,title,aliases:[title],author:text(row.artistName),authors:list(text(row.artistName).split(/\s+&\s+/)),series:"",volume:"",
         publicationDate:metadata.publicationDate(row.releaseDate),format:"EPUB",ebook:true,
-        genres:list(row.genres),subgenres:[],tropes:[],isbns:[artworkIsbn(artwork)].filter(Boolean),summary:summary(row.description),
+        genres:list(row.genres),subgenres:[],tropes:[],isbns:[...new Set([lookupIsbn,artworkIsbn(artwork)].filter(Boolean))],summary:summary(row.description),
         coverData:coverUrl(artwork),
       });
   }
   async function appleSearch(q) {
     const params=new URLSearchParams({term:q,country:"fr",media:"ebook",entity:"ebook",limit:"15"});
     const data=await json(apple+"/search?"+params,8000);
-    return (Array.isArray(data.results) ? data.results : []).filter(row=>row.kind==="ebook" && Number.isSafeInteger(row.trackId)).map(appleBook).filter(row=>row.title);
+    return (Array.isArray(data.results) ? data.results : []).filter(row=>row.kind==="ebook" && Number.isSafeInteger(row.trackId)).map(row=>appleBook(row)).filter(row=>row.title);
+  }
+
+  async function appleIsbn(code,expectedId="") {
+    const data=await json(apple+"/lookup?"+new URLSearchParams({isbn:code,country:"fr",entity:"ebook"}));
+    const rows=(Array.isArray(data.results) ? data.results : []).filter(row=>
+      row.kind==="ebook" && Number.isSafeInteger(row.trackId) && text(row.trackName));
+    if (rows.length!==1 || (expectedId && String(rows[0].trackId)!==expectedId)) return [];
+    // Apple lookup queried this exact ISBN. Artwork identifiers are optional corroboration.
+    const embedded=artworkIsbn(rows[0].artworkUrl100);
+    if (embedded && embedded!==code) return [];
+    return [appleBook(rows[0],code)];
   }
 
   function openLibraryCover(row) {
@@ -287,7 +298,7 @@ export function createCatalogue(localRows=[], signal) {
     const byTitle=title && !isbn(title) && (!code || matchesDocument);
     const requests=[
       ...(byTitle ? [appleSearch([title,author].filter(Boolean).join(" ")),openLibrarySearch(title,author)] : []),
-      ...(code ? [openLibraryIsbn(code)] : []),
+      ...(code ? [openLibraryIsbn(code),appleIsbn(code)] : []),
       bnfSearch(title,code,author),
     ];
     const outcomes=await Promise.allSettled(requests);
@@ -335,14 +346,15 @@ export function createCatalogue(localRows=[], signal) {
     const code=isbn(params.get("isbn"));
     const key=id.match(/^ol-work:(OL\d+W)$/)?.[1];
     const appleId=id.match(/^apple:(\d+)$/)?.[1];
-    const [work,known,alternatives,national,google]=await Promise.all([
+    const [work,known,alternatives,national,google,appleEdition]=await Promise.all([
       key ? json(openLibrary+"/works/"+key+".json",8000).catch(()=>({})) : {},
       code ? openLibraryIsbn(code).catch(()=>[]) : [],
       appleId ? json(apple+"/lookup?"+new URLSearchParams({id:appleId,country:"fr"})).then(data=>
-        (Array.isArray(data.results) ? data.results : []).filter(row=>String(row.trackId)===appleId).map(appleBook)).catch(()=>[])
+        (Array.isArray(data.results) ? data.results : []).filter(row=>String(row.trackId)===appleId).map(row=>appleBook(row))).catch(()=>[])
         : title && author ? appleSearch([title,volume && "tome "+volume,author].filter(Boolean).join(" ")).catch(()=>[]) : [],
       id.startsWith("bnf:") || !appleId && !key ? bnfSearch(title,code,author).catch(()=>[]) : [],
       code || title && author ? googleEditions(title,author,code).catch(()=>[]) : [],
+      code ? appleIsbn(code,appleId).catch(()=>[]) : [],
     ]);
     const requested={title,author,volume};
     const nearby=[...alternatives,...national,...google].filter(book=>sameWork(requested,book));
@@ -359,7 +371,7 @@ export function createCatalogue(localRows=[], signal) {
     const candidates = [...known,...sameVolume].filter(book =>
       (code && book.isbns.includes(code)) || sameWork(requested,book));
     // Une œuvre peut regrouper plusieurs éditions. Réserver les données physiques à la notice identifiée.
-    const editions=[...national,...known,...google,...alternatives].filter(row=>
+    const editions=[...national,...known,...appleEdition,...google,...alternatives].filter(row=>
       (code && row.isbns.includes(code)) || (!code && /^(?:bnf|apple|ol-edition):/.test(id) && row.id===id));
     const edition={};
     for (const row of editions) {
