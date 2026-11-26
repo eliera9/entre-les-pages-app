@@ -742,15 +742,9 @@
 #bibliotheque-app .pal-detail-author { margin-block: 4px; font: 23px/1.1 PalCormorant, Georgia, serif; }
 #bibliotheque-app .pal-detail-series { font: 18px/1.2 "Instrument Serif Formulaire", Georgia, serif; }
 #bibliotheque-app .pal-detail-genre {
-  max-inline-size: 100%;
+  --prune: var(--ep-accent);
   margin-block: 8px;
-  padding: 2px 11px;
-  border-radius: 24px;
-  border: 1px solid light-dark(#c5a7af,#6e536d);
-  background: light-dark(#eadcde,#443244);
-  font-size: 15px;
 }
-#bibliotheque-app .pal-detail-genre::before { content: '✦'; margin-inline-end: 5px; font-size: .75em; }
 #bibliotheque-app .pal-detail-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 6px 8px; }
 #bibliotheque-app .pal-detail-controls label { min-width: 0; font: 12px/1.3 "Source Sans 3 Formulaire", sans-serif; }
 #bibliotheque-app .pal-detail-controls select {
@@ -787,7 +781,7 @@
 .pal-detail-nav-title { display:none; }
 #bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title {
   display:block; position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap;
-  font: 16px/1 PalTypewriter, monospace; letter-spacing:.05em; pointer-events:none;
+  pointer-events:none;
 }
 #bibliotheque-app .toolbar [data-book-home] .pal-return-icon,
 #bibliotheque-app:has(.pal-saved-detail:not([hidden])) .toolbar [data-book-home] .pal-home-icon { display:none; }
@@ -798,12 +792,11 @@
   #bibliotheque-app .pal-detail-title h1 { font-size:44px; }
   #bibliotheque-app .pal-detail-author { font-size:30px; }
   #bibliotheque-app .pal-detail-series { font-size:23px; }
-  #bibliotheque-app .pal-detail-genre, #bibliotheque-app .pal-detail-rows { font-size:18px; }
+  #bibliotheque-app .pal-detail-rows { font-size:18px; }
   #bibliotheque-app .pal-detail-controls select { font-size:17px; }
   #bibliotheque-app .pal-saved-detail h2 { font-size:32px; }
   #bibliotheque-app .pal-detail-summary { font-size:19px; }
   #bibliotheque-app .pal-detail-gallery { grid-template-columns:repeat(3,minmax(0,1fr)); }
-  #bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title { font-size:22px; }
 }
 
 .pal-book-actions [data-action-art]::before{display:inline-block;width:1.1em;margin-right:.55em;vertical-align:middle;content:'';height:1.1em;background:currentColor;mask:var(--action-shape) center/contain no-repeat}

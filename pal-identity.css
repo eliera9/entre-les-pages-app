@@ -1,9 +1,10 @@
 @font-face{font-family:PalCormorant;src:url("./fonts/cormorant-garamond.woff2") format("woff2");font-weight:400 700;font-display:swap}
-@font-face{font-family:PalTypewriter;src:url("./fonts/pal-typewriter.woff") format("woff");font-display:swap}
+@font-face{font-family:PalTypewriter;src:url("./fonts/pal-typewriter.woff?v=alphabet") format("woff");font-display:swap}
 #bibliotheque-app #elp-add-book[data-pal] .ep-top-nav{display:grid;grid-template-columns:1fr max-content 1fr;align-items:center;gap:3px}
 #bibliotheque-app #elp-add-book[data-pal] .ep-top-group:last-child{justify-self:end}
 #bibliotheque-app #elp-add-book[data-pal] [data-add-home]{display:none}
-#bibliotheque-app #elp-add-book .pal-nav-title{margin:0;text-align:center;color:var(--ep-accent);font:400 clamp(14px,3.7vw,22px)/1.08 PalTypewriter,monospace;white-space:nowrap;letter-spacing:.025em}
+#bibliotheque-app #elp-add-book .pal-nav-title,
+#bibliotheque-app .pal-detail-nav-title{margin:0;text-align:center;color:var(--ep-accent,light-dark(#784B5B,#C8B9CC));font:400 clamp(14px,3.7vw,22px)/1.08 PalTypewriter,monospace;white-space:nowrap;letter-spacing:.025em}
 #bibliotheque-app #elp-add-book:not([data-pal]) .pal-nav-title{display:none}
 #bibliotheque-app #elp-add-book[data-pal] .ep-top-nav .ep-icon-button{width:44px;height:44px}
 #bibliotheque-app #elp-add-book[data-pal] .ep-top-nav .ep-icon-button::before{content:"";position:absolute;width:34px;height:34px;border-radius:50%;background:var(--tint)}
@@ -12,7 +13,8 @@
 #bibliotheque-app[data-format=tablet] #elp-add-book[data-pal] .ep-top-nav .ep-icon-button::before{width:42px;height:42px}
 #bibliotheque-app #elp-add-book[data-pal] .ep-form{max-width:none}
 #bibliotheque-app:where(:not([data-format="tablet"])) #elp-add-book[data-pal] .ep-top-group{gap:3px}
-@media(max-width:360px){#bibliotheque-app #elp-add-book .pal-nav-title{font-size:13px}#bibliotheque-app #elp-add-book[data-pal] .ep-top-group{gap:0}#bibliotheque-app #elp-add-book[data-pal] .ep-top-nav{grid-template-columns:max-content minmax(0,1fr) max-content}}
+@media(max-width:360px){#bibliotheque-app #elp-add-book .pal-nav-title,
+#bibliotheque-app .pal-detail-nav-title{font-size:13px}#bibliotheque-app #elp-add-book[data-pal] .ep-top-group{gap:0}#bibliotheque-app #elp-add-book[data-pal] .ep-top-nav{grid-template-columns:max-content minmax(0,1fr) max-content}}
 #bibliotheque-app #elp-add-book .ep-pal-identity{container:palBook / inline-size;--papier:var(--paper);--feuille:var(--ep-card);--encre:var(--text);--prune:var(--ep-accent);--second:var(--ep-muted);--filet:var(--ep-line);--lavis:light-dark(#ecd9db,#493647);--actif:light-dark(#674153,#d0aecf);--inverse:light-dark(#fff7f4,#382637);--ui:"Source Sans 3 Formulaire",sans-serif;text-align:left}
 #bibliotheque-app #elp-add-book .ep-pal-identity *{box-sizing:border-box}
 #bibliotheque-app #elp-add-book .ep-pal-identity [hidden]{display:none!important}
@@ -31,8 +33,10 @@
 #bibliotheque-app #elp-add-book .ep-pal-identity .saga,#bibliotheque-app #elp-add-book .ep-pal-identity .saga [data-texte],#bibliotheque-app #elp-add-book .ep-pal-identity .spin{font:15px/1.25 "Instrument Serif Formulaire",Georgia,serif;color:var(--prune)}
 #bibliotheque-app #elp-add-book .ep-pal-identity .rangee-genre-date{display:flex;align-items:center;gap:clamp(5px,2cqw,20px);margin-top:9px;min-width:0}
 #bibliotheque-app #elp-add-book .ep-pal-identity .recherche-genre{display:flex;align-items:center;min-width:0;flex:0 1 auto}
-#bibliotheque-app #elp-add-book .ep-pal-identity .jeton{display:inline-flex;align-items:center;justify-content:center;width:fit-content;max-width:100%;gap:0;padding:.32em .65em;border-radius:99px;border:1px solid light-dark(#c6a8b2,#755d78);background:linear-gradient(116deg,light-dark(#e0c5ce,#604254),light-dark(#f3e6e1,#493747) 46%,light-dark(#ded3e9,#50445d));font:500 17px/1.12 "Cormorant Garamond",Georgia,serif;letter-spacing:.005em;color:var(--prune)}
-#bibliotheque-app #elp-add-book .ep-pal-identity .jeton::before{content:"";width:.42em;height:.42em;flex:none;margin-right:.32em;clip-path:polygon(50% 0,63% 37%,100% 50%,63% 63%,50% 100%,37% 63%,0 50%,37% 37%);background:currentColor}
+#bibliotheque-app #elp-add-book .ep-pal-identity .jeton,
+#bibliotheque-app #elp-saved-book .pal-detail-genre{display:inline-flex;align-items:center;justify-content:center;width:fit-content;max-width:100%;gap:0;padding:.32em .65em;border-radius:99px;border:1px solid light-dark(#c6a8b2,#755d78);background:linear-gradient(116deg,light-dark(#e0c5ce,#604254),light-dark(#f3e6e1,#493747) 46%,light-dark(#ded3e9,#50445d));font:500 17px/1.12 "Cormorant Garamond",Georgia,serif;letter-spacing:.005em;color:var(--prune)}
+#bibliotheque-app #elp-add-book .ep-pal-identity .jeton::before,
+#bibliotheque-app #elp-saved-book .pal-detail-genre::before{content:"";width:.42em;height:.42em;flex:none;margin-right:.32em;clip-path:polygon(50% 0,63% 37%,100% 50%,63% 63%,50% 100%,37% 63%,0 50%,37% 37%);background:currentColor}
 #bibliotheque-app #elp-add-book .ep-pal-identity .nom-du-genre{min-width:0}
 #bibliotheque-app #elp-add-book .ep-pal-identity .bloc-parution{position:relative;flex:none;display:flex;align-items:center;flex-direction:column;text-align:center;gap:1px}
 #bibliotheque-app #elp-add-book .ep-pal-identity .collection{grid-column:1/-1;justify-self:start;max-width:100%;width:fit-content;text-align:left;border:0;border-radius:10px;padding:6px 11px;background:light-dark(#f0e4e4,#382e37);color:var(--encre)}
@@ -170,7 +174,8 @@
   white-space: nowrap;
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .recherche-genre { max-width: 100%; }
-#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .jeton {
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .jeton,
+#bibliotheque-app[data-format="tablet"] #elp-saved-book .pal-detail-genre {
   font-size: clamp(22px, 3.15cqw, 27px);
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .intitule-sortie {
@@ -206,7 +211,8 @@
 #bibliotheque-app[data-format="phone"] #elp-add-book[data-pal] .ep-top-group {
   gap: clamp(5px, 2vw, 8px);
 }
-#bibliotheque-app[data-format="phone"] #elp-add-book .pal-nav-title {
+#bibliotheque-app[data-format="phone"] #elp-add-book .pal-nav-title,
+#bibliotheque-app[data-format="phone"] .pal-detail-nav-title {
   font-size: clamp(12px, calc(5.8vw - 8px), 16px);
 }
 #bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .livre {
