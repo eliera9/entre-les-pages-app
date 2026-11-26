@@ -506,7 +506,7 @@
     #bibliotheque-app #elp-add-book .ep-drop-detail { display:none; }
   }
   #app-lecture #bibliotheque-app[data-adding-book] > .library { display:none; }
-  html:has(#bibliotheque-app[data-adding-book]) { scrollbar-gutter:auto; }
+
   #bibliotheque-app #elp-add-book .sr-only {
     position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
     clip-path:inset(50%); white-space:nowrap; border:0;
@@ -888,3 +888,28 @@
 #bibliotheque-app #elp-add-book .ep-start-statuses .final-lines i:last-child{width:53%}
 #bibliotheque-app #elp-add-book .ep-start-statuses .last-page b{margin:auto 0 0;font:500 35cqw/1 var(--book);color:#443642}
 #bibliotheque-app #elp-add-book .ep-start-statuses .last-page .end-rule{width:23%;height:1px;background:#9c868c;margin:6% 0 0}
+
+/* Le premier écran d’import suit les bords et la barre de l’accueil. */
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-form {
+  --page-edge: clamp(12px, 3vw, 30px);
+  --page-left: max(var(--page-edge), env(safe-area-inset-left));
+  --page-right: max(var(--page-edge), env(safe-area-inset-right));
+  max-width: 1060px;
+  margin-inline: auto;
+  padding: 0 var(--page-right) max(36px, env(safe-area-inset-bottom)) var(--page-left);
+}
+#bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav {
+  margin-inline: calc(-1 * var(--page-left)) calc(-1 * var(--page-right));
+  margin-block-end: 14px;
+  padding: max(var(--page-edge), env(safe-area-inset-top)) var(--page-right) 8px var(--page-left);
+  border-color: var(--rule);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-top-nav {padding-block-end:12px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button {inline-size:54px;block-size:54px}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital {
+  --cover:clamp(156px,22vw,210px);
+  --name:clamp(30px,4vw,38px);
+  --author:clamp(19px,2.55vw,24px);
+  --series:clamp(17px,2.25vw,21px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {gap:clamp(20px,3vw,32px)}
