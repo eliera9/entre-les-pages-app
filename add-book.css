@@ -776,11 +776,11 @@
 
 /* Choix du format et ses deux panneaux dépliables. */
 #bibliotheque-app #elp-add-book:not([data-step="next"]) {
-  --add-disc:34px; --add-icon:19px; --add-heading:30px; --add-question:15.5px;
+  --add-disc:34px; --add-icon:19px; --add-heading:30px; --add-question:17px;
   --add-ink:light-dark(#604259,#C5ADCC);
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) {
-  --add-disc:42px; --add-icon:23px; --add-heading:48px; --add-question:19px;
+  --add-disc:42px; --add-icon:23px; --add-heading:48px; --add-question:21px;
   --add-ink:light-dark(#51334D,#D4C5EE);
 }
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button {
@@ -808,8 +808,8 @@
   margin:4px 0 20px; min-block-size:0; text-align:center;
   font:400 var(--add-question)/1.35 "Baskervville Formulaire",Georgia,serif;
 }
-#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-question::after {
-  content:""; display:block; width:min(245px,65%); height:26px; margin:8px auto 0;
+#bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-question::before {
+  content:""; display:block; width:min(245px,65%); height:26px; margin:0 auto 8px;
   background:var(--add-ink); mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
   -webkit-mask:url("./art/etoile-entete.png") center / 114% auto no-repeat;
 }
@@ -829,7 +829,7 @@
 #bibliotheque-app #elp-add-book .ep-drop .ep-art-reader {inline-size:42px;block-size:42px}
 #bibliotheque-app #elp-add-book .ep-drop .ep-drop-detail {display:inline}
 #bibliotheque-app #elp-add-book .ep-drop .ep-drop-drag {display:none}
-#bibliotheque-app #elp-add-book .ep-digital {--cover:86px;--name:23px;--author:15px;--series:14px}
+#bibliotheque-app #elp-add-book .ep-digital {--cover:86px;--name:25px;--author:17px;--series:16px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital {--cover:116px;--name:26px;--author:16px;--series:15px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book {width:100%;max-width:none}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-form {max-width:none;margin-inline:auto;--space-x:clamp(12px,3vw,30px);padding-inline:max(var(--space-x),env(safe-area-inset-left)) max(var(--space-x),env(safe-area-inset-right))}
@@ -908,8 +908,8 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button {inline-size:54px;block-size:54px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital {
   --cover:clamp(156px,22vw,210px);
-  --name:clamp(30px,4vw,38px);
-  --author:clamp(19px,2.55vw,24px);
-  --series:clamp(17px,2.25vw,21px);
+  --name:clamp(33px,4.4vw,42px);
+  --author:clamp(21px,2.8vw,26px);
+  --series:clamp(19px,2.5vw,23px);
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {gap:clamp(20px,3vw,32px)}
