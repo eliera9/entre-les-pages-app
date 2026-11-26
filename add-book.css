@@ -855,15 +855,15 @@
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
   --device:#594455;--edge:light-dark(#b19ba2,#a292a7);--face:#f8f0e5;--screen-ink:#403640;
   --color:light-dark(#77495e,#ccaccb);--book:"Cormorant Garamond",Georgia,serif;--ui:"Source Sans 3 Formulaire",sans-serif;
-  --rd:54px;
+  container-type:inline-size;
+  --rd:clamp(55px,18cqw,88px);
 }
 #bibliotheque-app #elp-add-book .ep-start-status {
-  min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  padding:9px 3px;border-radius:8px;border:1px solid color-mix(in srgb,var(--color) 47%,var(--paper));
-  color:var(--color);background:color-mix(in srgb,var(--color) 8%,var(--paper));
+  min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  min-height:138px;padding:14px 3px;border-radius:8px;border:0;
+  color:var(--color);background:light-dark(#efe2df,#2b252a);
   font:400 14px/1.2 "EL EB Garamond",Georgia,serif;letter-spacing:.035em;
 }
-#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-start-statuses {--rd:62px}
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-start-status {font-size:16px}
 @media(prefers-reduced-motion:no-preference){
   #bibliotheque-app #elp-add-book .ep-start-status {animation:ep-status-arrival 1s .18s both ease-in-out}
