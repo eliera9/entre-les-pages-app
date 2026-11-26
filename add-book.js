@@ -1,4 +1,4 @@
-function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
+function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFolder, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
   const root=stage;
   const copy=selector=>root.querySelector(selector).content.cloneNode(true);
   const lifecycle=new AbortController();
@@ -107,6 +107,68 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const plus=get(".collection-plus");
     const trail=get(".collection-path");
     const isPal=()=>stage.hasAttribute("data-pal");
+    const editor=get("#ep-folder-inline");
+    const nameInput=get("#ep-folder-inline-name");
+    const submit=editor.querySelector('[type="submit"]');
+    const feedback=get("#ep-folder-inline-feedback");
+    let editVersion=0;
+    function closeEditor(focus=false) {
+      editVersion++;
+      editor.hidden=true;
+      plus.setAttribute("aria-expanded","false");
+      if (focus) plus.focus({preventScroll:true});
+    }
+    function editHere() {
+      if (!editor.hidden) {closeEditor(true);return;}
+      if (panel.hidden) {
+        panel.hidden=false;
+        disclosure.setAttribute("aria-expanded","true");
+        browse(selected);
+      }
+      editor.reset();
+      feedback.textContent="";
+      nameInput.removeAttribute("aria-invalid");
+      submit.disabled=false;
+      nameInput.readOnly=false;
+      editor.hidden=false;
+      plus.setAttribute("aria-expanded","true");
+      nameInput.focus();
+    }
+    editor.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const name=nameInput.value.trim();
+      if (submit.disabled) return;
+      if (!name) {
+        feedback.textContent="Donne un nom à ton dossier.";
+        nameInput.setAttribute("aria-invalid","true");
+        nameInput.focus();
+        return;
+      }
+      const version=editVersion;
+      submit.disabled=true;
+      nameInput.readOnly=true;
+      try {
+        const folder=await createLibraryFolder(name,browsing?.id ?? folderHome);
+        if (version!==editVersion || lifecycle.signal.aborted) return;
+        if (folder) {
+          browse(folder,true);
+          status.textContent="Dossier créé : "+folder.name;
+        } else {
+          feedback.textContent="Un dossier porte déjà ce nom ici.";
+          nameInput.setAttribute("aria-invalid","true");
+          nameInput.focus();
+        }
+      } catch {
+        if (version===editVersion) feedback.textContent="Le dossier n’a pas pu être créé. Réessaie.";
+      } finally {
+        if (version===editVersion) {submit.disabled=false;nameInput.readOnly=false;}
+      }
+    });
+    nameInput.addEventListener("input",()=>{feedback.textContent="";nameInput.removeAttribute("aria-invalid");});
+    editor.addEventListener("keydown",event=>{
+      if(event.key==="Escape"){event.preventDefault();closeEditor(true);}
+    });
+    get("[data-folder-inline-cancel]").addEventListener("click",()=>closeEditor(true));
     function paintTrail() {
       const chain=[],seen=new Set();
       for (let f=browsing; f && !seen.has(f.id); f=findFolder(f.parent)) {
@@ -128,6 +190,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     }
 
     function browse(folder, focusCards = false) {
+      closeEditor();
       browsing = folder;
       if (isPal()) paintTrail();
       choose.textContent=isPal() ? "Ranger ici" : "Choisir ce dossier";
@@ -145,6 +208,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
 
     function close(returnFocus = true) {
       if (panel.hidden) return false;
+      closeEditor();
       panel.hidden = true;
       disclosure.setAttribute("aria-expanded","false");
       if (returnFocus) disclosure.focus({preventScroll:true});
@@ -174,17 +238,13 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       if (browsing) select(browsing,"Dossier choisi : " + folderLabel(browsing));
     });
     function newFolder(trigger) {
-      if (panel.hidden && isPal()) browsing=selected;
+      if (isPal()) {editHere();return;}
       openFolderEditor({
         trigger,
         destination: browsing?.id ?? folderHome,
         home: folderHome,
         onCreated: (folder, destination) => {
           if (lifecycle.signal.aborted) return;
-          if (isPal()) {
-            panel.hidden=false;disclosure.setAttribute("aria-expanded","true");
-            browse(folder,true);status.textContent="Dossier créé : "+folder.name;return;
-          }
           select(folder,"",folder.name + " · " + destination);
         },
       });
@@ -193,7 +253,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     plus.addEventListener("click",()=>newFolder(plus));
     remove.addEventListener("click", () => select(null,"Dossier retiré."));
     renderSelection();
-    return {id: () => selected?.id ?? null, close, refresh:renderSelection};
+    return {id: () => selected?.id ?? null, close, refresh(){if(!isPal()) closeEditor(); renderSelection();}};
   }
 
   const datePartLabels={day:"Jour",month:"Mois",year:"Année"};

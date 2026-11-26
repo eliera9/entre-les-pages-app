@@ -421,7 +421,7 @@
 #bibliotheque-app #elp-add-book[data-pal] .ep-folder-disclosure {background:transparent;grid-template-columns:20px 1fr;flex:1;min-width:0;font-family:"Baskervville Formulaire",Georgia,serif}
 #elp-add-book[data-pal] .ep-folder-disclosure>:last-child,#elp-add-book[data-pal] :is(.ep-folder-parent,.ep-folder-add,[data-book-folder-path]) {display:none}
 #elp-add-book[data-pal] .collection-plus {display:block;border:0;background:none;color:var(--ep-accent);font:28px/1 Georgia;min-height:44px;min-width:44px}
-#elp-add-book[data-pal] .collection-bar:has([aria-expanded=true]) + .collection-path {display:block;margin-top:10px;color:var(--ep-muted);overflow-wrap:anywhere}
+#elp-add-book[data-pal] .collection-bar:has([aria-expanded=true]) ~ .collection-path {display:block;margin-top:10px;color:var(--ep-muted);overflow-wrap:anywhere}
 #elp-add-book[data-pal] .collection-path button {background:none;border:0;color:var(--ep-title);font:inherit;padding:6px 2px}
 #bibliotheque-app #elp-add-book[data-pal] .ep-folder-panel {border:0;background:none;padding:4px 0}
 #bibliotheque-app #elp-add-book[data-pal] [data-book-folder-grid]:not([hidden]) {display:grid;grid-template-columns:1fr;gap:0;list-style:none;padding:0;margin:0}
@@ -431,3 +431,13 @@
 #elp-add-book[data-pal] [data-book-folder-grid] button::after {content:"›";margin-inline-start:auto}
 #bibliotheque-app #elp-add-book[data-pal] .ep-confirm-zone .ep-access-primary {width:100%;display:flex;justify-content:center;align-items:center;background:#40303d;color:#dfd3df;border:0;border-radius:10px;box-shadow:none;min-height:48px;font:400 19px/1.25 "Baskervville Formulaire",Georgia,serif}
 #elp-add-book[data-pal] .collection-submit svg {width:22px;height:22px}
+
+#elp-add-book .collection-inline {display:none}
+#bibliotheque-app #elp-add-book[data-pal] .collection-inline:not([hidden]) {display:grid;gap:8px;margin:8px 0 0;padding:12px;border-radius:8px;background:var(--ep-card);color:var(--ep-title)}
+#elp-add-book .collection-inline label {font-size:16px}
+#elp-add-book .collection-inline input {box-sizing:border-box;width:100%;min-height:44px;padding:6px 10px;border-radius:6px;border:1px solid var(--ep-line);background:var(--ep-panel);color:var(--ep-title);font-size:16px}
+#elp-add-book .collection-inline-actions {display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#elp-add-book .collection-inline-actions button {min-height:44px;padding:5px 12px;border:0;border-radius:6px;background:var(--ep-pressed);color:var(--ep-title);font:inherit}
+#elp-add-book .collection-inline-actions [type=button] {background:transparent}
+#ep-folder-inline-feedback {margin:0}
+#ep-folder-inline-feedback:empty {display:none}

@@ -1826,6 +1826,15 @@ async function activateLibrary(root) {
     showFolderScreen('create', find(control));
   });
 
+  async function createLibraryFolder(name, parent) {
+    if (parent.startsWith('folder:') && !folders.some(folder => folder.id === parent)) throw Error('Dossier parent introuvable.');
+    const id = `folder:${crypto.randomUUID()}`;
+    const result = await storage.createFolder({name, nameKey: key(name), parent, id});
+    folders = result.folders;
+    if (!catalogueView.hidden) drawCollections();
+    return result.created ? folders.find(folder => folder.id === id) : null;
+  }
+
   function openFolderEditor({trigger = folderButton, destination, home, onCreated}) {
     if (folderDialog.open) return;
     showWindow();
@@ -1894,20 +1903,14 @@ async function activateLibrary(root) {
     find('[data-folder-open-index]').disabled = true;
     find('[data-folder-open-location]').disabled = true;
     try {
-      const id = `folder:${crypto.randomUUID()}`;
-      const result = await storage.createFolder({name, nameKey: key(name), parent, id});
-      folders = result.folders;
-      if (!catalogueView.hidden) drawCollections();
+      const created = await createLibraryFolder(name, parent);
       if (request !== folderRequest) return;
-      if (result.created) {
+      if (created) {
         if (bookFolderForm) {
-          const created = folders.find(folder => folder.id === id);
-          if (created) {
-            const {onCreated} = bookFolderForm;
-            closeFolderForm();
-            onCreated(created, destination);
-            return;
-          }
+          const {onCreated} = bookFolderForm;
+          closeFolderForm();
+          onCreated(created, destination);
+          return;
         }
         showFolderFeedback(`${name} · ${destination}`, 'success');
         folderName.value = '';
@@ -2769,6 +2772,7 @@ async function activateLibrary(root) {
       engine: coverReader,
       findFolder: id => folders.find(folder => folder.id === id),
       folderCards: bookFolderCards,
+      createLibraryFolder,
       folderLabel: folderPath,
       folderHome: scope === 'favorites' ? 'list:all' : folderTrail[0]?.folder.parent ?? folderParent(),
       initialFolder: currentFolder(),
