@@ -701,10 +701,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const summaryFrame=get('.ep-pal-summary');
   const summaryToggle=get('#ep-pal-summary-toggle');
   const summaryCopy=get('#ep-pal-summary-copy');
+  const summaryPanel=get('#ep-pal-summary-panel');
   let summaryBook=null;
   summaryToggle.addEventListener('click',()=>{
-    summaryCopy.hidden=!summaryCopy.hidden;
-    summaryToggle.setAttribute('aria-expanded',String(!summaryCopy.hidden));
+    summaryPanel.inert=!summaryPanel.inert;
+    summaryToggle.setAttribute('aria-expanded',String(!summaryPanel.inert));
   });
   summaryCopy.addEventListener('input',()=>{
     if (!currentBook) return;
@@ -715,7 +716,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     if (!book) return;
     if (summaryBook!==book){
       summaryBook=book;
-      summaryCopy.hidden=false;
+      summaryPanel.inert=false;
       summaryToggle.setAttribute('aria-expanded','true');
     } else if (document.activeElement===summaryCopy && editedSummaries.has(book)) return;
     const value=book.summary || '';
