@@ -367,24 +367,57 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return {clear,values};
   }
 
-  function separateSeriesTitle(book) {
-    const title=book.title?.trim();
-    if (!title) return;
-    const norm=value=>String(value || "").trim().toLocaleLowerCase("fr").replace(/\s+/g," ");
-    const number=value=>norm(value).replace(/^(?:tome|volume)\s*/,"").replace(",",".");
-    const prefix=title.match(/^(.+?)(?:\s*[-–—:,·]\s*|\s+)(?:tome|volume)\s+(\d+(?:[.,]\d+)?)(?:\s*[-–—:.·]\s*|\s+)(\S[\s\S]*)$/i);
-    if (prefix && (!book.series || norm(book.series)===norm(prefix[1])) &&
-        (!book.volume || number(book.volume)===number(prefix[2]))) {
-      book.series ||= prefix[1].trim();
-      book.volume ||= prefix[2];
-      book.title=prefix[3].trim();
-      return;
+  const meta=globalThis.BookMetadata;
+  const separateSeriesTitle=meta.separateTitle;
+  const selectedCovers=new WeakSet();
+  const coverAreas=new WeakMap();
+
+  function loadedCover(url, request, cors=false) {
+    return new Promise(resolve=>{
+      if (request.aborted) return resolve(null);
+      const img=new Image();
+      const done=result=>{
+        img.onload=img.onerror=null;
+        request.removeEventListener("abort",stop);
+        resolve(result);
+      };
+      const stop=()=>{done(null);img.removeAttribute("src");};
+      request.addEventListener("abort",stop,{once:true});
+      img.referrerPolicy="no-referrer";
+      if (cors) img.crossOrigin="anonymous";
+      img.onload=()=>done(img.naturalWidth>=40 && img.naturalHeight>=60 ? img : null);
+      img.onerror=()=>done(null);
+      img.src=url;
+    });
+  }
+  async function improveCover(book,candidates) {
+    if (selectedCovers.has(book)) return;
+    const urls=[...new Set([book.coverData,...candidates].map(meta.coverUrl).filter(Boolean))].slice(0,6);
+    if (!urls.length) return;
+    const request=AbortSignal.any([signal,AbortSignal.timeout(6000)]);
+    const images=await Promise.all(urls.map(async url=>({url,img:await loadedCover(url,request)})));
+    const best=images.filter(x=>x.img).sort((a,b)=>b.img.naturalWidth*b.img.naturalHeight-a.img.naturalWidth*a.img.naturalHeight)[0];
+    if (!best || signal.aborted || selectedCovers.has(book)) return;
+    const area=best.img.naturalWidth*best.img.naturalHeight;
+    if (area<=(coverAreas.get(book) || 0)) return;
+    // Readable originals can also have actual blank scan margins removed. A CORS-inaccessible
+    // image remains usable at full resolution by URL, including when the application comes back online.
+    let chosen=best.url;
+    const readable=await loadedCover(best.url,request,true);
+    if (readable && typeof engine.trimCover==="function") {
+      const ratio=Math.min(1,(engine.longEdge || 1800)/Math.max(readable.naturalWidth,readable.naturalHeight));
+      const canvas=document.createElement("canvas");
+      canvas.width=Math.max(1,Math.round(readable.naturalWidth*ratio));
+      canvas.height=Math.max(1,Math.round(readable.naturalHeight*ratio));
+      try {
+        canvas.getContext("2d").drawImage(readable,0,0,canvas.width,canvas.height);
+        const trimmed=engine.trimCover(canvas);
+        if (trimmed!==canvas) chosen=trimmed.toDataURL("image/jpeg",.95);
+      } catch { /* The original remains available. */ }
     }
-    const suffix=title.match(/^(.+?)(?:\s*\(\s*|\s+[-–—·]\s+)(.+?)(?:\s*[,·–—:-]\s*|\s+)(?:tome|volume)\s+(\d+(?:[.,]\d+)?)\s*\)?$/i);
-    if (suffix && norm(book.series)===norm(suffix[2]) &&
-        (!book.volume || number(book.volume)===number(suffix[3]))) {
-      book.volume ||= suffix[3];
-      book.title=suffix[1].trim();
+    if (!signal.aborted && !selectedCovers.has(book) && area>(coverAreas.get(book) || 0)) {
+      book.coverData=chosen;
+      coverAreas.set(book,area);
     }
   }
 
@@ -560,7 +593,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   const normTag=value=>String(value).normalize("NFKD").replace(/\p{M}/gu,"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
   const tropeNames=["Slow burn","Enemies to lovers","Friends to lovers","Found family","Fake dating","Forced proximity","Second chance","Grumpy / Sunshine","Forbidden love","Only one bed","Marriage of convenience","Love triangle","Touch her and die","Secret identity","Rivals to lovers","Brother’s best friend","Opposites attract","Who did this to you"];
   const aliases=new Map(Object.entries({"proximite forcee":"Forced proximity","faux couple":"Fake dating","famille choisie":"Found family","seconde chance":"Second chance","amour interdit":"Forbidden love","triangle amoureux":"Love triangle","mariage de convenance":"Marriage of convenience","un seul lit":"Only one bed","science fiction":"Science-fiction","historical fiction":"Fiction historique","contemporary romance":"Romance contemporaine","cozy mystery":"Cozy mystery"}));
-  function classify(book,data) {
+  function classify(book,data,prefer=false) {
     const fields=["genres","subgenres","tropes"];
     const indexes=fields.map(name=>new Map([...(name==="tropes" ? tropeNames : []),...bookTagOptions[name]].map(label=>[normTag(label),label])));
     const result=Object.fromEntries(fields.map(name=>[name,new Map()]));
@@ -573,8 +606,17 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       for (const i of [2,0,1]) if (indexes[i].has(key)) { add(fields[i],indexes[i].get(key)); return true; }
       return false;
     }
-    for (const name of fields) for (const label of [...(book[name] || []),...(data[name] || [])]) {
-      if (name!=="genres" || !subject(label)) add(name,label);
+    for (const name of fields) {
+      const values=prefer ? [...(data[name] || []),...(book[name] || [])] : [...(book[name] || []),...(data[name] || [])];
+      for (const label of values) {
+        if (typeof label!=="string" || /^(?:books?|livres?|fiction|literature|littérature|juvenile fiction|young adult fiction|general|non classé|inconnu)$/i.test(label.trim())) continue;
+        const canonical=aliases.get(normTag(label)) || label;
+        const k=normTag(canonical);
+        if (indexes[2].has(k)) add("tropes",indexes[2].get(k));
+        else if (name==="genres" && subject(canonical)) continue;
+        else if (name==="genres" && label.includes("/")) label.split(/\s*\/\s*/).forEach(subject);
+        else if (name!=="genres" || prefer || ["romance","manga","bande dessinee"].includes(k) || indexes[0].has(k)) add(name,canonical);
+      }
     }
     for (const label of [...(book.subjects || []),...(data.subjects || [])]) {
       if (typeof label==="string" && !subject(label)) label.split(/[/;,>|]/).forEach(subject);
@@ -599,7 +641,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=pages-tous");
+  const analysisModule=import("./promesse-form.js?v=pal-priorite-edition");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onDone(head) {
@@ -790,10 +832,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       currentBook.summary=editSummary.value.trim();
       editedSummaries.add(currentBook);
     }
+    if (editCoverCanvas) selectedCovers.add(currentBook);
     if (currentBook===digitalBook) {
       manualTitle.value=currentBook.title;
       titleField.hidden=true;
-      if (editCoverCanvas) setCover(editCoverCanvas);
+      if (editCoverCanvas) setCover(editCoverCanvas,true);
       else drawDigital();
     } else if (editCoverCanvas) {
       currentBook.coverData=engine.trimCover(editCoverCanvas).toDataURL("image/png");
@@ -822,7 +865,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       // The same catalogue adapters can reach the public sources from the device.
       if (action==="details") return serverData || {};
-      const {createCatalogue}=await import("./catalogue-engine.js?v=pages-tous");
+      const {createCatalogue}=await import("./catalogue-engine.js?v=pal-priorite-edition");
       if (query.paper && Number(query.page)>1) {
         if (serverData) return serverData;
         throw new Error("Recherche complémentaire indisponible.");
@@ -840,6 +883,10 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     const cached=catalogueCache.get(key);
     if (cached && cached.until>Date.now()) return cached.data;
     const data=await queryCatalogues("catalogue",query,requestSignal);
+    for (const book of data.books || []) {
+      separateSeriesTitle(book);
+      book.publicationDate=meta.publicationDate(book.publicationDate || book.publishedDate);
+    }
     if (!Array.isArray(data.books)) throw new Error("Catalogue indisponible.");
     if (!data.partial && !requestSignal.aborted) {
       if (catalogueCache.size>=30) catalogueCache.delete(catalogueCache.keys().next().value);
@@ -864,13 +911,23 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         else if (!literary?.summary && !literary?.genres?.length && !literary?.tropes?.length)
           analysisIssue.set(book,"Les sources consultées ne donnent pas assez d’indices pour analyser ce livre.");
         if (literary) {
+          const changed=editedFields.get(book);
+          if (!changed?.has("publicationDate")) book.publicationDate=meta.refineDate(book.publicationDate,literary.publicationDate);
           for (const key of ["series","volume","spinOffOf"]) {
             if (!book[key] && !editedFields.get(book)?.has(key) && literary[key]) book[key]=literary[key];
           }
-          for (const name of ["genres","subgenres","tropes"]) {
-            if (!editedTags.get(book)?.has(name) && Array.isArray(literary[name]) && literary[name].length)
-              book[name]=[...new Set([...literary[name],...(book[name] || [])])];
+          if (!["title","series","volume"].some(key=>changed?.has(key))) {
+            separateSeriesTitle(book);
+            if (typeof literary.title==="string" && literary.title.trim()) {
+              const original=normTag(book.title), proposed=normTag(literary.title);
+              const series=normTag(book.series || ""), volume=normTag(book.volume || "");
+              const remainder=original.startsWith(proposed+" ") ? original.slice(proposed.length).trim()
+                : original.endsWith(" "+proposed) ? original.slice(0,-proposed.length).trim() : "";
+              const markers=[series,volume,series+" "+volume,volume+" "+series];
+              if (!original || (remainder && markers.includes(remainder.replace(/\b(tome|t|vol|volume|book|livre) (?=\d)/g,"").trim()))) book.title=literary.title.trim();
+            }
           }
+          classify(book,literary,true);
           if (literary.summary && !editedSummaries.has(book)) book.summary=literary.summary;
           if (literary.ambiance) book.ambiance=literary.ambiance;
           if (literary.epoque) book.epoque=literary.epoque;
@@ -881,22 +938,25 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
         const sample=false;
         const eligible=book.id || query.isbn || query.author;
         const server=eligible ? queryCatalogues("details",query,request) : {};
-        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pages-tous").then(({createCatalogue})=>
+        const catalogues=eligible && !sample ? import("./catalogue-engine.js?v=pal-priorite-edition").then(({createCatalogue})=>
           createCatalogue([],request).details(new URLSearchParams(query))) : {};
         const stop=new Promise(resolve=>request.addEventListener("abort",()=>resolve({}),{once:true}));
         const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
-        return sources.then(notices=>{
+        return sources.then(async notices=>{
           if (!signal.aborted) {
             for (const data of notices) {
               classify(book,data);
+              if (!editedFields.get(book)?.has("publicationDate")) book.publicationDate=meta.refineDate(book.publicationDate,data.publicationDate);
               if (!editedSummaries.has(book) && !book.summary && data.summary) book.summary=data.summary;
-              for (const name of ["title","author","series","volume","isbn","coverData","publisher","publicationDate","language","pageCount"]) {
+              for (const name of ["title","author","series","volume","isbn","publisher","language","pageCount"]) {
                 if (book[name] || editedFields.get(book)?.has(name) || !data[name]) continue;
                 if (name==="pageCount" && (!Number.isInteger(data[name]) || data[name]<1)) continue;
                 book[name]=data[name];
               }
             }
             if (!["title","series","volume"].some(key=>editedFields.get(book)?.has(key))) separateSeriesTitle(book);
+            const covers=[...(book.coverCandidates || []),...notices.flatMap(row=>[...(row.coverCandidates || []),row.coverData])];
+            await improveCover(book,covers);
             completedMetadata.add(book);
           }
           return book.summary;
@@ -1041,7 +1101,10 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     original.setAttribute("aria-pressed",String(!useTrimmed));
     drawDigital();
   }
-  function setCover(canvas) {
+  function setCover(canvas,manual=false) {
+    if (!manual && (selectedCovers.has(digitalBook) || (coverAreas.get(digitalBook)||0)>canvas.width*canvas.height)) return;
+    if (manual) selectedCovers.add(digitalBook);
+    coverAreas.set(digitalBook,canvas.width*canvas.height);
     sourceCanvas=canvas;
     trimmedCanvas=engine.trimCover(canvas);
     coverModes.hidden=sourceCanvas===trimmedCanvas;
@@ -1053,7 +1116,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     return engine.imageCanvas(new Uint8Array(await file.arrayBuffer()));
   }
 
-  async function choosePdfPage(number,version=documentVersion) {
+  async function choosePdfPage(number,version=documentVersion,manual=false) {
     const ticket=++coverVersion;
     renderTask?.cancel();
     message("Préparation de la couverture…");
@@ -1064,7 +1127,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       });
       if (!current(version) || ticket!==coverVersion) return;
       renderTask=null;
-      setCover(canvas);
+      setCover(canvas,manual);
       for (const button of pages.querySelectorAll("button")) button.setAttribute("aria-pressed",String(Number(button.dataset.page)===number));
       message();
     } catch (error) {
@@ -1090,7 +1153,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       const label=document.createElement("span");
       label.textContent="Page "+number;
       button.append(image,label);
-      button.addEventListener("click",()=>choosePdfPage(number));
+      button.addEventListener("click",()=>choosePdfPage(number,documentVersion,true));
       pages.append(button);
     }
     if (current(version)) pages.hidden=pagesLabel.hidden=!pages.children.length;
@@ -1121,6 +1184,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       });
       else throw new Error("Choisis un fichier EPUB ou PDF reconnu.");
       if (!current(version)) return;
+      separateSeriesTitle(info);
       const fileName=file.name.replace(/\.(epub|pdf)$/i,"").trim();
       let started;
       if (format==="EPUB") {
@@ -1133,9 +1197,18 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       const matched=await matchDocument(info,fileName);
       if (!current(version)) return;
       const title=info.title || matched?.title || fileName;
-      const code=isbn(info.isbn || matched?.isbn || (matched?.isbns?.length===1 ? matched.isbns[0] : ""));
-      digitalBook={...matched,pageCount:info.pageCount || matched?.pageCount,publisher:info.publisher || matched?.publisher,language:info.language || matched?.language,
-        publicationDate:info.publicationDate || matched?.publicationDate || matched?.publishedDate,title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
+      const fileIsbn=isbn(info.isbn);
+      const identifiers=[matched?.isbn,...(matched?.isbns || [])].filter(Boolean).map(isbn);
+      const sameEdition=matched && (fileIsbn ? (isbn(matched.isbn)===fileIsbn || [...new Set(identifiers)].length===1 && identifiers.includes(fileIsbn)) :
+        info.publisher && normTag(info.publisher)===normTag(matched.publisher || "") &&
+        (matched.format===format || format==="EPUB" && matched.ebook===true) &&
+        (!info.language || !matched.language || normTag(info.language)===normTag(matched.language)));
+      const edition=sameEdition ? matched : {};
+      const code=fileIsbn || isbn(edition.isbn || (edition.isbns?.length===1 ? edition.isbns[0] : ""));
+      digitalBook={...matched,id:sameEdition ? matched.id : "",isbns:edition.isbns || [],
+        coverData:edition.coverData || "",coverCandidates:edition.coverCandidates || [],
+        pageCount:info.pageCount || edition.pageCount,publisher:info.publisher || edition.publisher,language:info.language || edition.language,
+        publicationDate:meta.refineDate(info.publicationDate,edition.publicationDate || edition.publishedDate),title,author:info.author || matched?.author || "",series:info.series || matched?.series || "",
         volume:info.volume || matched?.volume || "",isbn:code,format,file,summary:info.summary || matched?.summary || "",
         subjects:[...(info.subjects || []),...(matched?.subjects || [])]};
       const spinPattern=/\s*\(spin[- ]off\s+de\s+([^()]+)\)/i;
@@ -1208,15 +1281,15 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     try {
       const canvas=await readCoverImage(file);
       if (!current(version) || ticket!==coverVersion) return;
-      setCover(canvas);
+      setCover(canvas,true);
       message();
       for (const page of pages.querySelectorAll("button")) page.setAttribute("aria-pressed","false");
     } catch (error) {
       if (current(version) && ticket===coverVersion) message(error.message || "Cette image est illisible.");
     }
   });
-  cropped.addEventListener("click",()=>{if (trimmedCanvas) showCover(trimmedCanvas);});
-  original.addEventListener("click",()=>{if (sourceCanvas) showCover(sourceCanvas);});
+  cropped.addEventListener("click",()=>{if (trimmedCanvas){selectedCovers.add(digitalBook);showCover(trimmedCanvas);}});
+  original.addEventListener("click",()=>{if (sourceCanvas){selectedCovers.add(digitalBook);showCover(sourceCanvas);}});
 
   editButton.addEventListener("click",()=>{
     if (editForm.hidden) startEditing();

@@ -392,11 +392,15 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const volume = (seriesMeta && refine(seriesMeta, 'group-position')) || calibre('series_index') || '';
     const summary = named(metadata, 'description')[0]?.textContent.replace(/<[^>]+>/g, ' ').trim().slice(0, 1800) || '';
     let cover = null;
+    let coverArea = 0;
+    const visited = new Set();
     let coverIssue = '';
 
     for (const entry of [declared, guide].filter(Boolean)) {
       const path = archivePath(opfPath, entry.getAttribute('href'));
-      if (!path) continue;
+      if (!path || visited.has(path)) continue;
+      visited.add(path);
+      let candidate;
       try {
         const item = items.find(item => archivePath(opfPath, item.getAttribute('href')) === path);
         const type = item?.getAttribute('media-type') || '';
@@ -406,19 +410,30 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
             const doc = readText(wrapper);
             const image = [...named(doc, 'img'), ...named(doc, 'image')][0];
             const imagePath = archivePath(path, image?.getAttribute('src') || image?.getAttribute('href') || image?.getAttribute('xlink:href'));
-            if (imagePath) cover = await readEntry(archive, imagePath, 24 * MiB);
+            if (imagePath) candidate = await readEntry(archive, imagePath, 24 * MiB);
           }
         } else if (!type || rasterTypes.has(type)) {
-          cover = await readEntry(archive, path, 24 * MiB);
+          candidate = await readEntry(archive, path, 24 * MiB);
         }
-        if (cover) break;
+        const dimensions = candidate && imageSpec(candidate);
+        const area = dimensions ? dimensions.width * dimensions.height : 0;
+        if (candidate && area <= 48000000 && (!cover || area > coverArea) &&
+            (!dimensions || Math.max(dimensions.width, dimensions.height) <= 16000)) {
+          cover = candidate;
+          coverArea = area;
+        }
       } catch (error) {
         coverIssue = error.message;
       }
     }
 
+    const dates = named(metadata, 'date');
+    const event = node => (node.getAttribute('opf:event') || node.getAttributeNS('http://www.idpf.org/2007/opf', 'event') || '').toLowerCase();
+    const published = dates.filter(node => event(node) === 'publication');
+    const publicationDate = (published.length ? published : dates.filter(node => !event(node)))
+      .reduce((value, node) => globalThis.BookMetadata.refineDate(value, node.textContent), '');
     return {type: 'EPUB', pageCount, analysisContext:await readingSample(archive,opf,opfPath), publisher: named(metadata,'publisher')[0]?.textContent.trim(),
-      language: named(metadata,'language')[0]?.textContent.trim(), publicationDate: named(metadata,'date').find(node => !node.getAttribute('opf:event') || node.getAttribute('opf:event') === 'publication')?.textContent.trim(), title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
+      language: named(metadata,'language')[0]?.textContent.trim(), publicationDate, title, author, isbn, series, volume, summary, subjects: named(metadata, 'subject').slice(0,100).map(node => node.textContent.trim().slice(0,160)).filter(Boolean), cover, coverIssue};
   }
 
   async function fromPdf(bytes, track) {
@@ -440,7 +455,9 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const title = clean(metadata?.info?.Title);
     const author = clean(metadata?.info?.Author);
     const isbn = findIsbn(metadata?.metadata?.get('dc:identifier'));
-    return {type: 'PDF', document, title, author, isbn, subjects: String(metadata?.info?.Keywords || '').slice(0,5000).split(/[,;]/).map(item => item.trim()).filter(Boolean), TextLayer: pdf.TextLayer};
+    return {type: 'PDF', document, title, author, isbn,
+      publicationDate:globalThis.BookMetadata.publicationDate(metadata?.metadata?.get('prism:publicationdate')),
+      subjects: String(metadata?.info?.Keywords || '').slice(0,5000).split(/[,;]/).map(item => item.trim()).filter(Boolean), TextLayer: pdf.TextLayer};
   }
 
   function formatOf(bytes) {
@@ -549,8 +566,13 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
   }
 
   function cropRectangle({data, width, height}, targetWidth, targetHeight) {
+    // Only a narrow, uniform four-sided dark frame qualifies as a removable scan border.
+    const corners=[0,4*(width-1),4*width*(height-1),4*(width*height-1)];
+    const darkFrame=corners.every(i=>data[i+3]>=248 && Math.max(data[i],data[i+1],data[i+2])<=24 &&
+      [0,1,2].every(c=>Math.abs(data[i+c]-data[c])<=4));
     const background = (x, y) => {
       const i = 4 * (y * width + x);
+      if (darkFrame) return data[i+3]>=248 && Math.max(Math.abs(data[i]-data[0]),Math.abs(data[i+1]-data[1]),Math.abs(data[i+2]-data[2]))<=5;
       return data[i + 3] <= 10 || (data[i] >= 248 && data[i + 1] >= 248 && data[i + 2] >= 248);
     };
     const blank = (length, visit) => {
@@ -571,6 +593,11 @@ function createCoverReader({zip, getPdfEngine, createCanvas, parseXml, decodeIma
     const across = width - left - right;
     const top = run(height, y => blank(across, x => background(x + left, y)));
     const bottom = run(height, y => blank(across, x => background(x + left, height - 1 - y)));
+    if (darkFrame && (!left || !right || !top || !bottom ||
+        Math.max(left,right)>width*.08 || Math.max(top,bottom)>height*.08 ||
+        Math.max(left,right)>2*Math.min(left,right) || Math.max(top,bottom)>2*Math.min(top,bottom))) {
+      return {x:0,y:0,width:targetWidth,height:targetHeight};
+    }
     const x = Math.round(left * targetWidth / width);
     const y = Math.round(top * targetHeight / height);
     const croppedWidth = targetWidth - x - Math.round(right * targetWidth / width);
@@ -2672,6 +2699,7 @@ async function activateLibrary(root) {
     const imported = {
       genres: [], subgenres: [], tropes: [],
       ...existing, ...details, ...(existing && !statusChosen ? {} : readingFields),
+      saga: details.series ?? details.saga ?? existing?.saga ?? existing?.series ?? "",
       pageCount:pagesEdited ? promesse?.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || existing?.pageCount,
       ...(promesse ? {promesse:{...promesse,pages:pagesEdited ? promesse.pages : existing?.promesse?.pages || existing?.pages || details.pageCount || promesse.pages}} : {}),
       id: existing?.id ?? documentId ?? (catalogueId ? 'catalogue:' + catalogueId : 'paper:' + crypto.randomUUID()),
@@ -2683,6 +2711,7 @@ async function activateLibrary(root) {
       updatedAt: Date.now(),
       addedAt: existing?.addedAt ?? Date.now(),
     };
+    if (imported.status === 'À lire' && !imported.readingPriority) imported.readingPriority = 'Bientôt';
     if (imported.status === 'Terminé' && !imported.finishedAt && !imported.finishDateUnknown) imported.finishedAt = Date.now();
     const position = reading.readingPosition;
     if (position?.unit === 'chapter') imported.chapter = position.value;
@@ -2867,7 +2896,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=7');
+        const module = await import('./questionnaire.js?v=pal-priorite-edition');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,
@@ -3070,12 +3099,18 @@ async function activateLibrary(root) {
       return await new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => resolve(''); reader.readAsDataURL(blob); });
     } catch { return ''; }
   }
-  async function addToPile({title, author, saga, volume, image, publicationDate}) {
+  async function addToPile(source) {
+    const meta=globalThis.BookMetadata;
+    const {title,author,series,volume}=meta.separateTitle({title:source.title,author:source.author,series:source.saga || source.series,volume:source.volume});
+    const code=coverReader.findIsbn(String(source.isbn || ''));
+    const publicationDate=meta.publicationDate(source.publicationDate || source.date);
+    const image=meta.coverUrl(source.image || source.coverData);
+    const tags=name=>Array.isArray(source[name]) ? [...new Set(source[name].filter(value=>typeof value==='string' && value.trim()))] : [];
     const now = Date.now();
-    const book = {id: 'paper:' + crypto.randomUUID(), title, author: author || '', saga: saga || '', publicationDate, volume: volume ? String(volume) : '',
-      status: 'À lire', format: 'Papier', genres: [], subgenres: [], tropes: [], addedAt: now, updatedAt: now};
+    const book = {id: 'paper:' + crypto.randomUUID(), title, author: author || '', saga: series || '', publicationDate, volume: volume ? String(volume) : '',
+      isbn:code || '', status:'À lire',readingPriority:'Bientôt',format:'Papier',genres:tags('genres'),subgenres:tags('subgenres'),tropes:tags('tropes'),addedAt:now,updatedAt:now};
     const cover = image ? await imageAsData(image) : '';
-    if (cover) book.coverData = cover;
+    if (cover || image) book.coverData=cover || image;
     try { await storage.putBook(book); } catch { showStorageError(); return; }
     books.push(book);
     renderContent();
@@ -3111,7 +3146,7 @@ async function activateLibrary(root) {
           dialog.showModal();
           dialog.addEventListener('close', () => anchor.focus({preventScroll:true}), {once:true});
         },
-        onAdd: () => addToPile({title: next.title || group.name+', '+sub, author: group.author, saga: group.name, volume: next.position, publicationDate: next.date, image: next.image}),
+        onAdd: () => addToPile({...next,title: next.title || group.name+', '+sub, author: group.author, saga: group.name, volume: next.position, publicationDate: next.date, image: next.image}),
       })});
     }
     return out;

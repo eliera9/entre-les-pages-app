@@ -158,13 +158,25 @@ async function getJson(url, signal, init) {
 export async function fromGoogleBooks(book, signal, key = "") {
   const isbn = clean(book.isbn).replace(/[^0-9X]/gi, "");
   const q = /^97[89]\d{10}$/.test(isbn) ? `isbn:${isbn}` : `intitle:${clean(book.title)}${book.author ? ` inauthor:${clean(book.author)}` : ""}`;
-  const params = new URLSearchParams({q, maxResults: "3", printType: "books", fields: "items(volumeInfo(title,authors,industryIdentifiers,categories,pageCount,description,language))"});
+  const params = new URLSearchParams({q, maxResults: "3", printType: "books", fields: "items(volumeInfo(title,authors,industryIdentifiers,categories,pageCount,description,language,publisher,publishedDate),saleInfo(isEbook))"});
   if (key) params.set("key", key);
   const data = await getJson("https://www.googleapis.com/books/v1/volumes?" + params, signal);
-  const info = (data.items || []).map(item => item.volumeInfo || {}).filter(item =>
+  const info = (data.items || []).map(item => ({...item.volumeInfo, ebook:item.saleInfo?.isEbook})).filter(item =>
     sameNotice(book, item.title, item.authors || [], (item.industryIdentifiers || []).map(id => id.identifier)));
-  if (info.length !== 1) return {words: []};
+  const compact = value => String(value || "").replace(/[\s-]/g, "").toUpperCase();
+  const code = compact(book.isbn);
+  const edition = info.filter(item => {
+    if (code) return (item.industryIdentifiers || []).some(id => compact(id.identifier) === code);
+    const format = String(book.format || "").toLowerCase();
+    return Boolean(book.publisher && book.language &&
+      normalized(book.publisher) === normalized(item.publisher) && normalized(book.language) === normalized(item.language) &&
+      (["epub", "pdf", "numérique"].includes(format) ? item.ebook === true : format === "papier" && item.ebook === false));
+  });
+  const dates = [...new Set(edition.map(item => item.publishedDate).filter(Boolean))];
+  const publicationDate = dates.length === 1 ? dates[0] : "";
+  if (info.length !== 1) return {words: [], publicationDate};
   return {
+    publicationDate,
     words: info.flatMap(item => item.categories || []),
     pages: info.find(item => item.pageCount)?.pageCount,
     description: info.find(item => item.language === "fr" && item.description)?.description || "",
@@ -194,5 +206,5 @@ export async function guessPromesse(book, signal, {googleKey = ""} = {}) {
   const words = [book.title || "", book.series || book.saga || "", ...(book.genres || []), ...(book.subgenres || []), ...(book.tropes || []), ...found.flatMap(item => item.words || [])];
   const pages = found.find(item => item.pages)?.pages;
   const description = book.summary || found.find(item => item.description)?.description || "";
-  return {promesse: mapSignals({words, pages}), words, description, romance: isRomance({genres: words}), sources: status};
+  return {promesse: mapSignals({words, pages}), words, description, catalogueWords:found.flatMap(item=>item.words || []), publicationDate:found.find(item=>item.publicationDate)?.publicationDate || "", romance: isRomance({genres: words}), sources: status};
 }

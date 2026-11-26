@@ -89,7 +89,7 @@ function mountSavedBook({root, host, book, storage, engine, setReaderTheme, book
         } catch { /* Une notice peut compléter un fichier indisponible. */ }
       }
       if (!pages && !scope.signal.aborted && (code || book.title && book.author)) {
-        const {createCatalogue}=await import('./catalogue-engine.js?v=pages-tous');
+        const {createCatalogue}=await import('./catalogue-engine.js?v=pal-priorite-edition');
         const query=new URLSearchParams({id:book.catalogueId || '',isbn:code,title:book.title || '',
           author:book.author || '',volume:book.volume || '',publisher:book.publisher || '',format:book.format});
         const edition=await createCatalogue([],scope.signal).details(query);

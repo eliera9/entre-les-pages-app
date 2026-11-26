@@ -775,7 +775,8 @@
 #bibliotheque-app #elp-add-book :is(.ep-promesse, .ep-promesse-track, .ep-promesse-slide, .ep-promesse-check) { position:relative; }
 
 /* Choix du format et ses deux panneaux dépliables. */
-#bibliotheque-app #elp-add-book:not([data-step="next"]) {
+#bibliotheque-app #elp-add-book:not([data-step="next"]),
+#bibliotheque-app[data-format="phone"] #elp-add-book[data-pal] {
   --add-disc:34px; --add-icon:19px; --add-heading:30px; --add-question:15.5px;
   --add-ink:light-dark(#604259,#C5ADCC);
 }
@@ -792,11 +793,11 @@
   background:var(--tint);
 }
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav .ep-icon-button svg,
-#bibliotheque-app[data-format="tablet"] #elp-add-book[data-pal] .ep-top-nav .ep-icon-button svg {
+#bibliotheque-app[data-format] #elp-add-book[data-pal] .ep-top-nav .ep-icon-button svg {
   width:var(--add-icon); height:var(--add-icon);
 }
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-close span,
-#bibliotheque-app[data-format="tablet"] #elp-add-book[data-pal] .ep-close span {font:400 var(--add-icon)/1 Arial,sans-serif}
+#bibliotheque-app[data-format] #elp-add-book[data-pal] .ep-close span {font:400 var(--add-icon)/1 Arial,sans-serif}
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-header,
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-title {display:block; text-align:center}
 #bibliotheque-app #elp-add-book:not([data-step="next"]) :is(.ep-art-open,.ep-tablet-decoration) {display:none}
@@ -891,9 +892,9 @@
 #bibliotheque-app #elp-add-book .ep-start-statuses .last-page b{margin:auto 0 0;font:500 35cqw/1 var(--book);color:#443642}
 #bibliotheque-app #elp-add-book .ep-start-statuses .last-page .end-rule{width:23%;height:1px;background:#9c868c;margin:6% 0 0}
 
-/* Le choix du livre et sa fiche tablette partagent le même cadre. */
+/* Le choix du livre et sa fiche PAL partagent le même cadre. */
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-form,
-#bibliotheque-app[data-format="tablet"] #elp-add-book[data-pal] .ep-form {
+#bibliotheque-app[data-format] #elp-add-book[data-pal] .ep-form {
   --page-edge: clamp(12px, 3vw, 30px);
   --page-left: max(var(--page-edge), env(safe-area-inset-left));
   --page-right: max(var(--page-edge), env(safe-area-inset-right));
@@ -902,7 +903,7 @@
   padding: 0 var(--page-right) max(36px, env(safe-area-inset-bottom)) var(--page-left);
 }
 #bibliotheque-app #elp-add-book:not([data-step="next"]) .ep-top-nav,
-#bibliotheque-app[data-format="tablet"] #elp-add-book[data-pal] .ep-top-nav {
+#bibliotheque-app[data-format] #elp-add-book[data-pal] .ep-top-nav {
   margin-inline: calc(-1 * var(--page-left)) calc(-1 * var(--page-right));
   margin-block-end: 14px;
   padding: max(var(--page-edge), env(safe-area-inset-top)) var(--page-right) 8px var(--page-left);
@@ -918,3 +919,9 @@
   --series:clamp(19px,2.5vw,23px);
 }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {gap:var(--pal-book-gap)}
+#bibliotheque-app #elp-add-book .ep-cover:has(img:not([hidden])) {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}

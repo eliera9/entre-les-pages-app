@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de 6 questions (5 hors romance).
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=5";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, isRomance, guessPromesse, fillGaps} from "./promesse.js?v=pal-priorite-edition";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -41,6 +41,8 @@ const analyses=new WeakMap();
 
 async function askServer(book, context, signal) {
   const params={title:book.title || "",author:book.author || "",isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : "") || "",
+    series:book.series || book.saga || "",volume:book.volume || "",publicationDate:book.publicationDate || "",
+    publisher:book.publisher || "",language:book.language || "",format:book.format || book.type || "",
     genres:[...(book.genres || []),...(book.subgenres || []),...(book.subjects || [])].slice(0,20).join("|"),
     summary:(book.summary || "").slice(0,4000),toc:context?.toc,opening:context?.opening,ending:context?.ending};
   const {data,error}=await compteLecture.db.functions.invoke("catalogue",{body:{action:"promesse",params},signal});

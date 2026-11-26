@@ -15,6 +15,14 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   <div class="rangee-genre-date">
    <div class="recherche-genre"><button type="button" class="jeton" data-champ="genre" aria-label="Modifier le genre"></button></div>
    <div class="bloc-parution"><span class="intitule-sortie"><i class="icone-agenda" aria-hidden="true"></i>Date de sortie</span><div class="champs-date" role="group" aria-label="Date de sortie"></div></div>
+   <div class="priorite-lecture">
+    <label class="intitule-sortie" for="ep-priorite">Priorité</label>
+    <span class="glissiere">
+     <span class="piste-priorite" aria-hidden="true"><span class="avancement-priorite"></span><i class="cran-central"></i><i class="poignee-priorite"></i></span>
+     <input id="ep-priorite" type="range" min="0" max="2" step="1" value="1" aria-label="Priorité de lecture" aria-valuetext="Bientôt">
+    </span>
+    <output for="ep-priorite" aria-live="off">Bientôt</output>
+   </div>
   </div>
  </div>
  <section class="palette" id="ep-pal-palette" hidden><label class="barre-ecrire"><input class="saisie-genre" type="text" autocomplete="off" enterkeyhint="done"></label>
@@ -30,6 +38,23 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  const blocDate=livre.querySelector('.bloc-parution'),champs=blocDate.querySelector('.champs-date'),apercu=root;
  const donnees={genre:'',subgenres:[],tropes:[]};
  let book=null,coverKey='';
+ const priorite=livre.querySelector('.priorite-lecture');
+ const curseur=priorite.querySelector('input');
+ const niveaux=['Plus tard','Bientôt','En premier'];
+ function afficherPriorite(niveau){
+  const position=niveaux.indexOf(niveau);
+  const index=position<0?1:position;
+  curseur.value=String(index);
+  curseur.setAttribute('aria-valuetext',niveaux[index]);
+  priorite.style.setProperty('--position-priorite',index*50+'%');
+  priorite.querySelector('output').value=niveaux[index];
+ }
+ curseur.addEventListener('input',()=>{
+  if(!book)return;
+  const niveau=niveaux[curseur.valueAsNumber];
+  change(book,'readingPriority',niveau);
+  afficherPriorite(niveau);
+ });
  function el(tag,cl,tx){const n=document.createElement(tag);if(cl)n.className=cl;if(tx!==undefined)n.textContent=tx;return n}
  function bouton(tx,cl,fn){const b=el('button',cl,tx);b.type='button';b.addEventListener('click',fn);return b}
  function afficher(c){
@@ -307,8 +332,10 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   const empiles=disposition.flexDirection==='column';
   const premier=empiles?blocDate:boutonGenre.parentElement;
   if(ligneGenreDate.firstElementChild!==premier)ligneGenreDate.prepend(premier);
-  const largeurDate=empiles?0:blocDate.getBoundingClientRect().width+parseFloat(disposition.columnGap);
-  const libre=ligneGenreDate.clientWidth-largeurDate;
+  const ecart=parseFloat(disposition.columnGap)||0;
+  const libre=empiles
+   ? Math.min(ligneGenreDate.clientWidth*.56,ligneGenreDate.clientWidth-priorite.offsetWidth-ecart)
+   : ligneGenreDate.clientWidth-blocDate.getBoundingClientRect().width-priorite.offsetWidth-2*ecart;
   const base=parseFloat(style.fontSize);
   mesures.font=style.fontWeight+' '+base+'px '+style.fontFamily;
   const motLarge=Math.max(...(donnees.genre||'Ajouter un genre').split(/\s+/).map(v=>mesures.measureText(v).width+v.length*parseFloat(style.letterSpacing||0)));
@@ -365,6 +392,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   if(!next)return;
   if(book!==next){effacerOuverture();replier();coverKey=''}
   book=next;
+  afficherPriorite(book.readingPriority);
   for(const field of champsTexte)if(document.activeElement!==field)field.textContent=String(book[field.dataset.texte]??'');
   const spin=livre.querySelector('.spin');spin.hidden=!book.spinOffOf;spin.textContent=spin.hidden?'':'Spin-off de '+book.spinOffOf;
   const currentKey=JSON.stringify([book.title,book.coverData]);

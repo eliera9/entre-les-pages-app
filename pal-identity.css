@@ -199,3 +199,150 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .item { column-gap: 7px; }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .palette { --taille-genre: 19; --taille-multiple: 16; }
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .saisie-genre { font-size: 18px; }
+
+#bibliotheque-app[data-format="phone"] #elp-add-book[data-pal] .ep-top-nav {
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book[data-pal] .ep-top-group {
+  gap: clamp(5px, 2vw, 8px);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .pal-nav-title {
+  font-size: clamp(12px, calc(5.8vw - 8px), 16px);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .livre {
+  --book-gap: clamp(22px, 7cqw, 34px);
+  grid-template-columns: 1fr [cover] min(25%, 86px) [divider] var(--book-gap)
+    [copy] fit-content(min(54cqw, 174px)) [end-copy] 1fr;
+  gap: clamp(13px, 4cqw, 19px) 0;
+  padding-top: 6px;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .couverture {
+  grid-column: cover / divider;
+  grid-row: 1;
+  align-self: center;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .couverture::after {
+  right: calc(var(--book-gap) / -2);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .identite {
+  display: contents;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .texte-infos {
+  grid-column: copy / end-copy;
+  grid-row: 1;
+  min-width: 0;
+  align-self: center;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .titre-livre {
+  margin-bottom: 6px;
+  text-wrap: balance;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .autrice {
+  margin-bottom: 6px;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .rangee-genre-date {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+  justify-content: center;
+  gap: clamp(18px, 7cqw, 34px);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .collection {
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .collection .mot {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#bibliotheque-app #elp-add-book .ep-pal-identity .priorite-lecture {
+  --teinte-priorite: light-dark(#81516e,#d1b0d1);
+  --rail-priorite: light-dark(#d6c1cb,#655164);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-width: 0;
+  color: var(--prune);
+}
+#bibliotheque-app #elp-add-book .priorite-lecture .glissiere {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 22px;
+}
+#bibliotheque-app #elp-add-book .glissiere input {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  touch-action: pan-y;
+}
+#bibliotheque-app #elp-add-book .glissiere input::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; }
+#bibliotheque-app #elp-add-book .glissiere input::-moz-range-thumb { width:18px; height:18px; border:0; }
+#bibliotheque-app #elp-add-book .piste-priorite {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+  background: var(--rail-priorite);
+  border-radius: 3px;
+}
+#bibliotheque-app #elp-add-book .avancement-priorite {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--position-priorite,50%);
+  background: var(--teinte-priorite);
+}
+#bibliotheque-app #elp-add-book .piste-priorite::before,
+#bibliotheque-app #elp-add-book .piste-priorite::after,
+#bibliotheque-app #elp-add-book .cran-central {
+  content: "";
+  position: absolute;
+  top: 50%;
+  height: 9px;
+  width: 2px;
+  left: 0;
+  border-radius: 2px;
+  background: var(--rail-priorite);
+  transform: translate(-50%,-50%);
+}
+#bibliotheque-app #elp-add-book .cran-central { left:50%; }
+#bibliotheque-app #elp-add-book .piste-priorite::after { left:100%; }
+#bibliotheque-app #elp-add-book .poignee-priorite {
+  position: absolute;
+  left: var(--position-priorite,50%); top: 50%;
+  width: 11px; height: 11px;
+  border-radius: 2px;
+  background: var(--teinte-priorite);
+  transform: translate(-50%,-50%) rotate(45deg);
+  z-index: 1;
+}
+#bibliotheque-app #elp-add-book .glissiere:has(:focus-visible) .poignee-priorite { outline:2px solid var(--teinte-priorite);outline-offset:3px; }
+#bibliotheque-app #elp-add-book .priorite-lecture output { font:14px/1.2 "Baskervville Formulaire",Georgia,serif; text-align:center; }
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .rangee-genre-date { gap:clamp(6px,3cqw,18px); }
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-pal-identity .priorite-lecture { flex:0 0 clamp(64px,25cqw,98px); }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .rangee-genre-date {
+  display:grid;
+  grid-template-columns:fit-content(56%) minmax(0,1fr);
+  align-items:center;
+  column-gap:clamp(16px,3cqw,32px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .bloc-parution { grid-column:1/-1; grid-row:1; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .recherche-genre { grid-column:1; grid-row:2; }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-pal-identity .priorite-lecture { grid-column:2; grid-row:2; width:min(100%,132px); }
+#bibliotheque-app[data-format="tablet"] #elp-add-book .priorite-lecture output { font-size:clamp(17px,2.5cqw,21px); }
+#bibliotheque-app #elp-add-book .ep-pal-identity .couverture .ep-cover:has(img:not([hidden])) {
+  aspect-ratio:auto; background:transparent; border:0; border-radius:0; box-shadow:none; padding:0;
+}
+#bibliotheque-app #elp-add-book .ep-pal-identity .couverture .ep-cover img { height:auto; object-fit:contain; border-radius:0; }

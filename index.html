@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre les pages">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.hardcover.app https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org https://www.googleapis.com https://*.hardcover.app; object-src 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://*.hardcover.app https://*.mzstatic.com https://covers.openlibrary.org https://openapi.bnf.fr https://books.google.com https://books.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; connect-src 'self' https://onbizlpuzybodnmdtacx.supabase.co https://itunes.apple.com https://catalogue.bnf.fr https://openlibrary.org https://www.googleapis.com https://*.hardcover.app; object-src 'none'; base-uri 'none'">
 <style>
 #app-lecture[data-starting] { visibility: hidden !important; }
 html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))),
@@ -26,19 +26,20 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=12">
-<link rel="stylesheet" href="./add-book.css?v=pal-tablette-texte-centre">
+<link rel="stylesheet" href="./add-book.css?v=pal-priorite-edition">
 <link rel="stylesheet" href="./questionnaire.css?v=3">
-<script defer src="./book-scan.js?v=1"></script>
+<script defer src="./book-metadata.js?v=pal-priorite-edition"></script>
+<script defer src="./book-scan.js?v=pal-priorite-edition"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<link rel="stylesheet" href="./pal-identity.css?v=pal-tablette-texte-centre">
-<script defer src="./pal-identity.js?v=pal-tablette-texte-centre"></script>
-<script defer src="./add-book.js?v=pal-identite-date"></script>
+<link rel="stylesheet" href="./pal-identity.css?v=pal-priorite-edition">
+<script defer src="./pal-identity.js?v=pal-priorite-edition"></script>
+<script defer src="./add-book.js?v=pal-priorite-edition"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=pages-tous"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=pal-priorite-edition"></script>
 <script defer src="./reading-status.js"></script>
-<script defer src="./app.js?v=pages-tous"></script>
+<script defer src="./app.js?v=pal-priorite-edition"></script>
 </head>
 <body>
 <main hidden id="elp-connexion" data-theme="light" data-format="phone" data-art="medaillon" data-signature="capitales"
