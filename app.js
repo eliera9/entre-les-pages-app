@@ -2767,7 +2767,7 @@ async function activateLibrary(root) {
     }
   }
 
-  function showAddBook() {
+  function showAddBook(existing, returnToBook) {
     const template = find('template[data-add-book-template]');
     addBookPage.append(template.content.cloneNode(true));
     addBookPage.hidden = false;
@@ -2782,10 +2782,23 @@ async function activateLibrary(root) {
       createLibraryFolder,
       folderLabel: folderPath,
       folderHome: scope === 'favorites' ? 'list:all' : folderTrail[0]?.folder.parent ?? folderParent(),
-      initialFolder: currentFolder(),
+      initialFolder: existing ? folders.find(f => f.id === existing.folderIds?.[0]) : currentFolder(),
+      initialBook: existing,
       openFolderEditor,
-      saveBook: saveAddedBook,
-      close: returnFromSecondary,
+      saveBook: existing ? async (draft, reading, folderId, current) => {
+        const changes = {};
+        for (const field of ['title','author','series','volume','spinOffOf','genres','subgenres','tropes','summary','summarySource','publicationDate','pageCount','readingPriority','coverData']) {
+          if (field in draft) changes[field] = draft[field];
+        }
+        changes.saga = draft.series ?? existing.saga;
+        changes.promesse = {...existing.promesse,...reading.promesse};
+        const previous = existing.folderIds || [];
+        changes.folderIds = [...new Set([folderId,...previous.slice(1)].filter(Boolean))];
+        const updated = await storage.patchBook(existing.id,changes);
+        Object.assign(existing,updated);
+        if (current()) returnToBook();
+      } : saveAddedBook,
+      close: existing ? returnToBook : returnFromSecondary,
       home() {
         setScope('home');
         window.scrollTo({top: 0, behavior: 'instant'});
@@ -3446,6 +3459,7 @@ async function activateLibrary(root) {
         sidebarToggle.focus({preventScroll:true});
       }
       disposeBook = mountSavedBook({
+        editPal: () => openSecondary('add', book, source, {fromLibrary}),
         releaseWatch, folderChoices: () => folders.map(folder => ({id:folder.id,name:folderPath(folder)})),
         root, host: bookHost, book, storage, engine: coverReader, bookTagOptions, refreshIcons, home: fromLibrary ? returnFromSecondary : home,
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
@@ -3485,7 +3499,7 @@ async function activateLibrary(root) {
       otherBody.append(settings);
     }
     if (view === 'add') {
-      showAddBook();
+      showAddBook(book, () => openSecondary('book',book,source,{fromLibrary}));
       return;
     }
     if (view === 'collections') for (const entry of collections) otherBody.append(button(entry.name,'menu-row',() => setScope('collection',entry)));

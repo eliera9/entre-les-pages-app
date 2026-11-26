@@ -439,3 +439,56 @@ export function mountPromesse(section, {onPages, signal} = {}) {
   render();
   return {collect, prefill, retry, clear, values, setVisible};
 }
+
+export function renderPalDetail(root,book,save,statusChange) {
+  const node=(tag,cls,text)=>make(tag,cls,text);
+  const hero=node('div','pal-detail-hero'), meta=node('div','pal-detail-meta');
+  const cover=node('img','pal-detail-cover');cover.alt=book.title;
+  if(book.coverData)cover.src=book.coverData;else cover.hidden=true;
+  hero.append(cover,meta);
+  const title=node('div','pal-detail-title');
+  title.append(node('h1','',book.title));
+  const info=node('details','pal-detail-info'), icon=node('summary','','ⓘ');
+  icon.setAttribute('aria-label','Informations sur l’édition');
+  const pages=book.promesse?.pages || book.pageCount || book.pages;
+  info.append(icon,node('div','',[book.publicationDate && 'Date de sortie · '+book.publicationDate,pages && pages+' pages'].filter(Boolean).join(' · ') || 'Informations indisponibles'));
+  title.append(info);meta.append(title);
+  const series=book.spinOffOf ? 'Spin-Off de '+book.spinOffOf : [book.series || book.saga,book.volume && (/^tome/i.test(book.volume)?book.volume:'Tome '+book.volume)].filter(Boolean).join(' · ');
+  for(const [cls,text] of [['author',book.author],['series',series],['genre',(book.genres || []).join(' · ')]])if(text)meta.append(node('div',cls,text));
+  const controls=node('div','pal-detail-controls');
+  function select(label,choices,value,change){
+    const field=node('label','',label), input=node('select');
+    for(const [key,name] of choices)input.add(new Option(name,key));
+    input.value=value;input.onchange=()=>save(change(input.value));field.append(input);controls.append(field);
+  }
+  select('Statut',[['À lire','À lire'],['En cours','En cours'],['Terminé','Lu']],book.status,v=>statusChange(book,v));
+  select('Priorité',[['Plus tard','À lire plus tard'],['Bientôt','À lire bientôt'],['En premier','À lire en priorité']],book.readingPriority||'Bientôt',v=>({readingPriority:v}));
+  meta.append(controls);root.replaceChildren(hero);
+  const tags=node('div','pal-detail-tags');
+  for(const [label,values] of [['Sous-genres',book.subgenres],['Tropes',book.tropes]])if(values?.length){
+    const row=node('div');row.append(node('i','',label),node('span','',values.join(' · ')));tags.append(row);
+  }
+  if(tags.childElementCount)root.append(tags);
+  function heading(label,art){const h=node('h2');h.innerHTML=art;h.append(document.createTextNode(label));return h;}
+  if(book.summary)root.append(heading('Résumé',svg('<path d="M6 26 24 7M9 21C7 10 18 4 27 4c-1 10-7 19-18 17z"/>')),node('p','pal-detail-summary',book.summary));
+  const promise=book.promesse || {},rows=node('div','pal-detail-rows');
+  for(const slide of [...SLIDES,SPICE_SLIDE]){
+    const key=slide.key,value=promise[key];
+    if(value==null)continue;
+    const row=node('section'),h=node('h3');h.innerHTML=ICONS[key];h.append(node('span','',slide.title));row.append(h);
+    if(slide.list){
+      const selected=slide.list.filter(([id])=>Array.isArray(value)&&value.includes(id));
+      if(!selected.length)continue;
+      if(key==='decor'){
+        const gallery=node('div','pal-detail-gallery');
+        for(const [id,label] of selected){const fig=node('figure'),img=node('img');img.src='./art/pal-decors/'+id+'.webp';img.alt='';fig.append(img,node('figcaption','',label));gallery.append(fig);}row.append(gallery);
+      }else row.append(node('p','',selected.map(x=>x[1]).join(' · ')));
+    }else{
+      const level=(key==='spice'?SPICE:NOIRCEUR).find(x=>x[0]===Number(value));if(!level)continue;
+      if(key==='spice'){const peppers=node('div','pal-detail-peppers');for(let i=1;i<=5;i++){const s=node('span',i<=value?'on':'');s.innerHTML=ICONS.piment;peppers.append(s);}row.append(peppers);}
+      row.append(node('p','',key==='spice'?level[2]:level.slice(1).join(' · ')));
+    }
+    rows.append(row);
+  }
+  if(rows.childElementCount)root.append(heading('Ce qu’il me promet',ICONS.pages),rows);
+}

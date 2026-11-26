@@ -21,7 +21,7 @@ function trackSpeed(printedPage, percent) {
 }
 let speedBook = null;
 
-function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
   speedBook = book;
   speedLast = null;
   const scope = new AbortController();
@@ -101,6 +101,10 @@ function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage,
     })().catch(()=>{});
   }
 
+  const detail = document.createElement('article');
+  detail.className = 'pal-saved-detail';
+  access.before(detail);
+  const detailModule = import('./promesse-form.js?v=fiche-pal-complete');
   function renderStatus() {
     const key = Object.keys(statuses).find(id => statuses[id][0] === book.status);
     const label = statuses[key]?.[1] || book.status || statuses.pile[1];
@@ -173,6 +177,15 @@ function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage,
     }
     setText('[data-summary-copy]', book.summary);
     renderStatus();
+    const pal = viewing && book.status === 'À lire';
+    detail.hidden = !pal;
+    if (pal) {
+      preview.hidden = summary.hidden = true;
+      detailModule.then(module => {
+        if (scope.signal.aborted || detail.hidden) return;
+        module.renderPalDetail(detail,book,async changes => {if(await save(changes))render();},readingStatusChange);
+      });
+    }
     favorite.setAttribute('aria-pressed', String(book.coupDeCoeur === true));
   }
 
@@ -249,6 +262,8 @@ function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage,
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = label;
+    const art = {'Suivre l’auteur':'feather','Ne plus suivre l’auteur':'feather','Gérer les dossiers':'folder','Supprimer':'trash-2'}[label];
+    if(art) button.dataset.actionArt=art;
     button.onclick = handler;
     actions.append(button);
     return button;
@@ -305,6 +320,7 @@ function mountSavedBook({releaseWatch, folderChoices, root, host, book, storage,
     container.append(img);
   }
   on(edit, 'click', () => {
+    if (book.status === 'À lire') {editPal();return;}
     if (mode === 'edit') {form.requestSubmit(); return;}
     setPopup(false); setDelete(false);
     mode = 'edit';

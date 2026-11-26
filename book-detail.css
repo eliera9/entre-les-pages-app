@@ -704,3 +704,28 @@
 .pal-book-actions [aria-pressed=true]::before{content:'✓ '}
 #bibliotheque-app #elp-saved-book .ep-reader-access{width:100%;max-width:none;margin:24px 0 0}
 #bibliotheque-app #elp-saved-book .ep-reader-access button.ep-read-book{width:100%;max-width:none;min-height:54px;border:0;border-radius:9px;background:light-dark(#dfc9cd,#503848);color:light-dark(#51334d,#ebdcef);font:600 20px/1.2 "Baskervville Formulaire",Georgia,serif;animation:none;justify-content:center}
+
+.pal-saved-detail{font:17px/1.44 'Baskervville Formulaire',Georgia,serif;color:var(--ep-title);width:100%;text-align:left}
+.pal-detail-hero{display:grid;grid-template-columns:30% minmax(0,1fr);gap:12px;align-items:center}
+.pal-detail-cover{width:100%;height:auto;max-height:34vh;object-fit:contain}
+.pal-detail-meta{min-width:0;border-left:1px solid var(--ep-line);padding-left:12px;overflow-wrap:anywhere}
+.pal-detail-title,.pal-detail-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pal-detail-title h1{font:clamp(28px,7vw,48px)/1.1 'Cormorant Garamond',Georgia,serif;margin:0}
+.pal-detail-info{position:relative}.pal-detail-info summary{cursor:pointer;list-style:none}.pal-detail-info div{position:absolute;z-index:2;right:0;background:var(--ep-card);width:140px;padding:8px;border-radius:8px}
+.pal-detail-meta .author{font-size:1.3em}.pal-detail-meta .genre,.pal-detail-tags{background:var(--ep-card);padding:5px 10px;border-radius:8px}.pal-detail-meta .genre{display:table;border-radius:24px;margin:8px 0}
+.pal-detail-controls label{font:13px/1.4 sans-serif;min-width:0}.pal-detail-controls select{display:block;max-width:100%;color:inherit;background:var(--ep-card);border:0;border-radius:6px;padding:6px 2px;font:14px Georgia}
+.pal-detail-tags{margin-top:18px;font-size:16px}.pal-detail-tags i{display:block}.pal-detail-tags div+div{border-top:1px solid var(--ep-line);margin-top:7px;padding-top:7px}
+.pal-saved-detail h2{display:flex;align-items:center;justify-content:center;gap:8px;font:26px 'Instrument Serif Formulaire',Georgia;margin:26px 0 14px}.pal-saved-detail h2:before,.pal-saved-detail h2:after{content:'';height:1px;width:min(17%,150px);background:var(--ep-line)}
+.pal-saved-detail svg{width:24px;height:24px;flex:none}.pal-detail-summary{white-space:pre-line}.pal-detail-rows section{border-bottom:1px solid var(--ep-line);padding:14px 0}.pal-detail-rows h3{display:flex;align-items:center;gap:9px;margin:0;font-size:1.1em}.pal-detail-rows h3 span{border-left:1px solid var(--ep-accent);padding-left:9px}.pal-detail-rows p{margin:5px 0 0 43px}
+.pal-detail-gallery{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));margin-top:10px}.pal-detail-gallery figure{margin:0;text-align:center}.pal-detail-gallery img{width:100%;aspect-ratio:1.85;object-fit:cover;border-radius:8px}.pal-detail-peppers{display:flex;margin-left:43px;color:#bf8197}.pal-detail-peppers .piment-body{fill:none}.pal-detail-peppers .on .piment-body{fill:currentColor}
+@media(min-width:650px){.pal-detail-hero{grid-template-columns:minmax(130px,22%) minmax(0,1fr);gap:30px}.pal-detail-meta{padding-left:25px}.pal-saved-detail{font-size:20px}}
+
+.pal-detail-nav-title{display:none}
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title{display:block;position:absolute;left:50%;transform:translateX(-50%);font:clamp(12px,3.4vw,18px) monospace;letter-spacing:.04em;pointer-events:none}
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])) [data-book-home] svg{display:none}
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])) [data-book-home]::after{content:'‹';font:24px/1 Georgia}
+
+.pal-book-actions [data-action-art]::before{display:inline-block;width:1.1em;margin-right:.55em;vertical-align:middle;content:'';height:1.1em;background:currentColor;mask:var(--action-shape) center/contain no-repeat}
+.pal-book-actions [data-action-art="feather"]{--action-shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M3 21 17 7M6 17C3 4 15 2 21 3c1 7-6 16-15 14z'/%3E%3C/svg%3E")}
+.pal-book-actions [data-action-art="folder"]{--action-shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M2 6h8l2 2h10v12H2z'/%3E%3C/svg%3E")}
+.pal-book-actions [data-action-art="trash-2"]{--action-shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M3 6h18M6 6l1 15h10l1-15M9 6V3h6v3'/%3E%3C/svg%3E")}

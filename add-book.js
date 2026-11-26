@@ -1,4 +1,4 @@
-function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFolder, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
+function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, createLibraryFolder, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
   const root=stage;
   const copy=selector=>root.querySelector(selector).content.cloneNode(true);
   const lifecycle=new AbortController();
@@ -1005,6 +1005,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
   }
 
   function prepareMetadata(book,started) {
+    if(initialBook) return Promise.resolve(book.summary);
     if (!pendingMetadata.has(book)) {
       classify(book,{});
       const primary=started || analyse(book,ebookSamples.get(book));
@@ -1487,6 +1488,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
     });
   }
   function returnToResults() {
+    if(initialBook){close();return;}
     if (addButton.disabled || !applyBookEdits()) return;
     showStep(lastStep);
     window.scrollTo({top:originScroll,behavior:"instant"});
@@ -1539,7 +1541,17 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
     }
   });
   readingFields.clear();
-  showStep("digital",false);
+  if(initialBook){
+    const draft=structuredClone(initialBook);
+    draft.series ??= draft.saga || "";
+    draft.promesse ??= {};
+    draft.pageCount ??= draft.promesse.pages || draft.pages;
+    palTitle.textContent="MODIFIER MA FICHE";
+    const caption=addButton.querySelector(".collection-submit");
+    caption.lastChild.textContent="Enregistrer les modifications";
+    completedMetadata.add(draft);
+    openBook(draft,"digital",null);
+  }else showStep("digital",false);
   refreshIcons();
   exit.focus({preventScroll:true});
 
