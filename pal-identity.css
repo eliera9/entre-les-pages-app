@@ -504,3 +504,16 @@
   & .slide-decor .ep-promesse-checks { gap:6px; }
   & .slide-decor .ep-promesse-label { padding:3px; }
 }
+
+#bibliotheque-app[data-format=phone] #elp-add-book[data-pal] {
+  & .ep-top-nav [data-add-home] { display:none; }
+  & .ep-pal-identity .livre {
+    --book-gap:clamp(24px,8vw,34px);
+    grid-template-columns: minmax(0,1fr) [cover] clamp(100px,34vw,140px) [divider] var(--book-gap) [copy] fit-content(44%) [end-copy] minmax(0,1fr);
+    padding-top:14px;
+    row-gap:22px;
+  }
+  & .ep-pal-identity .identite { gap:14px; }
+  & .ep-pal-identity .texte-infos { display:grid; gap:10px; }
+  & .ep-pal-identity :is(.titre-livre,.autrice) { margin-block:0; }
+}
