@@ -104,7 +104,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   const detail = document.createElement('article');
   detail.className = 'pal-saved-detail';
   access.before(detail);
-  const detailModule = import('./promesse-form.js?v=fiche-pal-complete');
+  const detailModule = import('./promesse-form.js?v=pal-layout-3');
   function renderStatus() {
     const key = Object.keys(statuses).find(id => statuses[id][0] === book.status);
     const label = statuses[key]?.[1] || book.status || statuses.pile[1];

@@ -454,7 +454,7 @@ export function renderPalDetail(root,book,save,statusChange) {
   info.append(icon,node('div','',[book.publicationDate && 'Date de sortie · '+book.publicationDate,pages && pages+' pages'].filter(Boolean).join(' · ') || 'Informations indisponibles'));
   title.append(info);meta.append(title);
   const series=book.spinOffOf ? 'Spin-Off de '+book.spinOffOf : [book.series || book.saga,book.volume && (/^tome/i.test(book.volume)?book.volume:'Tome '+book.volume)].filter(Boolean).join(' · ');
-  for(const [cls,text] of [['author',book.author],['series',series],['genre',(book.genres || []).join(' · ')]])if(text)meta.append(node('div',cls,text));
+  for(const [cls,text] of [['pal-detail-author',book.author],['pal-detail-series',series],['pal-detail-genre',(book.genres || []).join(' · ')]])if(text)meta.append(node('div',cls,text));
   const controls=node('div','pal-detail-controls');
   function select(label,choices,value,change){
     const field=node('label','',label), input=node('select');

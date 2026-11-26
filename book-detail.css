@@ -705,25 +705,106 @@
 #bibliotheque-app #elp-saved-book .ep-reader-access{width:100%;max-width:none;margin:24px 0 0}
 #bibliotheque-app #elp-saved-book .ep-reader-access button.ep-read-book{width:100%;max-width:none;min-height:54px;border:0;border-radius:9px;background:light-dark(#dfc9cd,#503848);color:light-dark(#51334d,#ebdcef);font:600 20px/1.2 "Baskervville Formulaire",Georgia,serif;animation:none;justify-content:center}
 
-.pal-saved-detail{font:17px/1.44 'Baskervville Formulaire',Georgia,serif;color:var(--ep-title);width:100%;text-align:left}
-.pal-detail-hero{display:grid;grid-template-columns:30% minmax(0,1fr);gap:12px;align-items:center}
-.pal-detail-cover{width:100%;height:auto;max-height:34vh;object-fit:contain}
-.pal-detail-meta{min-width:0;border-left:1px solid var(--ep-line);padding-left:12px;overflow-wrap:anywhere}
-.pal-detail-title,.pal-detail-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.pal-detail-title h1{font:clamp(28px,7vw,48px)/1.1 'Cormorant Garamond',Georgia,serif;margin:0}
-.pal-detail-info{position:relative}.pal-detail-info summary{cursor:pointer;list-style:none}.pal-detail-info div{position:absolute;z-index:2;right:0;background:var(--ep-card);width:140px;padding:8px;border-radius:8px}
-.pal-detail-meta .author{font-size:1.3em}.pal-detail-meta .genre,.pal-detail-tags{background:var(--ep-card);padding:5px 10px;border-radius:8px}.pal-detail-meta .genre{display:table;border-radius:24px;margin:8px 0}
-.pal-detail-controls label{font:13px/1.4 sans-serif;min-width:0}.pal-detail-controls select{display:block;max-width:100%;color:inherit;background:var(--ep-card);border:0;border-radius:6px;padding:6px 2px;font:14px Georgia}
-.pal-detail-tags{margin-top:18px;font-size:16px}.pal-detail-tags i{display:block}.pal-detail-tags div+div{border-top:1px solid var(--ep-line);margin-top:7px;padding-top:7px}
-.pal-saved-detail h2{display:flex;align-items:center;justify-content:center;gap:8px;font:26px 'Instrument Serif Formulaire',Georgia;margin:26px 0 14px}.pal-saved-detail h2:before,.pal-saved-detail h2:after{content:'';height:1px;width:min(17%,150px);background:var(--ep-line)}
-.pal-saved-detail svg{width:24px;height:24px;flex:none}.pal-detail-summary{white-space:pre-line}.pal-detail-rows section{border-bottom:1px solid var(--ep-line);padding:14px 0}.pal-detail-rows h3{display:flex;align-items:center;gap:9px;margin:0;font-size:1.1em}.pal-detail-rows h3 span{border-left:1px solid var(--ep-accent);padding-left:9px}.pal-detail-rows p{margin:5px 0 0 43px}
-.pal-detail-gallery{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));margin-top:10px}.pal-detail-gallery figure{margin:0;text-align:center}.pal-detail-gallery img{width:100%;aspect-ratio:1.85;object-fit:cover;border-radius:8px}.pal-detail-peppers{display:flex;margin-left:43px;color:#bf8197}.pal-detail-peppers .piment-body{fill:none}.pal-detail-peppers .on .piment-body{fill:currentColor}
-@media(min-width:650px){.pal-detail-hero{grid-template-columns:minmax(130px,22%) minmax(0,1fr);gap:30px}.pal-detail-meta{padding-left:25px}.pal-saved-detail{font-size:20px}}
-
-.pal-detail-nav-title{display:none}
-#bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title{display:block;position:absolute;left:50%;transform:translateX(-50%);font:clamp(12px,3.4vw,18px) monospace;letter-spacing:.04em;pointer-events:none}
-#bibliotheque-app:has(.pal-saved-detail:not([hidden])) [data-book-home] svg{display:none}
-#bibliotheque-app:has(.pal-saved-detail:not([hidden])) [data-book-home]::after{content:'‹';font:24px/1 Georgia}
+/* Fiche PAL : la couverture et les informations partagent la même rangée. */
+#bibliotheque-app .pal-saved-detail {
+  inline-size: 100%;
+  max-inline-size: 1020px;
+  margin-inline: auto;
+  font: 17px/1.44 "Baskervville Formulaire", Georgia, serif;
+  color: var(--text);
+  text-align: start;
+}
+#bibliotheque-app .pal-detail-hero {
+  display: grid;
+  grid-template-columns: 30% minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-inline: auto;
+}
+#bibliotheque-app .pal-detail-hero:has(.pal-detail-cover[hidden]) { grid-template-columns: 1fr; }
+#bibliotheque-app .pal-detail-cover { display: block; width: 100%; height: auto; }
+#bibliotheque-app .pal-detail-meta {
+  min-width: 0;
+  align-self: stretch;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  border-inline-start: 1px solid var(--rule);
+  padding-inline-start: 12px;
+  overflow-wrap: anywhere;
+}
+#bibliotheque-app .pal-detail-title { display: grid; grid-template-columns: minmax(0,auto) auto; align-items: center; max-width:100%; gap:7px; }
+#bibliotheque-app .pal-detail-title h1 { margin: 0; font: 34px/1.04 PalCormorant, Georgia, serif; color: var(--title); }
+#bibliotheque-app .pal-detail-info { position: relative; }
+#bibliotheque-app .pal-detail-info summary { cursor: pointer; list-style: none; font: 16px/1 sans-serif; }
+#bibliotheque-app .pal-detail-info summary::-webkit-details-marker { display: none; }
+#bibliotheque-app .pal-detail-info div { position: absolute; z-index: 2; inset-inline-end: 0; width: 150px; padding: 8px; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; font-size: 15px; }
+#bibliotheque-app .pal-detail-author { margin-block: 4px; font: 23px/1.1 PalCormorant, Georgia, serif; }
+#bibliotheque-app .pal-detail-series { font: 18px/1.2 "Instrument Serif Formulaire", Georgia, serif; }
+#bibliotheque-app .pal-detail-genre {
+  max-inline-size: 100%;
+  margin-block: 8px;
+  padding: 2px 11px;
+  border-radius: 24px;
+  border: 1px solid light-dark(#c5a7af,#6e536d);
+  background: light-dark(#eadcde,#443244);
+  font-size: 15px;
+}
+#bibliotheque-app .pal-detail-genre::before { content: '✦'; margin-inline-end: 5px; font-size: .75em; }
+#bibliotheque-app .pal-detail-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 6px 8px; }
+#bibliotheque-app .pal-detail-controls label { min-width: 0; font: 12px/1.3 "Source Sans 3 Formulaire", sans-serif; }
+#bibliotheque-app .pal-detail-controls select {
+  display: block; field-sizing:content; max-width: 100%; margin-top: 3px; padding: 5px 4px;
+  border: 0; border-radius: 7px; color: var(--text); background: light-dark(#eadcde,#40313f);
+  font: 14px/1.2 "Baskervville Formulaire", Georgia, serif;
+}
+#bibliotheque-app .pal-detail-tags { margin: 18px 0 0; border-radius: 8px; background: light-dark(#f0e3e2,#382f39); padding: 8px 12px; font-size: 16px; }
+#bibliotheque-app .pal-detail-tags i { display: block; color: var(--muted); }
+#bibliotheque-app .pal-detail-tags div + div { border-top: 1px solid var(--rule); margin-top: 6px; padding-top: 6px; }
+#bibliotheque-app .pal-saved-detail h2 {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 24px 0 14px; color: var(--title); font: 26px/1.15 "Instrument Serif Formulaire", Georgia, serif;
+}
+#bibliotheque-app .pal-saved-detail h2::before, #bibliotheque-app .pal-saved-detail h2::after {
+  content: ''; flex: 0 1 19%; max-width: 150px; height: 1px; background: var(--rule);
+}
+#bibliotheque-app .pal-saved-detail svg { flex: none; width: 22px; height: 22px; }
+#bibliotheque-app .pal-detail-summary { margin: 0; white-space: pre-line; font: inherit; color: var(--text); }
+#bibliotheque-app .pal-detail-rows section { padding: 13px 0; border-bottom: 1px solid var(--rule); }
+#bibliotheque-app .pal-detail-rows section:last-child { border: 0; }
+#bibliotheque-app .pal-detail-rows h3 { display: flex; align-items: center; gap: 9px; margin: 0; font: 20px/1.3 "Baskervville Formulaire", Georgia, serif; }
+#bibliotheque-app .pal-detail-rows h3 span { border-inline-start: 1px solid var(--accent); padding-inline-start: 9px; }
+#bibliotheque-app .pal-detail-rows p { margin: 6px 0 0 41px; font: inherit; }
+#bibliotheque-app .pal-detail-gallery { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 9px; }
+#bibliotheque-app .pal-detail-gallery:has(figure:only-child) { grid-template-columns: 1fr; }
+#bibliotheque-app .pal-detail-gallery figure { margin: 0; }
+#bibliotheque-app .pal-detail-gallery img { display: block; width: 100%; aspect-ratio: 2/1; object-fit: cover; border-radius: 6px; }
+#bibliotheque-app .pal-detail-gallery figcaption { margin-top: 3px; text-align: center; font-style: italic; font-size: 15px; }
+#bibliotheque-app .pal-detail-peppers { display:flex; gap: 5px; margin: 9px 0 0 41px; color: #bd7e91; }
+#bibliotheque-app .pal-detail-peppers svg { width:24px; height:24px; }
+#bibliotheque-app .pal-detail-peppers .piment-body { fill:none; }
+#bibliotheque-app .pal-detail-peppers .on .piment-body { fill:currentColor; }
+.pal-detail-nav-title { display:none; }
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title {
+  display:block; position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap;
+  font: 16px/1 PalTypewriter, monospace; letter-spacing:.05em; pointer-events:none;
+}
+#bibliotheque-app .toolbar [data-book-home] .pal-return-icon,
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])) .toolbar [data-book-home] .pal-home-icon { display:none; }
+#bibliotheque-app:has(.pal-saved-detail:not([hidden])) .toolbar [data-book-home] .pal-return-icon { display:block; }
+@media(min-width:650px) {
+  #bibliotheque-app .pal-detail-hero { max-width: 600px; grid-template-columns: 170px minmax(0,1fr); gap:26px; }
+  #bibliotheque-app .pal-detail-meta { padding-inline-start:25px; }
+  #bibliotheque-app .pal-detail-title h1 { font-size:44px; }
+  #bibliotheque-app .pal-detail-author { font-size:30px; }
+  #bibliotheque-app .pal-detail-series { font-size:23px; }
+  #bibliotheque-app .pal-detail-genre, #bibliotheque-app .pal-detail-rows { font-size:18px; }
+  #bibliotheque-app .pal-detail-controls select { font-size:17px; }
+  #bibliotheque-app .pal-saved-detail h2 { font-size:32px; }
+  #bibliotheque-app .pal-detail-summary { font-size:19px; }
+  #bibliotheque-app .pal-detail-gallery { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  #bibliotheque-app:has(.pal-saved-detail:not([hidden])):not([data-book-reading]) .pal-detail-nav-title { font-size:22px; }
+}
 
 .pal-book-actions [data-action-art]::before{display:inline-block;width:1.1em;margin-right:.55em;vertical-align:middle;content:'';height:1.1em;background:currentColor;mask:var(--action-shape) center/contain no-repeat}
 .pal-book-actions [data-action-art="feather"]{--action-shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M3 21 17 7M6 17C3 4 15 2 21 3c1 7-6 16-15 14z'/%3E%3C/svg%3E")}
