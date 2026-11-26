@@ -104,36 +104,27 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
     let selected = initialFolder ?? null;
     let browsing = null;
 
-    const plus=get(".collection-plus");
+    const toggle=get(".collection-title");
+    const content=get("#ep-collection-content");
     const trail=get(".collection-path");
     const isPal=()=>stage.hasAttribute("data-pal");
     const editor=get("#ep-folder-inline");
     const nameInput=get("#ep-folder-inline-name");
-    const submit=editor.querySelector('[type="submit"]');
+    const submit=get('[form="ep-folder-inline"]');
     const feedback=get("#ep-folder-inline-feedback");
     let editVersion=0;
-    function closeEditor(focus=false) {
+    function resetDraft() {
       editVersion++;
-      editor.hidden=true;
-      plus.setAttribute("aria-expanded","false");
-      if (focus) plus.focus({preventScroll:true});
-    }
-    function editHere() {
-      if (!editor.hidden) {closeEditor(true);return;}
-      if (panel.hidden) {
-        panel.hidden=false;
-        disclosure.setAttribute("aria-expanded","true");
-        browse(selected);
-      }
       editor.reset();
       feedback.textContent="";
       nameInput.removeAttribute("aria-invalid");
       submit.disabled=false;
       nameInput.readOnly=false;
-      editor.hidden=false;
-      plus.setAttribute("aria-expanded","true");
-      nameInput.focus();
     }
+    toggle.addEventListener("click",()=>{
+      content.inert=!content.inert;
+      toggle.setAttribute("aria-expanded",String(!content.inert));
+    });
     editor.addEventListener("submit",async event=>{
       event.preventDefault();
       const name=nameInput.value.trim();
@@ -148,9 +139,12 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       submit.disabled=true;
       nameInput.readOnly=true;
       try {
-        const folder=await createLibraryFolder(name,browsing?.id ?? folderHome);
+        const folder=await createLibraryFolder(name,(panel.hidden ? selected : browsing)?.id ?? folderHome);
         if (version!==editVersion || lifecycle.signal.aborted) return;
         if (folder) {
+          resetDraft();
+          panel.hidden=false;
+          disclosure.setAttribute("aria-expanded","true");
           browse(folder,true);
           status.textContent="Dossier créé : "+folder.name;
         } else {
@@ -165,10 +159,12 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       }
     });
     nameInput.addEventListener("input",()=>{feedback.textContent="";nameInput.removeAttribute("aria-invalid");});
-    editor.addEventListener("keydown",event=>{
-      if(event.key==="Escape"){event.preventDefault();closeEditor(true);}
+    get("[data-folder-inline-cancel]").addEventListener("click",()=>{
+      resetDraft();
+      browsing=selected;
+      close(false);
+      disclosure.focus();
     });
-    get("[data-folder-inline-cancel]").addEventListener("click",()=>closeEditor(true));
     function paintTrail() {
       const chain=[],seen=new Set();
       for (let f=browsing; f && !seen.has(f.id); f=findFolder(f.parent)) {
@@ -177,7 +173,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       trail.replaceChildren();
       for (const f of [null,...chain]) {
         const button=document.createElement("button");
-        button.type="button";button.textContent=f?.name || "Ma collection";
+        button.type="button";button.textContent=f?.name || "Tous les dossiers";
         if (f===browsing) button.setAttribute("aria-current","location");
         button.addEventListener("click",()=>browse(f,true));
         if (trail.childNodes.length) trail.append(" › ");
@@ -185,12 +181,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       }
     }
     function renderSelection() {
-      get("[data-book-folder-value]").textContent = selected ? folderLabel(selected) : isPal() ? "Choisir un dossier" : "Voir les dossiers";
+      get("[data-book-folder-value]").textContent = selected ? folderLabel(selected) : isPal() ? "Ma collection" : "Voir les dossiers";
       remove.hidden = !selected;
     }
 
     function browse(folder, focusCards = false) {
-      closeEditor();
       browsing = folder;
       if (isPal()) paintTrail();
       choose.textContent=isPal() ? "Ranger ici" : "Choisir ce dossier";
@@ -203,12 +198,11 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       grid.hidden = !cards.length;
       get("[data-book-folder-empty]").hidden = cards.length > 0;
       refreshIcons();
-      if (focusCards) (grid.querySelector("button") ?? (folder ? choose : create)).focus({preventScroll:true});
+      if (focusCards) (grid.querySelector("button") ?? (folder ? choose : isPal() ? nameInput : create)).focus({preventScroll:true});
     }
 
     function close(returnFocus = true) {
       if (panel.hidden) return false;
-      closeEditor();
       panel.hidden = true;
       disclosure.setAttribute("aria-expanded","false");
       if (returnFocus) disclosure.focus({preventScroll:true});
@@ -238,7 +232,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       if (browsing) select(browsing,"Dossier choisi : " + folderLabel(browsing));
     });
     function newFolder(trigger) {
-      if (isPal()) {editHere();return;}
+      if (isPal()) { nameInput.focus(); return; }
       openFolderEditor({
         trigger,
         destination: browsing?.id ?? folderHome,
@@ -250,10 +244,9 @@ function mountAddBook(stage, {engine, findFolder, folderCards, createLibraryFold
       });
     }
     create.addEventListener("click",()=>newFolder(create));
-    plus.addEventListener("click",()=>newFolder(plus));
     remove.addEventListener("click", () => select(null,"Dossier retiré."));
     renderSelection();
-    return {id: () => selected?.id ?? null, close, refresh(){if(!isPal()) closeEditor(); renderSelection();}};
+    return {id: () => selected?.id ?? null, close, refresh(){if (!isPal()) { content.inert=false; toggle.setAttribute("aria-expanded","true"); } renderSelection();}};
   }
 
   const datePartLabels={day:"Jour",month:"Mois",year:"Année"};
