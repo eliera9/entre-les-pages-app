@@ -104,13 +104,33 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     let selected = initialFolder ?? null;
     let browsing = null;
 
+    const plus=get(".collection-plus");
+    const trail=get(".collection-path");
+    const isPal=()=>stage.hasAttribute("data-pal");
+    function paintTrail() {
+      const chain=[],seen=new Set();
+      for (let f=browsing; f && !seen.has(f.id); f=findFolder(f.parent)) {
+        seen.add(f.id);chain.unshift(f);
+      }
+      trail.replaceChildren();
+      for (const f of [null,...chain]) {
+        const button=document.createElement("button");
+        button.type="button";button.textContent=f?.name || "Ma collection";
+        if (f===browsing) button.setAttribute("aria-current","location");
+        button.addEventListener("click",()=>browse(f,true));
+        if (trail.childNodes.length) trail.append(" › ");
+        trail.append(button);
+      }
+    }
     function renderSelection() {
-      get("[data-book-folder-value]").textContent = selected ? folderLabel(selected) : "Voir les dossiers";
+      get("[data-book-folder-value]").textContent = selected ? folderLabel(selected) : isPal() ? "Choisir un dossier" : "Voir les dossiers";
       remove.hidden = !selected;
     }
 
     function browse(folder, focusCards = false) {
       browsing = folder;
+      if (isPal()) paintTrail();
+      choose.textContent=isPal() ? "Ranger ici" : "Choisir ce dossier";
       path.hidden = !folder;
       path.textContent = folder ? folderLabel(folder) : "";
       parent.hidden = !folder;
@@ -153,20 +173,27 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
     choose.addEventListener("click", () => {
       if (browsing) select(browsing,"Dossier choisi : " + folderLabel(browsing));
     });
-    create.addEventListener("click", () => {
+    function newFolder(trigger) {
+      if (panel.hidden && isPal()) browsing=selected;
       openFolderEditor({
-        trigger: create,
+        trigger,
         destination: browsing?.id ?? folderHome,
         home: folderHome,
         onCreated: (folder, destination) => {
           if (lifecycle.signal.aborted) return;
+          if (isPal()) {
+            panel.hidden=false;disclosure.setAttribute("aria-expanded","true");
+            browse(folder,true);status.textContent="Dossier créé : "+folder.name;return;
+          }
           select(folder,"",folder.name + " · " + destination);
         },
       });
-    });
+    }
+    create.addEventListener("click",()=>newFolder(create));
+    plus.addEventListener("click",()=>newFolder(plus));
     remove.addEventListener("click", () => select(null,"Dossier retiré."));
     renderSelection();
-    return {id: () => selected?.id ?? null, close};
+    return {id: () => selected?.id ?? null, close, refresh:renderSelection};
   }
 
   const datePartLabels={day:"Jour",month:"Mois",year:"Année"};
@@ -721,6 +748,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
   function syncPal(){
     const isPal=stage.dataset.step==='next' && selectedStatus==='to-read';
     stage.toggleAttribute('data-pal',isPal);
+    folderPicker.refresh();
     palHost.hidden=!isPal||!editForm.hidden;
     if(stage.dataset.step==='next')nextBook.hidden=isPal||!editForm.hidden;
     summaryFrame.hidden=palHost.hidden;

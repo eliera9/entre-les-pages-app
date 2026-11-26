@@ -31,9 +31,9 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./book-metadata.js?v=edition-officielle-1"></script>
 <script defer src="./book-scan.js?v=pal-priorite-edition"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<link rel="stylesheet" href="./pal-identity.css?v=reperes-aquarelles">
+<link rel="stylesheet" href="./pal-identity.css?v=collection-pal-1">
 <script defer src="./pal-identity.js?v=reperes-aquarelles"></script>
-<script defer src="./add-book.js?v=edition-officielle-1"></script>
+<script defer src="./add-book.js?v=collection-pal-1"></script>
 <link rel="stylesheet" href="./book-detail.css?v=7">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
@@ -1034,16 +1034,18 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
       </section>
       <section class="ep-promesse" data-promesse aria-label="Ce qu’il me promet" hidden></section>
       <section class="ep-folder-zone" aria-labelledby="ep-collections-heading">
-        <h3 class="ep-summary-heading" id="ep-collections-heading">Mes collections</h3>
+        <h3 class="ep-summary-heading" id="ep-collections-heading"><span class="pal-only collection-title"><i data-lucide="folder"></i>Ma collection</span><span class="other-status">Mes collections</span></h3>
         <div class="catalogue-folder-created" data-book-folder-created role="status" hidden>
           <span class="catalogue-folder-created-mark" aria-hidden="true"><i data-lucide="check"></i></span>
           <span class="catalogue-folder-created-copy"><strong>Dossier créé</strong><span data-book-folder-created-path></span></span>
         </div>
-        <button type="button" class="ep-folder-disclosure cursor-interaction" data-book-folders aria-controls="ep-book-folders" aria-expanded="false">
+        <div class="collection-bar"><button type="button" class="ep-folder-disclosure cursor-interaction" data-book-folders aria-controls="ep-book-folders" aria-expanded="false">
           <i data-lucide="folders" aria-hidden="true"></i>
           <span data-book-folder-value>Voir les dossiers</span>
           <i data-lucide="chevron-down" aria-hidden="true"></i>
         </button>
+        <button type="button" class="pal-only collection-plus" aria-label="Créer un dossier ici" aria-haspopup="dialog">⊕</button></div>
+        <nav class="pal-only collection-path" aria-label="Chemin du dossier"></nav>
         <div class="ep-folder-panel" id="ep-book-folders" data-book-folder-panel hidden>
           <p class="catalogue-folder-location-path" data-book-folder-path hidden></p>
           <button type="button" class="catalogue-folder-index-choice catalogue-folder-up ep-folder-parent cursor-interaction" data-book-folder-parent hidden>
@@ -1060,7 +1062,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <p class="sr-only" role="status" data-creation-status></p>
       </section>
       <section class="ep-confirm-zone" aria-label="Confirmer l’ajout du livre">
-        <button type="button" class="ep-access ep-access-primary cursor-interaction" data-confirm-book>Ajouter à ma bibliothèque</button>
+        <button type="button" class="ep-access ep-access-primary cursor-interaction" data-confirm-book><span class="pal-only collection-submit"><i data-lucide="book-plus"></i>Ajouter à ma PAL</span><span class="other-status">Ajouter à ma bibliothèque</span></button>
       </section>
     </section>
       </section>

@@ -413,3 +413,21 @@
 #bibliotheque-app #elp-add-book .ep-results li:has(.ep-result[aria-expanded=true]) { grid-column:1/-1; }
 
 #elp-add-book .ep-pal-identity .saga[hidden] { display: none; }
+
+#elp-add-book .pal-only, #elp-add-book[data-pal] .other-status {display:none}
+#elp-add-book[data-pal] .collection-title,#elp-add-book[data-pal] .collection-submit {display:inline-flex;align-items:center;justify-content:center;gap:8px}
+#elp-add-book[data-pal] .collection-title svg {width:25px;height:25px;color:var(--ep-accent)}
+#elp-add-book[data-pal] .collection-bar {display:flex;align-items:center;background:var(--ep-pressed);border-radius:9px;padding-inline-end:4px}
+#bibliotheque-app #elp-add-book[data-pal] .ep-folder-disclosure {background:transparent;grid-template-columns:20px 1fr;flex:1;min-width:0;font-family:"Baskervville Formulaire",Georgia,serif}
+#elp-add-book[data-pal] .ep-folder-disclosure>:last-child,#elp-add-book[data-pal] :is(.ep-folder-parent,.ep-folder-add,[data-book-folder-path]) {display:none}
+#elp-add-book[data-pal] .collection-plus {display:block;border:0;background:none;color:var(--ep-accent);font:28px/1 Georgia;min-height:44px;min-width:44px}
+#elp-add-book[data-pal] .collection-bar:has([aria-expanded=true]) + .collection-path {display:block;margin-top:10px;color:var(--ep-muted);overflow-wrap:anywhere}
+#elp-add-book[data-pal] .collection-path button {background:none;border:0;color:var(--ep-title);font:inherit;padding:6px 2px}
+#bibliotheque-app #elp-add-book[data-pal] .ep-folder-panel {border:0;background:none;padding:4px 0}
+#bibliotheque-app #elp-add-book[data-pal] [data-book-folder-grid]:not([hidden]) {display:grid;grid-template-columns:1fr;gap:0;list-style:none;padding:0;margin:0}
+#bibliotheque-app #elp-add-book[data-pal] [data-book-folder-grid] button {display:flex;align-items:center;gap:10px;border:0;border-radius:0;border-bottom:1px solid var(--ep-line);width:100%;min-height:44px;height:auto;background:none;color:var(--ep-title);text-align:start;padding:8px}
+#elp-add-book[data-pal] [data-book-folder-grid] .genre-illustration {display:none}
+#elp-add-book[data-pal] [data-book-folder-grid] button::before {content:"";width:19px;height:15px;flex:none;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20' fill='none' stroke='black' stroke-width='1.6'%3E%3Cpath d='M2 4a1 1 0 0 1 1-1h6l2 3h10a1 1 0 0 1 1 1v10H2Z'/%3E%3C/svg%3E") center/contain no-repeat}
+#elp-add-book[data-pal] [data-book-folder-grid] button::after {content:"›";margin-inline-start:auto}
+#bibliotheque-app #elp-add-book[data-pal] .ep-confirm-zone .ep-access-primary {width:100%;display:flex;justify-content:center;align-items:center;background:#40303d;color:#dfd3df;border:0;border-radius:10px;box-shadow:none;min-height:48px;font:400 19px/1.25 "Baskervville Formulaire",Georgia,serif}
+#elp-add-book[data-pal] .collection-submit svg {width:22px;height:22px}
