@@ -379,6 +379,19 @@ export function createCatalogue(localRows=[], signal, googleKey="") {
     const physical=confirmed.length ? confirmed : editionKeys.size===1 && (publisher || language) ? byIdentity : [];
     const counts=new Set(physical.map(row=>metadata.editionPages(row.pageCount)).filter(Boolean));
     edition.pageCount=counts.size===1 ? [...counts][0] : undefined;
+    if (!edition.pageCount && format==="epub" && title && author) {
+      const [paperBnf,paperGoogle]=code || id ? await Promise.all([
+        bnfSearch(title,"",author).catch(()=>[]), googleEditions(title,author,"").catch(()=>[])
+      ]) : [national,google];
+      const matching=[...paperBnf,...paperGoogle].filter(row=>
+        row.ebook===false && sameWork(requested,row) &&
+        (!bookVolume(row) || bookVolume(row)===bookVolume(requested)) &&
+        (!volume || bookVolume(row) || normal(title)===normal(row.title) && normal(title)!==normal(params.get("series"))) &&
+        (!language || !row.language || metadata.language(row.language)===language) &&
+        metadata.editionPages(row.pageCount));
+      const preferred=matching.find(row=>publisher && normal(row.publisher)===publisher) || matching[0];
+      if (preferred) edition.pageCount=metadata.editionPages(preferred.pageCount);
+    }
     const notices=(confirmed.length ? confirmed : byIdentity).filter(row=>row.summarySource && row.summary &&
       (!language || !row.language || metadata.language(row.language)===language));
     const texts=new Set(notices.map(row=>row.summary));
