@@ -950,6 +950,10 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <div class="ep-tag-editor" data-book-tags></div>
         <p class="ep-message ep-edit-message" data-edit-cover-status role="status" hidden></p>
       </form>
+      <fieldset class="ep-pal-summary" hidden>
+        <legend><button id="ep-pal-summary-toggle" type="button" aria-controls="ep-pal-summary-copy" aria-expanded="true"><svg aria-hidden="true" viewBox="0 0 32 26" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 23 18 8m-12 12 1-7L17 3a5 5 0 0 1 7 7l-9 9-9 1Zm6-6h7m6-12 1 2.6L29 6l-2.7 1L25 10l-1-3-2.5-1L24 5Z"/></svg>Résumé<svg class="chevron" aria-hidden="true" viewBox="0 0 12 12"><path d="m2 4 4 4 4-4" fill="none" stroke="currentColor"/></svg></button></legend>
+        <div id="ep-pal-summary-copy" role="textbox" aria-label="Modifier le résumé" aria-multiline="true" contenteditable="plaintext-only" data-placeholder="Écrire le résumé…"></div>
+      </fieldset>
       <h3 class="ep-summary-heading" id="ep-summary-heading">Résumé</h3>
       <p class="ep-message" data-book-lookup role="status" hidden></p>
       <p class="ep-next-summary"></p>

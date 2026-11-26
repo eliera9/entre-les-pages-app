@@ -698,11 +698,36 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
       book[name]=value;
     }
   });
+  const summaryFrame=get('.ep-pal-summary');
+  const summaryToggle=get('#ep-pal-summary-toggle');
+  const summaryCopy=get('#ep-pal-summary-copy');
+  let summaryBook=null;
+  summaryToggle.addEventListener('click',()=>{
+    summaryCopy.hidden=!summaryCopy.hidden;
+    summaryToggle.setAttribute('aria-expanded',String(!summaryCopy.hidden));
+  });
+  summaryCopy.addEventListener('input',()=>{
+    if (!currentBook) return;
+    currentBook.summary=summaryCopy.innerText.trim();
+    editedSummaries.add(currentBook);
+  });
+  function updatePalSummary(book){
+    if (!book) return;
+    if (summaryBook!==book){
+      summaryBook=book;
+      summaryCopy.hidden=false;
+      summaryToggle.setAttribute('aria-expanded','true');
+    } else if (document.activeElement===summaryCopy && editedSummaries.has(book)) return;
+    const value=book.summary || '';
+    if (summaryCopy.innerText!==value) summaryCopy.textContent=value;
+  }
   function syncPal(){
     const isPal=stage.dataset.step==='next' && selectedStatus==='to-read';
     stage.toggleAttribute('data-pal',isPal);
     palHost.hidden=!isPal||!editForm.hidden;
     if(stage.dataset.step==='next')nextBook.hidden=isPal||!editForm.hidden;
+    summaryFrame.hidden=palHost.hidden;
+    if (!summaryFrame.hidden) updatePalSummary(currentBook);
     if(!isPal){palIdentity.close();return}
     nav.hidden=false;legacyHeader.hidden=true;decoration.hidden=true;back.hidden=true;
     paperBack.hidden=false;paperBack.setAttribute('aria-label',lastStep==='digital'?'Retour aux trois cartes de statut':'Revenir aux résultats de recherche');
@@ -759,6 +784,7 @@ function mountAddBook(stage, {engine, findFolder, folderCards, folderLabel, fold
           if (!editedFields.get(book)?.has(field.name) && !field.value) field.value=book[field.name] || "";
         }
       }
+      if (!summaryFrame.hidden) updatePalSummary(book);
       summary.textContent=book.summary || "Résumé indisponible.";
       if (!editForm.hidden && !editSummaryChanged) editSummary.value=book.summary || "";
     });
