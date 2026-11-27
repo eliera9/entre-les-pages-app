@@ -2268,14 +2268,10 @@ body { margin: 0; }
 @font-face { font-family: "DM Sans"; src: url("./fonts/dm-sans.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
 #app-lecture #bibliotheque-app [data-acc-row="sagas"] .acc-card { min-inline-size: 0; }
 #app-lecture #bibliotheque-app [data-acc-row="sagas"] .acc-name {
-  max-inline-size: 100%; font: 400 13.5px/1.25 "DM Sans", sans-serif;
-  color: light-dark(#51334D, #F0DFD7); overflow-wrap: anywhere; text-align: center;
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  max-inline-size: 100%; overflow-wrap: anywhere; text-align: center;
 }
-#app-lecture #bibliotheque-app[data-format="tablet"] [data-acc-row="sagas"] .acc-name { font-size: 14.5px; }
 #app-lecture [data-acc-row="sagas"] .acc-status { width: 100%; }
 #app-lecture [data-acc-row="sagas"] .acc-ticks { width: fit-content; max-width: 100%; }
-#app-lecture [data-acc-row="sagas"] .acc-saga-progress { font: 400 12px/1.2 var(--body); color:var(--muted); }
 #app-lecture .acc-remote-open { position:absolute; inset:0; border:0; background:transparent; }
 #app-lecture .acc-remote-open + .acc-plus { z-index:1; }
 #app-lecture .acc-saga-details { max-width:min(86vw,23rem); padding:20px; color:var(--title); background:var(--paper); border:1px solid var(--rule); border-radius:12px; }

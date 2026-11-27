@@ -3074,8 +3074,9 @@ async function activateLibrary(root) {
     for (let volume = 1; volume <= Math.min(total, 12); volume++) {
       ticks.append(el('i', readVolumes.has(volume) ? 'read' : volume === current ? 'next' : ''));
     }
-    const count = el('small', 'acc-saga-progress', readVolumes.size + ' / ' + total);
-    status.append(ticks, count);
+    status.setAttribute('role', 'img');
+    status.setAttribute('aria-label', `${readVolumes.size} tome${readVolumes.size > 1 ? 's lus' : ' lu'} sur ${total}`);
+    status.append(ticks);
     return status;
   }
 
