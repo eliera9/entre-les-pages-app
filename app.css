@@ -2315,3 +2315,21 @@ body { margin: 0; }
 #app-lecture .acc-pill .acc-pill-bar { inset-inline-start:calc(58px + var(--reading-offset, 0px)); }
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-full { padding-inline-start:calc(12px + var(--reading-offset, 0px)); }
 #app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-bar { inset-inline-start:calc(72px + var(--reading-offset, 0px)); }
+
+#app-lecture .release-card { position: relative; }
+#app-lecture .release-card .release-trigger { position:absolute; inset:0; width:100%; height:100%; background:transparent; border:0; cursor:pointer; }
+#app-lecture #bibliotheque-app .release-panel {
+  box-sizing:border-box; position:fixed; inset:0; margin:auto; width:min(92vw,560px); max-height:90dvh;
+  overflow:auto; padding:clamp(14px,3vw,26px); border-radius:20px;
+  background:var(--card,var(--paper)); border:1px solid light-dark(#d9c6ca,#544957);
+  color:light-dark(#51334d,#d4c5ee); --release-label:light-dark(#fff4f4,#f2e8f5);
+}
+#app-lecture .release-panel[open] {display:grid;grid-template-columns:27% minmax(0,1fr);align-items:center;gap:clamp(10px,2.5vw,22px)}
+#app-lecture .release-panel::backdrop {background:rgb(27 19 28 / 43%)}
+#app-lecture .release-panel > .elp-cover {display:block;width:100%;height:auto;aspect-ratio:2/3;object-fit:cover}
+#app-lecture .release-actions {display:grid;justify-items:center;text-align:center;gap:12px;min-width:0}
+#app-lecture .release-actions h2 {font:500 clamp(19px,4.8vw,29px)/1.08 "Cormorant Garamond",Georgia,serif;color:inherit;margin:0;overflow-wrap:anywhere}
+#app-lecture .release-actions button {box-sizing:border-box;display:inline-flex;justify-content:center;align-items:center;max-width:100%;border-radius:999px;font:400 clamp(14px,3.6vw,20px)/1.15 Baskervville,Georgia,serif;cursor:pointer;text-align:center}
+#app-lecture .release-actions .release-add {padding:5px 14px;gap:7px;border:0;background:light-dark(#794a5b,#5a4859);color:var(--release-label)}
+#app-lecture .release-reader {width:1.5em;height:1.6em;flex:none;background:currentColor;mask:url('art/liseuse-ajout.webp') center/contain no-repeat}
+#app-lecture .release-actions .release-ignore {padding:5px 12px;background:transparent;color:light-dark(#794a5b,#f2e8f5);border:1px solid currentColor}

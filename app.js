@@ -3225,10 +3225,47 @@ async function activateLibrary(root) {
     }
     return out;
   }
+  function showRelease(item, trigger) {
+    const panel = el('dialog', 'release-panel');
+    panel.setAttribute('aria-labelledby', 'release-choice-title');
+    const cover = trigger.closest('.acc-card').querySelector('.elp-cover').cloneNode(true);
+    const body = el('div', 'release-actions');
+    const title = el('h2', '', item.title);
+    title.id = 'release-choice-title';
+    const add = button('Ajouter un EPUB', 'release-add', () => {
+      panel.close();
+      openSecondary('add');
+    });
+    const reader = el('span', 'release-reader');
+    reader.setAttribute('aria-hidden', 'true');
+    add.prepend(reader);
+    const ignore = button('Ignorer la proposition', 'release-ignore', () => {
+      try { releaseWatch.ignore(item); }
+      catch { announce('Impossible de mémoriser ce choix sur cet appareil.'); return; }
+      panel.close();
+      announce('Proposition ignorée.');
+    });
+    body.append(title, add, ignore);
+    panel.append(cover, body);
+    panel.addEventListener('close', () => panel.remove(), {once:true});
+    panel.addEventListener('click', event => {
+      if (event.target !== panel) return;
+      const box = panel.getBoundingClientRect();
+      if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) panel.close();
+    });
+    root.append(panel);
+    panel.showModal();
+  }
   function accSoon() {
-    return releaseWatch.feed().map(item => remoteCard({
-      label:item.title, sub:item.author, image:item.image, releaseDays:item.days
-    }));
+    return releaseWatch.feed().map(item => {
+      const card = remoteCard({label:item.title, sub:item.author, image:item.image, releaseDays:item.days});
+      const trigger = button('', 'release-trigger', () => showRelease(item, trigger));
+      trigger.setAttribute('aria-label', item.title);
+      trigger.setAttribute('aria-haspopup', 'dialog');
+      card.classList.add('release-card');
+      card.append(trigger);
+      return card;
+    });
   }
 
   function renderAccueil(show) {

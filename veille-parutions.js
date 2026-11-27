@@ -114,11 +114,18 @@ const EbookReleases = (() => {
       };
       settings.append(h,form,status,list);queueMicrotask(drawList);return settings;
     }
+    const ignoredKey = key => api.key + '-ignore-' + key;
+    const releaseKey = item => normalize(item.title)+'|'+normalize(item.author);
+    function ignore(item) {
+      localStorage.setItem(ignoredKey(releaseKey(item)), '1');
+      changed();
+    }
     function feed(){
       const now=today(), seen=new Set(), output=[];
       for(const item of items){
         if(!visible(item.date,now))continue;
-        const key=normalize(item.title)+'|'+normalize(item.author);
+        const key=releaseKey(item);
+        try { if (localStorage.getItem(ignoredKey(key))) continue; } catch {}
         if(seen.has(key))continue;
         seen.add(key);output.push({...item,days:(stamp(item.date)-stamp(now))/dayMs});
       }
@@ -133,7 +140,7 @@ const EbookReleases = (() => {
       void refresh(true);setInterval(tick,60000);document.addEventListener('visibilitychange',tick);
       window.addEventListener('online',()=>refresh(true));window.addEventListener('pageshow',tick);
     }
-    return {feed,authorSettings,start,has,follow,refresh};
+    return {feed,ignore,authorSettings,start,has,follow,refresh};
   }
   return {visible,today,accountApi,mount};
 })();
