@@ -801,25 +801,41 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   const journalHost=document.createElement('section');
   summaryFrame.after(journalHost);
   const journal=mountReadingJournal(journalHost,signal);
+  const confirmZone=addButton.closest('.ep-confirm-zone');
+  const confirmAnchor=document.createComment('confirmation');
+  confirmZone.before(confirmAnchor);
+  const defaultIcon=addButton.querySelector('img').getAttribute('src');
   function syncPal(){
     const isPal=stage.dataset.step==='next' && selectedStatus==='to-read';
     const inProgress=stage.dataset.step==='next' && selectedStatus==='reading';
-    stage.toggleAttribute('data-pal',isPal||inProgress);
+    const finished=stage.dataset.step==='next' && selectedStatus==='finished';
+    const useBookHeader=isPal||inProgress||finished;
+    stage.toggleAttribute('data-finished',finished);
+    get('.ep-status-section > h3').textContent=finished?'Mes dates de lecture':'Statut de lecture';
+    stage.toggleAttribute('data-pal',useBookHeader);
     stage.toggleAttribute('data-in-progress',inProgress);
     journalHost.hidden=!inProgress||!editForm.hidden;
     if(!journalHost.hidden && currentBook)journal.open(currentBook);
-    palTitle.textContent=initialBook?'MODIFIER MA FICHE':inProgress?'MA LECTURE EN COURS':'AJOUTER DANS MA PAL';
+    palTitle.textContent=initialBook?'MODIFIER MA FICHE':inProgress?'MA LECTURE EN COURS':finished?'FIN DE LECTURE':'AJOUTER DANS MA PAL';
     const caption=addButton.querySelector('.collection-submit');
-    caption.lastChild.textContent=initialBook?'Enregistrer les modifications':inProgress?'Ajouter à mes lectures en cours':'Ajouter à ma PAL';
+    caption.lastChild.textContent=initialBook?'Enregistrer les modifications':inProgress?'Ajouter à mes lectures en cours':finished?'Ajouter à mes livres lus':'Ajouter à ma PAL';
+    if(finished){
+      get('.ep-status-section').after(addButton.closest('.ep-confirm-zone'));
+      caption.querySelector('img').src='./art/add-book/lu.png';
+
+    } else {
+      confirmAnchor.after(confirmZone);
+      caption.querySelector('img').src=defaultIcon;
+    }
     palHost.setAttribute('aria-label','Informations du livre');
-    palHost.querySelector('.reperes').hidden=inProgress;
+    palHost.querySelector('.reperes').hidden=inProgress||finished;
 
     folderPicker.refresh();
-    palHost.hidden=!(isPal||inProgress)||!editForm.hidden;
-    if(stage.dataset.step==='next')nextBook.hidden=isPal||inProgress||!editForm.hidden;
+    palHost.hidden=!(useBookHeader)||!editForm.hidden;
+    if(stage.dataset.step==='next')nextBook.hidden=useBookHeader||!editForm.hidden;
     summaryFrame.hidden=palHost.hidden;
     if (!summaryFrame.hidden) updatePalSummary(currentBook);
-    if(!isPal&&!inProgress){palIdentity.close();return}
+    if(!useBookHeader){palIdentity.close();return}
     nav.hidden=false;legacyHeader.hidden=true;decoration.hidden=true;back.hidden=true;
     paperBack.hidden=false;paperBack.setAttribute('aria-label',lastStep==='digital'?'Retour aux trois cartes de statut':'Revenir aux résultats de recherche');
     actions.append(exit);exit.hidden=false;
@@ -1523,7 +1539,18 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     }
     else close();
   });
-  addButton.addEventListener("click",async()=>{
+  const choice=get('[data-finished-choice]');
+  addButton.addEventListener('click',()=>{
+    if (!initialBook && selectedStatus==='finished') {
+      if (applyBookEdits() && readingFields.values() && !choice.open) choice.showModal();
+    } else void submitBook(false);
+  });
+  choice.addEventListener('keydown',event=>{if(event.key==='Escape')event.stopPropagation()});
+  choice.addEventListener('click',event=>{
+    const action=event.target.closest('[data-finish]');
+    if(action){choice.close();void submitBook(action.dataset.finish==='sheet')}
+  });
+  async function submitBook(openSheet){
     if (!currentBook || addButton.disabled || !applyBookEdits()) return;
     if (['to-read','reading'].includes(selectedStatus) && !currentBook.title?.trim()) {
       saveStatus.textContent="Renseigne le titre du livre avant de l’ajouter.";palIdentity.focusTitle();return;
@@ -1546,14 +1573,14 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
         reading.pagesEdited=editedFields.get(book)?.has('pageCount') || false;
         if (promesse || reading.pagesEdited) reading.promesse={...promesse,pages:book.pageCount ?? (reading.pagesEdited ? null : promesse?.pages)};
       }
-      if (!signal.aborted && book===currentBook) await saveBook(book,reading,collection,()=>!signal.aborted && book===currentBook);
+      if (!signal.aborted && book===currentBook) await saveBook(book,reading,collection,()=>!signal.aborted && book===currentBook,openSheet);
     } catch {
       if (!signal.aborted) saveStatus.textContent="Enregistrement impossible. Vérifie l’espace disponible, puis réessaie.";
     } finally {
       following.inert=false;
       addButton.disabled=false;
     }
-  });
+  }
   readingFields.clear();
   if(initialBook){
     const draft=structuredClone(initialBook);

@@ -516,3 +516,46 @@
   & .ep-pal-identity .texte-infos { display:grid; gap:10px; }
   & .ep-pal-identity :is(.titre-livre,.autrice) { margin-block:0; }
 }
+
+#bibliotheque-app #elp-add-book[data-finished] .ep-status-section{display:block}
+#elp-add-book .lu-note-heading{display:none}
+#bibliotheque-app #elp-add-book[data-finished] .lu-note-heading{display:flex;margin-top:20px}
+#bibliotheque-app #elp-add-book[data-finished] .ep-status-options{display:none}
+#bibliotheque-app #elp-add-book[data-finished] .ep-finished-evaluation{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+#bibliotheque-app #elp-add-book[data-finished] .ep-reading-fields{gap:14px}
+
+#bibliotheque-app #elp-add-book[data-finished] .ep-status-section .ep-summary-heading {
+  white-space: nowrap;
+  column-gap: clamp(6px, 2vw, 18px);
+}
+#bibliotheque-app #elp-add-book[data-finished] .ep-status-section .ep-summary-heading::before,
+#bibliotheque-app #elp-add-book[data-finished] .ep-status-section .ep-summary-heading::after {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 170px;
+}
+
+#bibliotheque-app #elp-add-book[data-finished] .ep-confirm-zone {margin-block-start:20px}
+#bibliotheque-app #elp-add-book[data-finished] .collection-submit img {width:28px;height:28px;filter:brightness(0) invert(.92)}
+
+#bibliotheque-app .finished-choice {
+  box-sizing:border-box; width:min(88vw,426px); max-width:calc(100% - 24px);
+  margin:auto; padding:24px clamp(12px,4vw,20px); border:1px solid var(--rule);
+  border-radius:19px; background:var(--paper); color:var(--title); box-shadow:0 8px 32px var(--shadow);
+}
+.finished-choice::backdrop { background:rgb(35 26 33 / 22%); }
+#bibliotheque-app .finished-choice h2 {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  margin:0; font:500 clamp(24px,7vw,30px)/1.15 "Cormorant Garamond",Georgia,serif; white-space:nowrap;
+}
+.finished-choice h2::before,.finished-choice h2::after { content:""; height:1px; flex:1; background:var(--rule); }
+#bibliotheque-app .finished-choice button {
+  display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  border:0; border-radius:99px; margin-top:12px; padding:10px 6px; min-height:48px;
+  background:var(--button); color:var(--button-text); cursor:pointer;
+  font:400 clamp(15px,4.5vw,18px)/1.25 Baskervville,Georgia,serif;
+}
+.finished-choice button img { width:28px; height:28px; object-fit:contain; filter:brightness(0) invert(.92); }
+#bibliotheque-app .ep-note-preview textarea {display:block;box-sizing:border-box;width:min(100%,640px);margin:20px auto 12px;padding:14px;min-height:10em;color:var(--text);background:var(--card);border:1px solid var(--rule);border-radius:10px;font:18px/1.5 Baskervville,serif}
+#bibliotheque-app .ep-note-preview [data-save-sheet] {justify-self:center;min-height:44px;border:0;border-radius:30px;background:var(--button);color:var(--button-text);padding:9px 24px;cursor:pointer}
+@media(max-width:360px){#bibliotheque-app #elp-add-book[data-finished] .lu-note-heading{font-size:clamp(17px,5.7vw,21px)}}

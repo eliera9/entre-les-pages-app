@@ -59,7 +59,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   const favorite = q('[data-saved-favorite]');
   const popup = q('[data-status-popup]');
   const bubble = q('[data-delete-layer]');
-  const hasSheet = Boolean(book.readingSheet);
+  let hasSheet = Boolean(book.readingSheet);
   const statuses = {
     pile: ['À lire', 'Pile à lire', 'pile'],
     'en-cours': ['En cours', 'En cours', 'cours'],
@@ -372,10 +372,26 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });
 
+  const sheetText=q('[data-sheet-text]');
+  const saveSheet=q('[data-save-sheet]');
+  sheetText.value=typeof book.readingSheet==='string' ? book.readingSheet : book.readingSheet?.text || '';
+  on(sheetText,'input',()=>setText('[data-sheet-status]',''));
+  on(saveSheet,'click',async()=>{
+    if(saveSheet.disabled)return;
+    saveSheet.disabled=true;
+    const previous=book.readingSheet;
+    const readingSheet={...(previous && typeof previous==='object' ? previous : {}),text:sheetText.value};
+    if(await save({readingSheet})){
+      hasSheet=true;
+      render();
+      setText('[data-sheet-status]','Fiche enregistrée.');
+    }
+    saveSheet.disabled=false;
+  });
   function showNote() {
     setPopup(false); setDelete(false);
     mode = 'note';
-    setText('#book-reading-sheet-title', hasSheet ? 'Fiche de lecture' : 'Remplir ma fiche de lecture');
+    setText('#book-reading-sheet-title', 'Ma fiche de lecture');
     setText('[data-note-book]', book.title);
     render();
     focus(hasSheet ? switcher : cancelNote);
@@ -1194,7 +1210,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   setDelete(false);
   q('.ep-book-name').tabIndex = -1;
   if (startInReader) void openReader();
-  else if (startInNote && hasSheet) {
+  else if (startInNote) {
     showNote();
     window.scrollTo({top:0, behavior:'instant'});
   } else {

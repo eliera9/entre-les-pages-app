@@ -31,17 +31,17 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./book-metadata.js?v=edition-officielle-1"></script>
 <script defer src="./book-scan.js?v=pal-priorite-edition"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<link rel="stylesheet" href="./pal-identity.css?v=pal-nav-mobile-1">
+<link rel="stylesheet" href="./pal-identity.css?v=fin-lecture-1">
 <script defer src="./pal-identity.js?v=reperes-aquarelles"></script>
 <script defer src="./reading-journal.js?v=1"></script>
-<script defer src="./add-book.js?v=reading-journal-1"></script>
+<script defer src="./add-book.js?v=fin-lecture-1"></script>
 <link rel="stylesheet" href="./book-detail.css?v=decor-aquarelle-b">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=journal-cours-1"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=fin-lecture-1"></script>
 <script defer src="./reading-status.js"></script>
 <script defer src="./veille-parutions.js?v=pal-fiche-lire-1"></script>
-<script defer src="./app.js?v=reading-journal-1"></script>
+<script defer src="./app.js?v=fin-lecture-1"></script>
 <link rel="stylesheet" href="./mobile-surface.css?v=1">
 <script defer src="./mobile-surface.js?v=1"></script>
 </head>
@@ -546,6 +546,9 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <section class="ep-note-preview" id="book-reading-sheet" data-note-preview aria-labelledby="book-reading-sheet-title" hidden>
           <h1 id="book-reading-sheet-title"></h1>
           <p data-note-book></p>
+          <textarea data-sheet-text aria-label="Ma fiche de lecture"></textarea>
+          <button type="button" data-save-sheet>Enregistrer ma fiche</button>
+          <p role="status" data-sheet-status></p>
         </section>
         <section class="reading-edp" data-book-reader aria-label="Liseuse" hidden>
     <div class="reader livre" aria-label="Liseuse" data-reader-surface>
@@ -1013,6 +1016,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
             <div class="ep-date-parts" role="group" aria-labelledby="ep-finish-heading"></div>
             <span class="ep-date-feedback" data-date-feedback role="status" hidden></span>
           </div>
+          <h3 class="ep-summary-heading lu-note-heading">Ma note et mon coup de cœur</h3>
           <div class="ep-finished-evaluation" data-reading-for="finished">
             <div class="ep-rating-field">
               <span class="ep-field-label" id="ep-rating-label">Note sur 5</span>
@@ -1073,6 +1077,12 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <p class="sr-only" role="status" data-creation-status></p>
 </div></div>
       </section>
+
+      <dialog class="finished-choice" data-finished-choice aria-labelledby="finished-choice-title">
+        <h2 id="finished-choice-title">Et maintenant ?</h2>
+        <button type="button" data-finish="alone"><img src="./art/add-book/lu.png" alt="">Ajouter le livre seul</button>
+        <button type="button" data-finish="sheet"><img src="./art/carnet-etoile.webp" alt="">Écrire ma fiche de lecture</button>
+      </dialog>
       <section class="ep-confirm-zone" aria-label="Confirmer l’ajout du livre">
         <button type="button" class="ep-access ep-access-primary cursor-interaction" data-confirm-book><span class="pal-only collection-submit"><img src="./art/add-book/pal-etoile.webp" width="27" height="23" alt="">Ajouter à ma PAL</span><span class="other-status">Ajouter à ma bibliothèque</span></button>
       </section>

@@ -2712,7 +2712,7 @@ async function activateLibrary(root) {
     root.removeAttribute('data-adding-book');
   }
 
-  async function saveAddedBook(data, reading, folderId, isCurrent) {
+  async function saveAddedBook(data, reading, folderId, isCurrent, openSheet) {
     const {file, id: catalogueId, isbns, ...details} = data;
     const {statusChosen, promesse, pagesEdited, ...readingFields} = reading;
     let fingerprint;
@@ -2760,6 +2760,10 @@ async function activateLibrary(root) {
     options.author = sorted(unique(books.map(item => item.author).filter(Boolean)));
     options.trope = sorted(unique(books.flatMap(item => item.tropes)));
     if (isCurrent()) {
+      if (openSheet) {
+        openSecondary('book',book,restoreFocus,{fromLibrary:true,openReadingSheet:true});
+        return;
+      }
       returnFromSecondary();
       if (!catalogues.has(scope)) renderContent();
     } else if (other.hidden) {
