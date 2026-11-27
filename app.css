@@ -2243,6 +2243,12 @@ body { margin: 0; }
   font: 400 20px/1.15 "Cormorant Garamond", Georgia, serif;
   color: light-dark(#51334d, #d4c5ee); text-align: start; cursor: pointer;
 }
+#app-lecture .next-reading-card:not([hidden]) + .accueil > [data-acc-row="pile"] {
+  padding-block-start: 4px;
+}
+#app-lecture [data-format="tablet"] .next-reading-card:not([hidden]) + .accueil > [data-acc-row="pile"] {
+  padding-block-start: 8px;
+}
 #app-lecture .next-reading-card svg { inline-size: 44px; block-size: 44px; flex: none; color: light-dark(#664255, #b399ae); }
 #app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card { inline-size: 71%; justify-content: center; min-block-size: 72px; gap: 20px; font-size: 26px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card svg { inline-size: 51px; block-size: 51px; }
