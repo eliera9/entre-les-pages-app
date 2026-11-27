@@ -249,7 +249,8 @@ export function mountQuestionnaire({host, books, cover, openBook, startBook, sav
   }
 
   function originOf() {
-    const rect = trigger?.getBoundingClientRect();
+    const origin = trigger?.querySelector(".next-reading-die") || trigger;
+    const rect = origin?.getBoundingClientRect();
     return rect ? {x: rect.left + rect.width / 2, y: rect.top + rect.height / 2} : {x: innerWidth / 2, y: innerHeight / 2};
   }
 

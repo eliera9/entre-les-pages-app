@@ -2233,81 +2233,25 @@ body { margin: 0; }
 #app-lecture .elp-mosaic[data-bookmark-open] .elp-tile:not([data-bookmark-owner]) .elp-cover {opacity:.52}
 #app-lecture .elp-mosaic[data-bookmark-open] .elp-tile {animation:none}
 
-/* Prochaine lecture · composition validée : capsule douce, dé étoilé, prune / lilas. */
-#app-lecture #bibliotheque-app .pal-dice {
-  --pal-fill: light-dark(#EEE3EF, #2F253B);
-  --pal-border: light-dark(#CFC0D4, #54415F);
-  --pal-ink: light-dark(#6D477C, #D4B9EA);
-  --pal-label: light-dark(#48304F, #EEE2F4);
-  --pal-pressed: light-dark(#E2D1E4, #493554);
-  display: inline-flex; align-items: center; justify-content: center; justify-self: center;
-  min-inline-size: 0; min-block-size: 44px; max-inline-size: 100%;
-  padding: 0; border: 0; border-radius: 30px; background: none;
-  color: var(--pal-ink); cursor: pointer; touch-action: manipulation;
+/* Accueil · choisir sa prochaine lecture */
+#app-lecture #bibliotheque-app .next-reading-card {
+  box-sizing: border-box; inline-size: 100%; min-block-size: 60px;
+  display: flex; align-items: center; justify-content: flex-start; gap: 14px;
+  padding: 5px 12px; margin: 0 0 4px; border-radius: 11px;
+  background: light-dark(#efe4e2, #332d33); border: 1px solid light-dark(#d7c7c9, #504751);
+  font: 400 20px/1.15 "Cormorant Garamond", Georgia, serif;
+  color: light-dark(#51334d, #d4c5ee); text-align: start; cursor: pointer;
 }
-#app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-}
-#app-lecture .toolbar:has(.pal-dice:not([hidden])) .toolbar-group:last-of-type { justify-self: end; }
-#app-lecture #bibliotheque-app[data-book-open] .pal-dice,
-#app-lecture #bibliotheque-app:not([data-accueil-page]) .pal-dice { display: none; }
-#app-lecture #bibliotheque-app .pal-dice-capsule {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-block-size: 33px; padding: 5px 11px; border: 1px solid var(--pal-border);
-  border-radius: 30px; background: var(--pal-fill); box-shadow: 0 2px 7px -6px #00000055;
-}
-#app-lecture #bibliotheque-app .pal-dice:active .pal-dice-capsule { background: var(--pal-pressed); }
-#app-lecture #bibliotheque-app .pal-dice:focus-visible { outline: 2px solid var(--pal-ink); outline-offset: 3px; }
-#app-lecture #bibliotheque-app .pal-dice-label {
-  color: var(--pal-label); font: 400 16px/1.2 "Instrument Serif Formulaire", "Instrument Serif", Georgia, serif;
-  white-space: nowrap; flex: none;
-}
-#app-lecture #bibliotheque-app .pal-die-scene {
-  display: grid; place-items: center; position: relative; inline-size: 27px; block-size: 25px;
-  flex: none; overflow: visible; pointer-events: none;
-}
-#app-lecture #bibliotheque-app .pal-die-spin {
-  display: block; position: relative; inline-size: 20px; block-size: 20px; transform-origin: 50% 50%;
-}
-#app-lecture #bibliotheque-app .pal-die {
-  display: block; position: absolute; inset: 0; inline-size: 100%; block-size: 100%; stroke-width: 1.45;
-}
-#app-lecture #bibliotheque-app .pal-die-star {
-  position: absolute; inline-size: 7px; block-size: 7px; stroke-width: 1.2; opacity: .8;
-}
-#app-lecture #bibliotheque-app .pal-die-star-first { inset-inline-end: -1px; inset-block-start: -1px; }
-#app-lecture #bibliotheque-app .pal-die-star-last {
-  inset-inline-start: -2px; inset-block-end: 0; inline-size: 5px; block-size: 5px;
-}
-#app-lecture #bibliotheque-app[data-format="tablet"] .pal-dice-capsule { min-block-size: 37px; padding: 6px 12px; }
-#app-lecture #bibliotheque-app[data-format="tablet"] .pal-dice-label { font-size: 18px; }
-#app-lecture #bibliotheque-app[data-format="tablet"] .pal-die-scene { inline-size: 30px; block-size: 26px; }
-#app-lecture #bibliotheque-app[data-format="tablet"] .pal-die-spin { inline-size: 23px; block-size: 23px; }
-@container (max-width: 340px) {
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) { gap: 5px; }
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) .toolbar-group { gap: 4px; }
-  #app-lecture #bibliotheque-app .pal-dice .pal-dice-capsule { min-block-size: 32px; padding: 5px 8px; gap: 5px; }
-  #app-lecture #bibliotheque-app .pal-dice .pal-dice-label { font-size: 15px; }
-  #app-lecture #bibliotheque-app .pal-dice .pal-die-scene { inline-size: 25px; block-size: 24px; }
-  #app-lecture #bibliotheque-app .pal-dice .pal-die-spin { inline-size: 20px; block-size: 20px; }
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) .acc-goal { gap: 4px; }
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) .acc-goal-ring { inline-size: 28px; block-size: 28px; }
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) .acc-goal-copy b { font-size: 13px; }
-  #app-lecture #bibliotheque-app .toolbar:has(.pal-dice:not([hidden])) .acc-goal-copy small {
-    max-inline-size: 35px; font-size: 10px; white-space: normal;
-  }
-}
-@container (max-width: 280px) {
-  #app-lecture #bibliotheque-app .pal-dice .pal-dice-capsule { padding-inline: 7px; gap: 4px; }
-  #app-lecture #bibliotheque-app .pal-dice .pal-dice-label { font-size: 14px; }
-}
+#app-lecture .next-reading-card svg { inline-size: 44px; block-size: 44px; flex: none; color: light-dark(#664255, #b399ae); }
+#app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card { justify-content: center; min-block-size: 72px; gap: 20px; font-size: 26px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card svg { inline-size: 51px; block-size: 51px; }
+#app-lecture #bibliotheque-app .next-reading-card[hidden],
+#app-lecture #bibliotheque-app:not([data-accueil-page]) .next-reading-card,
+#app-lecture #bibliotheque-app[data-book-open] .next-reading-card { display: none; }
+#app-lecture .next-reading-card:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
-  #app-lecture .pal-dice:not([hidden]) .pal-die-spin { animation: pal-die-turn 4s linear 900ms infinite; }
-  #app-lecture .pal-dice:not([hidden]) .pal-die > * {
-    stroke-dasharray: 90; stroke-dashoffset: 90; animation: pal-die-trace 900ms ease-out forwards;
-  }
-  @keyframes pal-die-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes pal-die-trace { to { stroke-dashoffset: 0; } }
+  #app-lecture .next-reading-die { transform-origin: center; transform-box: view-box; animation: next-reading-sway 4s ease-in-out infinite; }
+  @keyframes next-reading-sway { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
 }
 #app-lecture :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
 #app-lecture .pile-title-link {

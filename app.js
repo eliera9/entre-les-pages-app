@@ -2124,6 +2124,7 @@ async function activateLibrary(root) {
     const open = read => {
       const book = getBook();
       if (!read && scope === 'home' && control.closest('[data-library-search-results]')) {
+        if (root.dataset.format === 'phone' && root.dataset.theme === 'light') return;
         return showBookmark(book);
       }
       if (book) openSecondary('book', book, control, {
@@ -2949,7 +2950,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=edition-officielle-1');
+        const module = await import('./questionnaire.js?v=carte-prochaine-lecture-1');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,
