@@ -2926,14 +2926,15 @@ async function activateLibrary(root) {
     }
     return next.sort((a, b) => b.readAt - a.readAt);
   }
-  function accCard(book, {label, sub, extra, heart, homeCover} = {}) {
+  function accCard(book, {label, sub, volumeLabel, extra, heart, homeCover} = {}) {
     const card = el('button', 'acc-card cursor-interaction');
     card.type = 'button';
     card.setAttribute('role', 'listitem');
     card.dataset.book = book.id;
-    card.setAttribute('aria-label', [label || book.title, sub].filter(Boolean).join(', '));
+    card.setAttribute('aria-label', [label || book.title, volumeLabel || sub].filter(Boolean).join(', '));
     const cover = el('span', 'acc-cover');
     cover.append(catalogueCover(book));
+    if (volumeLabel) cover.append(el('span', 'acc-band', volumeLabel));
     if (heart) {
       const mark = el('i', 'acc-heart', '♥');
       mark.setAttribute('aria-hidden', 'true');
@@ -3067,15 +3068,15 @@ async function activateLibrary(root) {
   }
   window.addEventListener('resize', () => { if (!accueil.hidden) accDotsFit(); });
   const accOpenList = view => () => openCatalogue(view);
-  function sagaProgress(readVolumes, total, current) {
+  function sagaProgress(readVolumes, total) {
     const status = el('span', 'acc-status');
     const ticks = el('span', 'acc-ticks');
     ticks.setAttribute('aria-hidden', 'true');
-    for (let volume = 1; volume <= Math.min(total, 12); volume++) {
-      ticks.append(el('i', readVolumes.has(volume) ? 'read' : volume === current ? 'next' : ''));
-    }
+    const remaining = Math.max(0, total - readVolumes.size);
+    ticks.classList.toggle('many-unread', remaining > 4);
+    for (let i = 0; i < Math.min(remaining, 4); i++) ticks.append(el('i'));
     status.setAttribute('role', 'img');
-    status.setAttribute('aria-label', `${readVolumes.size} tome${readVolumes.size > 1 ? 's lus' : ' lu'} sur ${total}`);
+    status.setAttribute('aria-label', remaining === 1 ? '1 tome restant' : remaining + ' tomes restants');
     status.append(ticks);
     return status;
   }
@@ -3127,7 +3128,7 @@ async function activateLibrary(root) {
   }
   const dayStart = date => { const d = new Date(date); d.setHours(0, 0, 0, 0); return d.getTime(); };
   const parseDay = value => { const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime() : null; };
-  function remoteCard({label, sub, image, extra, onAdd, onOpen, releaseDays}) {
+  function remoteCard({label, sub, volumeLabel, image, extra, onAdd, onOpen, releaseDays}) {
     const card = el('div', 'acc-card acc-remote');
     card.setAttribute('role', 'listitem');
     const cover = el('span', 'acc-cover');
@@ -3137,6 +3138,7 @@ async function activateLibrary(root) {
       img.addEventListener('error', () => img.replaceWith(Object.assign(el('span', 'elp-cover elp-cover-placeholder'), {textContent: ''})));
       cover.append(img);
     } else cover.append(el('span', 'elp-cover elp-cover-placeholder acc-remote-title', label));
+    if (volumeLabel) cover.append(el('span', 'acc-band', volumeLabel));
     if (releaseDays !== undefined) {
       cover.classList.add('is-soon');
       if (releaseDays >= 0) {
@@ -3147,7 +3149,7 @@ async function activateLibrary(root) {
     if (onOpen) {
       const hit = el('button','acc-remote-open cursor-interaction');
       hit.type = 'button';
-      hit.setAttribute('aria-label',[label, sub].join(', '));
+      hit.setAttribute('aria-label',[label, volumeLabel || sub].filter(Boolean).join(', '));
       bindCoverGesture(hit, read => onOpen(read, hit));
       cover.append(hit);
     }
@@ -3208,10 +3210,10 @@ async function activateLibrary(root) {
       if (date == null || date > today) continue; // pas encore sorti : il ira dans « Bientôt »
       const number = Number(next.position);
       const total = Math.ceil(Math.max(number, ...volumes.map(v => Number(v.position) || 0), ...group.books.map(b => Number(b.seriesTotal) || 0)));
-      const status = sagaProgress(new Set(read.map(accVolume)), total, number);
+      const status = sagaProgress(new Set(read.map(accVolume)), total);
       const sub = 'Tome ' + String(next.position).replace('.', ',');
       out.push({readAt: Math.max(...read.map(accFinishedAt)), card: remoteCard({
-        label:group.name, sub, image:next.image, extra:status,
+        label:group.name, volumeLabel:sub, image:next.image, extra:status,
         onOpen(read, anchor) {
           const dialog = find('[data-saga-details]');
           find('h2', dialog).textContent = next.title || group.name;
@@ -3280,8 +3282,8 @@ async function activateLibrary(root) {
     const sagaCards = nextVolumes.map(({book, readVolumes, total, readAt}) => ({
       readAt,
       card: accCard(book, {
-        homeCover:true, label:book.saga, sub:'Tome ' + String(book.volume).replace('.', ','),
-        extra:sagaProgress(readVolumes, total, accVolume(book))
+        homeCover:true, label:book.saga, volumeLabel:'Tome ' + String(book.volume).replace('.', ','),
+        extra:sagaProgress(readVolumes, total)
       })
     }));
     for (const item of accToBuy()) sagaCards.push(item);

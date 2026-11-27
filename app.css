@@ -2288,13 +2288,16 @@ body { margin: 0; }
 }
 #app-lecture #bibliotheque-app[data-format="tablet"] #acc-bientot-title { font-size: clamp(17px, 7.2cqi, 30px); }
 #app-lecture #bibliotheque-app #acc-bientot-title .acc-count { font-size: clamp(13px, 4.7cqi, 16px); }
-#app-lecture [data-acc-row="bientot"] .acc-band {
-  padding: 4px 2px;
-  font: 500 11px/1.2 var(--body);
-  text-transform: none;
-  letter-spacing: .005em;
+#app-lecture #bibliotheque-app :is([data-acc-row="bientot"],[data-acc-row="sagas"]) .acc-band {
+  inset-block-end:10%; padding:1px 2px; box-sizing:border-box; pointer-events:none;
+  background:light-dark(#784b5b,#514150); color:light-dark(#fff1e9,#f1d5df);
+  border-block:1px solid light-dark(#cb9eae,#b49ca5);
+  font:400 14px/1.2 "Cormorant Garamond",Georgia,serif;
+  letter-spacing:normal; text-transform:none; white-space:normal;
 }
-#app-lecture #bibliotheque-app[data-format="tablet"] [data-acc-row="bientot"] .acc-band { font-size: 13px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] :is([data-acc-row="bientot"],[data-acc-row="sagas"]) .acc-band {font-size:18px}
+#app-lecture [data-acc-row="sagas"] .acc-ticks i {background:light-dark(#c69dab,#947f95)}
+#app-lecture [data-acc-row="sagas"] .acc-ticks.many-unread i {background:light-dark(#ac426c,#e3a2d3)}
 
 #app-lecture .veille-dialog button + button { margin-inline-start: .6rem; }
 #app-lecture .veille-settings form, #app-lecture .veille-settings li { display:flex; gap:.6rem; align-items:center; }
