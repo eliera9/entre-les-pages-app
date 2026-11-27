@@ -925,3 +925,21 @@
   border-radius: 0;
   box-shadow: none;
 }
+
+/* Livre importé sur téléphone, avant le choix du statut de lecture. */
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-digital [data-ep-digital-preview] {
+  --cover: clamp(100px, 34vw, 140px);
+  --name: clamp(24px, 7vw, 30px);
+  --author: 18px;
+  --series: 16px;
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-digital .ep-book-snapshot {
+  grid-template-columns: var(--cover) minmax(0, max-content);
+  justify-content: center;
+  column-gap: clamp(24px, 8vw, 34px);
+}
+#bibliotheque-app[data-format="phone"] #elp-add-book .ep-digital .ep-book-copy {
+  padding-block-start: 0;
+  gap: 10px;
+  text-align: start;
+}
