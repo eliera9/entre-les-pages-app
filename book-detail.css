@@ -770,7 +770,11 @@
 #bibliotheque-app .pal-detail-rows h3 span { border-inline-start: 1px solid var(--accent); padding-inline-start: 9px; }
 #bibliotheque-app .pal-detail-rows p { margin: 6px 0 0 41px; font: inherit; }
 #bibliotheque-app .pal-detail-gallery { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 9px; }
-#bibliotheque-app .pal-detail-gallery:has(figure:only-child) { grid-template-columns: 1fr; }
+#bibliotheque-app .pal-detail-gallery:has(figure:only-child) {
+  grid-template-columns: min(100%, var(--single-decor-width, 216px));
+  justify-content: center;
+}
+#bibliotheque-app[data-format="tablet"] .pal-detail-gallery { --single-decor-width: 288px; }
 #bibliotheque-app .pal-detail-gallery figure { margin: 0; }
 #bibliotheque-app .pal-detail-gallery img { display: block; width: 100%; aspect-ratio: 2/1; object-fit: cover; border-radius: 6px; }
 #bibliotheque-app .pal-detail-gallery figcaption { margin-top: 3px; text-align: center; font-style: italic; font-size: 15px; }
