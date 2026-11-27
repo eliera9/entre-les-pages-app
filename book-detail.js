@@ -330,7 +330,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     container.append(img);
   }
   on(edit, 'click', () => {
-    if (book.status === 'À lire' || (book.status === 'En cours' && book.readingJournal)) {editPal();return;}
+    if (book.status === 'À lire' || book.status === 'En cours') {editPal();return;}
     if (mode === 'edit') {form.requestSubmit(); return;}
     setPopup(false); setDelete(false);
     mode = 'edit';

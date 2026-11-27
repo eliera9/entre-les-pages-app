@@ -466,8 +466,9 @@ export function renderPalDetail(root,book,save,statusChange) {
   if (ongoing) {
     const start = book.readingStart;
     const date = typeof start==='string' ? start : [start?.day,start?.month,start?.year].filter(Boolean).join('/');
-    for(const [label,value] of [['Début de lecture',date],['Nombre de pages',pages]]) {
-      if(value){const field=node('label','',label);field.append(node('span','',String(value)));controls.append(field);}
+    if(date){
+      const field=node('label','','Début de lecture');
+      field.append(node('span','',date));controls.append(field);
     }
   } else select('Priorité',[['Plus tard','À lire plus tard'],['Bientôt','À lire bientôt'],['En premier','À lire en priorité']],book.readingPriority||'Bientôt',v=>({readingPriority:v}));
   meta.append(controls);root.replaceChildren(hero);

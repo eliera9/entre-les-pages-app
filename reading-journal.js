@@ -25,8 +25,14 @@ function mountReadingJournal(host,signal){
   function sync(){if(!track.clientWidth)return;const i=Math.max(0,Math.min(1,Math.round(track.scrollLeft/(track.clientWidth+12))));dots.forEach((b,k)=>{b.setAttribute('aria-current',k===i?'page':'false');slides[k].inert=k!==i});track.style.height=slides[i].offsetHeight+'px'}
   dots.forEach((b,i)=>b.onclick=()=>track.scrollTo({left:i*(track.clientWidth+12),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'}));
   track.onscroll=sync;const observer=new ResizeObserver(sync);slides.forEach(s=>observer.observe(s));signal.addEventListener('abort',()=>observer.disconnect(),{once:true});
+  let initialPositions;
   return {open(next){if(book===next)return;book=next;const data=book.readingJournal||{},old=book.readingPosition;
-    positions.forEach(i=>i.value=book.readingJournal?(data[i.name]??''):(old?.unit===i.name?old.value:''));
+    positions.forEach(input=>{
+      const name=input.name;
+      const legacy=name==='chapter'?book.chapter:name==='percent'?book.progress:null;
+      input.value=old?.[name] ?? data[name] ?? (old?.unit===name?old.value:legacy) ?? '';
+    });
+    initialPositions=positions.map(i=>i.value);
     for(const i of all('.loc input'))delete i.dataset.manual;
     all('input[type=checkbox]').forEach(i=>i.checked=(data.feelings||[]).includes(i.parentElement.textContent));
     notes=[...(data.notes||[])];drafts={};subject=null;select('Scène');progress();list();track.scrollLeft=0;requestAnimationFrame(sync)
@@ -34,6 +40,6 @@ function mountReadingJournal(host,signal){
     const [page,chapter,percent]=positions.map(number);
     const readingJournal={page,chapter,percent,notes:[...notes],feelings:all('input:checked').map(i=>i.parentElement.textContent)};
     const marker=page!==null?{unit:'page',value:page}:chapter!==null?{unit:'chapter',value:chapter}:percent!==null?{unit:'percent',value:percent}:null;
-    return {readingJournal,...(marker?{readingPosition:marker}:{}),...(chapter!==null?{chapter}:{}),...(percent!==null?{progress:percent}:{})}
+    return {readingJournal,...(marker && (!book.readingPosition || positions.some((i,k)=>i.value!==initialPositions[k]))?{readingPosition:marker}:{}),...(chapter!==null?{chapter}:{}),...(percent!==null?{progress:percent}:{})}
   }};
 }
