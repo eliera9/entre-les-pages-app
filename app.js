@@ -766,6 +766,8 @@ async function activateLibrary(root) {
   const results = find('[data-results]');
   const statusNotice = find('[data-status-notice]');
   const bookList = find('[data-book-list]');
+  const discovery = find('[data-library-discovery]');
+  const resultsHome = results.parentElement;
   const resultsHeader = find('[data-results-header]');
   const searchEmpty = find('[data-search-empty]');
   const other = find('[data-other-view]');
@@ -1382,8 +1384,12 @@ async function activateLibrary(root) {
     renderContent();
   }
 
+  function inLibraryRoot() {
+    return scope === 'all' && !currentFolder();
+  }
+
   function filterBooks(includeQuery, filters = applied) {
-    const field = catalogues.has(scope) ? catalogueSearch : search;
+    const field = catalogues.has(scope) && !inLibraryRoot() ? catalogueSearch : search;
     const words = includeQuery ? key(field.value).split(/\s+/).filter(Boolean) : [];
     return books.filter(book => {
       const match = (kind, values) => !filters[kind].length || filters[kind].some(label => values.some(value => key(value) === key(label)));
@@ -1526,7 +1532,7 @@ async function activateLibrary(root) {
     const overview = effectiveMode === 'overview' && !searching;
     catalogueView.toggleAttribute('data-catalogue-list', redesigned);
     catalogueView.toggleAttribute('data-favorites-catalogue', favorites);
-    catalogueSearchForm.hidden = favorites && empty;
+    catalogueSearchForm.hidden = inLibraryRoot() || (favorites && empty);
     viewSwitch.hidden = scope === 'sagas' || favorites || searching || (empty && !hasCollections);
     find('[data-catalogue-search-form] [data-clear-catalogue-search]').hidden = !searching;
     const destination = nextCatalogueMode[catalogueMode];
@@ -2123,7 +2129,7 @@ async function activateLibrary(root) {
   function bindBookGesture(control, getBook, {homeCover = false} = {}) {
     const open = read => {
       const book = getBook();
-      if (!read && scope === 'home' && control.closest('[data-library-search-results]')) {
+      if (!read && inLibraryRoot() && control.closest('[data-library-search-results]')) {
         if (root.dataset.format === 'phone' && root.dataset.theme === 'light') return;
         return showBookmark(book);
       }
@@ -2521,7 +2527,7 @@ async function activateLibrary(root) {
   function renderResults() {
     const query = Boolean(search.value.trim());
     const list = scope === 'genre' ? libraryLists[activeLibraryTab] : libraryLists[scope];
-    const matching = filterBooks(true).filter(book => query || (
+    const matching = filterBooks(true).filter(book => query ? (!inLibraryRoot() || !favoritesOnly || book.coupDeCoeur) : (
       (scope !== 'genre' || book.genres.includes(selectedGenre.name)) &&
       (scope !== 'collection' || collection.ids.includes(book.id)) && (!list || list.includes(book))
     ));
@@ -2530,14 +2536,14 @@ async function activateLibrary(root) {
     const noMatch = query && !matching.length;
     results.toggleAttribute('data-library-search-results', query);
     const caption = find('[data-search-caption]');
-    caption.hidden = !(scope === 'home' && query);
+    caption.hidden = !(inLibraryRoot() && query);
     if (!caption.hidden) {
       const count = caption.querySelector('small');
       count.hidden = false;
       count.textContent = countLabel(matching.length);
     }
     resultsHeader.hidden = noMatch || !caption.hidden;
-    renderSearchEmpty(searchEmpty, noMatch, query, countFilters(applied) > 0);
+    renderSearchEmpty(searchEmpty, noMatch, query, countFilters(applied) > 0 || (inLibraryRoot() && favoritesOnly));
     bookList.hidden = noMatch;
     const ordered = query ? sortedCatalogueEntries(matching, bookSort).flatMap(entry => entry.volumes)
       : sagaGroups(matching).flat();
@@ -2572,7 +2578,11 @@ async function activateLibrary(root) {
 
   function renderContent() {
     find('[data-search-caption]').hidden = true;
-    if (scope !== 'home' || !search.value.trim()) dismissBookmark();
+    const librarySearch = inLibraryRoot();
+    discovery.hidden = !librarySearch;
+    const host = librarySearch ? discovery : resultsHome;
+    if (results.parentElement !== host) host.append(results);
+    if (!librarySearch || !search.value.trim()) dismissBookmark();
     markBottomPage(scope === 'all' ? 'library' : 'home');
     refreshSidebarPage();
     syncCatalogueView();
@@ -2586,7 +2596,18 @@ async function activateLibrary(root) {
         find('.elp-script', catalogueTitle).textContent = initial;
         find('.elp-heading-rest', catalogueTitle).textContent = rest.join('');
         catalogueSearchForm.setAttribute('aria-label', `Rechercher dans « ${title} »`);
+        const query = librarySearch && Boolean(search.value.trim());
+        const searching = query || recentOpen();
+        catalogueView.toggleAttribute('data-discovery-active', searching);
         updateCatalogueMode();
+        if (librarySearch) {
+          find('[data-clear-search]', discovery).hidden = !search.value;
+          find('[data-save-filter]', results).hidden = !countFilters(applied);
+          results.hidden = !query;
+          renderRecent();
+          if (query) renderResults();
+          if (searching) return;
+        }
         drawCollections();
         renderCatalogue();
       }
@@ -2597,7 +2618,6 @@ async function activateLibrary(root) {
     const searching = Boolean(search.value.trim());
     const showResults = !emptyLibrary && (!home || searching);
     find('[data-library-empty]').hidden = !emptyLibrary;
-    search.closest('.search').hidden = emptyLibrary;
     statusNotice.hidden = true;
     statusNotice.textContent = '';
     const accueilOn = home && !emptyLibrary && !searching;
@@ -3381,7 +3401,7 @@ async function activateLibrary(root) {
     writeRecent([q, ...readRecent().filter(item => item.toLowerCase() !== q.toLowerCase())]);
   }
   function recentOpen() {
-    return scope === 'home' && searchFocused && !search.value.trim() && books.length > 0 && readRecent().length > 0;
+    return inLibraryRoot() && searchFocused && !search.value.trim() && books.length > 0 && readRecent().length > 0;
   }
   function renderRecent() {
     const open = recentOpen();
@@ -3410,7 +3430,7 @@ async function activateLibrary(root) {
   recentBox.addEventListener('pointerdown', event => event.preventDefault());
   find('[data-recent-clear]').addEventListener('click', () => { writeRecent([]); renderContent(); });
   search.addEventListener('focus', () => { searchFocused = true; if (recentOpen()) renderContent(); });
-  search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (scope === 'home' && !search.value.trim()) renderContent(); });
+  search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (inLibraryRoot() && !search.value.trim()) renderContent(); });
   search.addEventListener('keydown', event => { if (event.key === 'Enter') { rememberSearch(); search.blur(); } });
 
   // En-tête : se réduit en barre compacte collée en haut quand on fait défiler
@@ -3676,7 +3696,7 @@ async function activateLibrary(root) {
     if (catalogues.has(scope)) {
       renderContent();
       const originalBook = catalogueReturn?.bookId
-        ? document.getElementById(`catalogue-book-${catalogueReturn.bookId}`) : null;
+        ? document.getElementById(`${inLibraryRoot() && search.value.trim() ? 'library' : 'catalogue'}-book-${catalogueReturn.bookId}`) : null;
       const target = originalBook ?? (catalogueReturn?.bookId ? catalogueSearch : restoreFocus) ?? catalogueBack;
       window.scrollTo({top: catalogueReturn?.top ?? 0, behavior: 'auto'});
       if (target.isConnected && !target.closest('[hidden], [inert]')) target.focus({preventScroll: true});
@@ -3728,7 +3748,7 @@ async function activateLibrary(root) {
     clear.addEventListener('click', () => {
       favoritesOnly = false;
       applyFilters(emptyFilters());
-      (catalogueView.hidden ? search : catalogueSearch).focus({preventScroll: true});
+      (inLibraryRoot() || catalogueView.hidden ? search : catalogueSearch).focus({preventScroll: true});
     });
   }
   scrollTopButton.addEventListener('click', () => {

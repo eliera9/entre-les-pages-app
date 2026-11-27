@@ -2220,7 +2220,7 @@ body { margin: 0; }
 #app-lecture .bookmark-choice:before {content:'';width:7px;height:7px;border-radius:50%;border:1px solid currentColor;margin-inline:3px}
 #app-lecture .bookmark-choice[aria-pressed="true"]:before {background:currentColor}
 @media (prefers-reduced-motion:no-preference) {
- #app-lecture [data-accueil-page] [data-library-search-results] .elp-tile {animation:elp-search-rise .85s ease-out backwards;animation-delay:var(--arrival,0ms)}
+ #app-lecture [data-library-discovery] [data-library-search-results] .elp-tile {animation:elp-search-rise .85s ease-out backwards;animation-delay:var(--arrival,0ms)}
  @keyframes elp-search-rise {from{transform:translateY(22px);opacity:0}to{transform:translateY(0);opacity:1}}
 }
 
@@ -2237,21 +2237,22 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app .next-reading-card {
   box-sizing: border-box; inline-size: 100%; min-block-size: 60px;
   display: flex; align-items: center; justify-content: flex-start; gap: 14px;
-  padding: 5px 12px; margin: 0 0 4px; border-radius: 11px;
-  background: light-dark(#efe4e2, #332d33); border: 1px solid light-dark(#d7c7c9, #504751);
+  padding: 5px 12px; margin: 0 auto 4px; border-radius: 999px;
+  background: var(--card, var(--paper)); border: 1px solid light-dark(#EBCFD6, #4A3A50);
+  box-shadow: 0 6px 14px -10px rgba(69,44,53,.45);
   font: 400 20px/1.15 "Cormorant Garamond", Georgia, serif;
   color: light-dark(#51334d, #d4c5ee); text-align: start; cursor: pointer;
 }
 #app-lecture .next-reading-card svg { inline-size: 44px; block-size: 44px; flex: none; color: light-dark(#664255, #b399ae); }
-#app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card { justify-content: center; min-block-size: 72px; gap: 20px; font-size: 26px; }
+#app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card { inline-size: 71%; justify-content: center; min-block-size: 72px; gap: 20px; font-size: 26px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .next-reading-card svg { inline-size: 51px; block-size: 51px; }
 #app-lecture #bibliotheque-app .next-reading-card[hidden],
 #app-lecture #bibliotheque-app:not([data-accueil-page]) .next-reading-card,
 #app-lecture #bibliotheque-app[data-book-open] .next-reading-card { display: none; }
 #app-lecture .next-reading-card:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) {
-  #app-lecture .next-reading-die { transform-origin: center; transform-box: view-box; animation: next-reading-sway 4s ease-in-out infinite; }
-  @keyframes next-reading-sway { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+  #app-lecture .next-reading-die { transform-origin: center; transform-box: fill-box; animation: next-reading-breathe 4.4s ease-in-out infinite; }
+  @keyframes next-reading-breathe { 0%, 100% { transform: scale(.94); } 50% { transform: scale(1.08); } }
 }
 #app-lecture :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) {display:flex;align-items:center;justify-content:center;gap:8px;flex:1;font:small-caps 24px/1.15 var(--heading);text-align:center}
 #app-lecture .pile-title-link {
@@ -2310,3 +2311,5 @@ body { margin: 0; }
 #app-lecture .veille-settings ul { list-style:none; padding:0; }
 #app-lecture .veille-settings li { justify-content:space-between; padding-block:.35rem; }
 #app-lecture .veille-settings [role=status]:empty { display:none; }
+
+#app-lecture [data-discovery-active] > :is(.elp-page-heading, [data-catalogue-panel], [data-save-catalogue-filter], [data-catalogue-filter-notice]) { display: none; }
