@@ -1635,7 +1635,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     if (!current) return;
     ensureAnnotationIds(state);
     persisted[current.key] = {
-      ...persisted[current.key],position:current.position,label:current.label,
+      ...persisted[current.key],position:current.position,label:current.label,chapterLabel:current.chapter?.label,
       annotations:state.annotations.map(item => item.range ? {...item,quote:quoteFor(item.range)} : {...item}),
       placement:state.placement.map(item => ({...item})),documentRevision:book.documentRevision || ""
     };
@@ -2162,7 +2162,7 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
     one("[data-saved-empty]").hidden = Boolean(visible.length);
     list.hidden = !visible.length;
     visible.sort((first,second) => first.page.position - second.page.position);
-    list.replaceChildren(...visible.map(({icon,label,copy,page,item}) => {
+    const entries = visible.map(({icon,label,copy,page,item}) => {
       const element = document.createElement("li");
       const action = button("","saved-jump");
       const title = document.createElement("strong");
@@ -2183,7 +2183,20 @@ function mountReaderAnnotations({root,app,book,storage,save:saveBook,navigate,si
       });
       element.append(art(icon),action);
       return element;
-    }));
+    });
+    list.replaceChildren();
+    const chapters = new Map();
+    visible.forEach(({page}, index) => {
+      const title = page.chapterLabel || page.label || 'Passages annotés';
+      if (!chapters.has(title)) {
+        const li = document.createElement('li'), group = document.createElement('details');
+        const summary = document.createElement('summary'), items = document.createElement('ul');
+        group.open = title === current.chapter?.label || page.position === current.position;
+        summary.textContent = title;
+        group.append(summary,items);li.append(group);list.append(li);chapters.set(title,items);
+      }
+      chapters.get(title).append(entries[index]);
+    });
   }
   for (const tab of all("[data-saved-filter]")) tab.addEventListener("click",() => {
     savedFilter = tab.dataset.savedFilter;

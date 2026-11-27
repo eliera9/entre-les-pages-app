@@ -43,6 +43,13 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   const access = q('[data-reader-access]');
   const read = q('[data-open-reader]');
   const edit = bar('[data-book-edit]');
+  const carnet = document.createElement('button');
+  carnet.type = 'button';
+  carnet.className = edit.className;
+  carnet.setAttribute('aria-label','Mes annotations');
+  carnet.title = 'Mes annotations';
+  carnet.innerHTML = '<svg class="navigation-icon" viewBox="0 0 24 24" aria-hidden="true"><image href="./art/carnet-etoile.webp" width="24" height="24"/></svg>';
+  edit.before(carnet);
   const trash = bar('[data-book-trash]');
   const homeButton = bar('[data-book-home]');
   const create = bar('[data-create-note]');
@@ -177,7 +184,10 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     }
     setText('[data-summary-copy]', book.summary);
     renderStatus();
-    const pal = viewing && book.status === 'À lire';
+    const ongoing = book.status === 'En cours';
+    carnet.hidden = !viewing || !ongoing || access.hidden;
+    setText('[data-reader-label]', ongoing ? 'Reprendre ma lecture' : 'Lire le livre');
+    const pal = viewing && (ongoing || book.status === 'À lire');
     detail.hidden = !pal;
     if (pal) {
       preview.hidden = summary.hidden = true;
@@ -880,8 +890,8 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     chrome.hidden = false;
     trackSpeed(numbered ? Number(leaf.number) : null, percent);
     if (record) {
-      const readingPosition = {unit:unit(),value:index+1,...latestAnchor};
-      savePosition = savePosition.then(() => save({readingPosition}));
+      const readingPosition = {unit:unit(),value:index+1,...latestAnchor,percent:shownPercent,page:numbered ? Number(leaf.number) : unit()==='page' ? index+1 : null,chapter:location.startsWith('Chapitre ') ? location.slice(9).split('/')[0] : null};
+      savePosition = savePosition.then(async () => {if(await save({readingPosition}) && mode==='book')render();});
     }
   }
   function slide(delta) {
@@ -1166,6 +1176,10 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     }
   }
   on(read, 'click', openReader);
+  on(carnet,'click',async () => {
+    await openReader();
+    if(mode==='reader' && readyToRead && !scope.signal.aborted) q('[data-fiche]').click();
+  });
   on(readerBack, 'click', closeReader);
   on(readerDetails, 'click', showBookDetails);
   on(document, 'keydown', event => {
@@ -1189,7 +1203,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     focus(q('.ep-book-name'));
   }
   return () => {
-    scope.abort(); stopReader();
+    carnet.remove(); scope.abort(); stopReader();
     for (const button of [edit, trash, homeButton, create]) button.hidden = true;
     host.replaceChildren();
     delete host.dataset.bookId;

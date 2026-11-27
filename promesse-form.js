@@ -462,7 +462,14 @@ export function renderPalDetail(root,book,save,statusChange) {
     input.value=value;input.onchange=()=>save(change(input.value));field.append(input);controls.append(field);
   }
   select('Statut',[['À lire','À lire'],['En cours','En cours'],['Terminé','Lu']],book.status,v=>statusChange(book,v));
-  select('Priorité',[['Plus tard','À lire plus tard'],['Bientôt','À lire bientôt'],['En premier','À lire en priorité']],book.readingPriority||'Bientôt',v=>({readingPriority:v}));
+  const ongoing = book.status === 'En cours';
+  if (ongoing) {
+    const start = book.readingStart;
+    const date = typeof start==='string' ? start : [start?.day,start?.month,start?.year].filter(Boolean).join('/');
+    for(const [label,value] of [['Début de lecture',date],['Nombre de pages',pages]]) {
+      if(value){const field=node('label','',label);field.append(node('span','',String(value)));controls.append(field);}
+    }
+  } else select('Priorité',[['Plus tard','À lire plus tard'],['Bientôt','À lire bientôt'],['En premier','À lire en priorité']],book.readingPriority||'Bientôt',v=>({readingPriority:v}));
   meta.append(controls);root.replaceChildren(hero);
   const tags=node('div','pal-detail-tags');
   for(const [label,values] of [['Sous-genres',book.subgenres],['Tropes',book.tropes]])if(values?.length){
@@ -471,6 +478,22 @@ export function renderPalDetail(root,book,save,statusChange) {
   if(tags.childElementCount)root.append(tags);
   function heading(label,art){const h=node('h2');h.innerHTML=art;h.append(document.createTextNode(label));return h;}
   if(book.summary)root.append(heading('Résumé',svg('<path d="M6 26 24 7M9 21C7 10 18 4 27 4c-1 10-7 19-18 17z"/>')),node('p','pal-detail-summary',book.summary));
+  if(ongoing){
+    root.append(heading('Ma progression',svg('<path d="M8 5h15v23l-7.5-5L8 28zM25 1l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>')));
+    const pos=book.readingPosition || {}, initial=book.readingJournal || {};
+    const tracked=Number.isFinite(pos.percent);
+    const percent=tracked ? pos.percent : initial.percent ?? book.progress;
+    const page=tracked ? pos.page : initial.page ?? (pos.unit==='page'?pos.value:null);
+    const chapter=tracked ? pos.chapter : initial.chapter ?? book.chapter ?? (pos.unit==='chapter'?pos.value:null);
+    const numbers=node('div','fiche-positions');
+    for(const [label,value] of [['Page',page],['Chapitre',chapter],['Progression',percent==null?null:percent+' %']]){
+      const col=node('div');col.append(node('small','',label),node('span','',String(value??'—')));numbers.append(col);
+    }
+    const line=node('div','fiche-track'), fill=node('div','fiche-fill');
+    fill.style.width=Math.max(0,Math.min(100,Number(percent)||0))+'%';
+    if(percent!=null) fill.append(node('span','','✦'));
+    line.append(fill);root.append(numbers,line);return;
+  }
   const promise=book.promesse || {},rows=node('div','pal-detail-rows');
   for(const slide of [...SLIDES,SPICE_SLIDE]){
     const key=slide.key,value=promise[key];
