@@ -2790,6 +2790,7 @@ async function activateLibrary(root) {
         for (const field of ['title','author','series','volume','spinOffOf','genres','subgenres','tropes','summary','summarySource','publicationDate','pageCount','readingPriority','coverData']) {
           if (field in draft) changes[field] = draft[field];
         }
+        if(reading.readingJournal){for(const key of ["readingJournal","readingPosition","chapter","progress"])if(key in reading)changes[key]=reading[key]}
         changes.saga = draft.series ?? existing.saga;
         changes.promesse = {...existing.promesse,...reading.promesse};
         const previous = existing.folderIds || [];

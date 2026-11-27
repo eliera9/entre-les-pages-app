@@ -798,15 +798,28 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     const value=book.summary || '';
     if (summaryCopy.innerText!==value) summaryCopy.textContent=value;
   }
+  const journalHost=document.createElement('section');
+  summaryFrame.after(journalHost);
+  const journal=mountReadingJournal(journalHost,signal);
   function syncPal(){
     const isPal=stage.dataset.step==='next' && selectedStatus==='to-read';
-    stage.toggleAttribute('data-pal',isPal);
+    const inProgress=stage.dataset.step==='next' && selectedStatus==='reading';
+    stage.toggleAttribute('data-pal',isPal||inProgress);
+    stage.toggleAttribute('data-in-progress',inProgress);
+    journalHost.hidden=!inProgress||!editForm.hidden;
+    if(!journalHost.hidden && currentBook)journal.open(currentBook);
+    palTitle.textContent=initialBook?'MODIFIER MA FICHE':inProgress?'MA LECTURE EN COURS':'AJOUTER DANS MA PAL';
+    const caption=addButton.querySelector('.collection-submit');
+    caption.lastChild.textContent=initialBook?'Enregistrer les modifications':inProgress?'Ajouter à mes lectures en cours':'Ajouter à ma PAL';
+    palHost.setAttribute('aria-label','Informations du livre');
+    palHost.querySelector('.reperes').hidden=inProgress;
+
     folderPicker.refresh();
-    palHost.hidden=!isPal||!editForm.hidden;
-    if(stage.dataset.step==='next')nextBook.hidden=isPal||!editForm.hidden;
+    palHost.hidden=!(isPal||inProgress)||!editForm.hidden;
+    if(stage.dataset.step==='next')nextBook.hidden=isPal||inProgress||!editForm.hidden;
     summaryFrame.hidden=palHost.hidden;
     if (!summaryFrame.hidden) updatePalSummary(currentBook);
-    if(!isPal){palIdentity.close();return}
+    if(!isPal&&!inProgress){palIdentity.close();return}
     nav.hidden=false;legacyHeader.hidden=true;decoration.hidden=true;back.hidden=true;
     paperBack.hidden=false;paperBack.setAttribute('aria-label',lastStep==='digital'?'Retour aux trois cartes de statut':'Revenir aux résultats de recherche');
     actions.append(exit);exit.hidden=false;
@@ -1512,12 +1525,13 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   });
   addButton.addEventListener("click",async()=>{
     if (!currentBook || addButton.disabled || !applyBookEdits()) return;
-    if (selectedStatus==="to-read" && !currentBook.title?.trim()) {
+    if (['to-read','reading'].includes(selectedStatus) && !currentBook.title?.trim()) {
       saveStatus.textContent="Renseigne le titre du livre avant de l’ajouter.";palIdentity.focusTitle();return;
     }
     const book=currentBook;
     const reading=readingFields.values();
     if (!reading) return;
+    if(selectedStatus==='reading'){const values=journal.values();if(!values)return;Object.assign(reading,values);}
     const pile=selectedStatus==="to-read";
     const collection=folderPicker.id();
     addButton.disabled=true;
@@ -1551,6 +1565,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     caption.lastChild.textContent="Enregistrer les modifications";
     completedMetadata.add(draft);
     openBook(draft,"digital",null);
+    if(draft.status==='En cours')following.querySelector('[name="ep-statut-lecture"][value="reading"]').click();
   }else showStep("digital",false);
   refreshIcons();
   exit.focus({preventScroll:true});
