@@ -1936,26 +1936,16 @@ body { margin: 0; }
 }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar :is([data-create-folder], [data-window-choice="organiser"]) { display: none; }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar {
-  position: sticky; inset-block-start: 0; z-index: 20;
+  position: relative; inset-block-start: auto; z-index: 20;
   margin-inline: calc(-1 * var(--library-left, 16px)) calc(-1 * var(--library-right, 16px));
   margin-block: calc(-1 * max(var(--library-padding, 12px), env(safe-area-inset-top))) 6px;
   padding: max(var(--library-padding, 12px), env(safe-area-inset-top)) var(--library-right, 16px) 8px var(--library-left, 16px);
   border-block-end: 1px solid transparent;
-  transition: padding 220ms cubic-bezier(.23,1,.32,1), background-color 180ms ease, border-color 180ms ease;
+  background-color: var(--paper);
 }
 #app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar .round::before {
   width: 44px; height: 44px; transition: transform 220ms cubic-bezier(.23,1,.32,1);
 }
-#app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar.is-compact {
-  padding-block: max(6px, env(safe-area-inset-top)) 6px;
-  border-block-end-color: var(--rule);
-}
-#app-lecture #bibliotheque-app[data-format="tablet"][data-accueil-page]:not([data-book-open]) .toolbar.is-compact {
-  background: color-mix(in srgb, var(--paper) 92%, transparent);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-}
-#app-lecture #bibliotheque-app[data-accueil-page]:not([data-book-open]) .toolbar.is-compact .round::before { transform: scale(.86); }
-
 /* Accueil · barre de recherche validée (zone 2) */
 #app-lecture #bibliotheque-app #bibliotheque-app-search {
   gap: 10px; min-block-size: 40px; block-size: 40px; margin: 4px 0 18px;
@@ -2319,3 +2309,13 @@ body { margin: 0; }
 #app-lecture .veille-settings [role=status]:empty { display:none; }
 
 #app-lecture [data-discovery-active] > :is(.elp-page-heading, [data-catalogue-panel], [data-save-catalogue-filter], [data-catalogue-filter-notice]) { display: none; }
+
+#app-lecture .acc-pill { --reading-offset: 17px; }
+#app-lecture [data-format="tablet"] .acc-pill { --reading-offset: 36px; }
+#app-lecture .acc-pill-resume { position:absolute; inset:0; width:100%; height:100%; background:transparent; border:0; padding:0; border-radius:inherit; cursor:pointer; }
+#app-lecture .acc-pill-full { pointer-events:none; padding-inline-start:calc(9px + var(--reading-offset, 0px)); }
+#app-lecture .acc-pill-full .acc-pill-cover { position:relative; z-index:1; pointer-events:auto; background:none; padding:0; border:0; cursor:pointer; }
+#app-lecture .acc-pill.mini .acc-pill-cover { visibility:hidden; }
+#app-lecture .acc-pill .acc-pill-bar { inset-inline-start:calc(58px + var(--reading-offset, 0px)); }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-full { padding-inline-start:calc(12px + var(--reading-offset, 0px)); }
+#app-lecture #bibliotheque-app[data-format="tablet"] .acc-pill-bar { inset-inline-start:calc(72px + var(--reading-offset, 0px)); }

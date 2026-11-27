@@ -17,7 +17,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <link rel="manifest" href="./app.webmanifest?v=accueil-direct" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=entre-les-pages" sizes="180x180">
 <link rel="icon" href="./icons/app-192.png?v=entre-les-pages" sizes="192x192" type="image/png">
-<link rel="stylesheet" href="./app.css?v=espacement-pile-1">
+<link rel="stylesheet" href="./app.css?v=lecture-position-b">
 <script defer src="./vendor/lucide.min.js"></script>
 <link rel="stylesheet" href="./compte.css?v=accueil-direct">
 <script defer src="./vendor/supabase-2.119.1.js"></script>
@@ -41,7 +41,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=fin-lecture-1"></script>
 <script defer src="./reading-status.js"></script>
 <script defer src="./veille-parutions.js?v=pal-fiche-lire-1"></script>
-<script defer src="./app.js?v=pastille-bibliotheque-2"></script>
+<script defer src="./app.js?v=lecture-position-b"></script>
 <link rel="stylesheet" href="./mobile-surface.css?v=1">
 <script defer src="./mobile-surface.js?v=1"></script>
 </head>
@@ -391,9 +391,9 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         <small></small><h2 id="acc-saga-book-title"></h2><p></p>
         <form method="dialog"><button type="submit" class="cursor-interaction">Fermer</button></form>
       </dialog>
-      <button type="button" class="acc-pill cursor-interaction" data-acc-pill hidden>
+      <div class="acc-pill" data-acc-pill hidden>
         <span class="acc-pill-full">
-          <span class="acc-pill-cover" data-acc-pill-cover></span>
+          <button type="button" class="acc-pill-cover" data-acc-pill-cover></button>
           <span class="acc-pill-text"><b data-acc-pill-title></b><small data-acc-pill-sub></small></span>
           <span class="acc-pill-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg></span>
           <span class="acc-pill-bar" aria-hidden="true"><i data-acc-pill-bar></i></span>
@@ -402,7 +402,8 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
           <svg class="acc-ring" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="2.4"/><circle data-acc-ring cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" transform="rotate(-90 20 20)" stroke-dasharray="0 999"/></svg>
           <svg class="acc-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c3-1.2 6-1.2 9 .8 3-2 6-2 9-.8v13c-3-1.2-6-1.2-9 .8-3-2-6-2-9-.8z"/><path d="M12 6.3v13"/></svg>
         </span>
-      </button>
+        <button type="button" class="acc-pill-resume" data-acc-resume></button>
+      </div>
 
       <div class="library-tabs" data-library-tabs role="group" aria-label="Onglets de la bibliothèque">
         <button class="library-tab cursor-interaction" type="button" data-library-tab="all" aria-pressed="true" aria-controls="bibliotheque-app-tab-body">

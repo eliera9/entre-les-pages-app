@@ -3283,7 +3283,8 @@ async function activateLibrary(root) {
     find('[data-acc-pill-sub]', accPill).textContent = [book.author, `${progress} %`].filter(Boolean).join(' · ');
     find('[data-acc-pill-bar]', accPill).style.width = `${progress}%`;
     find('[data-acc-ring]', accPill).setAttribute('stroke-dasharray', `${(2 * Math.PI * 17 * progress / 100).toFixed(1)} 999`);
-    accPill.setAttribute('aria-label', `Reprendre ${book.title}, ${progress} %`);
+    cover.setAttribute('aria-label', `Ouvrir la fiche de « ${book.title} »`);
+    find('[data-acc-resume]', accPill).setAttribute('aria-label', `Reprendre ${book.title}, ${progress} %`);
     accPill.classList.toggle('mini', accPillMini);
   }
   window.addEventListener('scroll', () => {
@@ -3294,13 +3295,19 @@ async function activateLibrary(root) {
     else return;
     accPill.classList.toggle('mini', accPillMini);
   }, {passive: true});
-  accPill.addEventListener('click', () => {
+  const readingCover = find('[data-acc-pill-cover]', accPill);
+  readingCover.addEventListener('click', () => {
+    const book = importedReading();
+    if (book) openSecondary('book', book, readingCover, {fromLibrary:true});
+  });
+  const resumeReading = find('[data-acc-resume]', accPill);
+  resumeReading.addEventListener('click', () => {
     if (accPill.classList.contains('mini')) {
       accPillMini = false;
       accPill.classList.remove('mini');
       return;
     }
-    openSecondary('reading', null, accPill);
+    openSecondary('reading', null, resumeReading);
   });
 
   // Accueil : salutation, pile à lire et objectif annuel dans la barre.
@@ -3432,18 +3439,6 @@ async function activateLibrary(root) {
   search.addEventListener('focus', () => { searchFocused = true; if (recentOpen()) renderContent(); });
   search.addEventListener('blur', () => { searchFocused = false; rememberSearch(); if (inLibraryRoot() && !search.value.trim()) renderContent(); });
   search.addEventListener('keydown', event => { if (event.key === 'Enter') { rememberSearch(); search.blur(); } });
-
-  // En-tête : se réduit en barre compacte collée en haut quand on fait défiler
-  const headerBar = find('.toolbar');
-  let headerCompact = false;
-  function updateHeader() {
-    const y = window.scrollY;
-    const next = headerCompact ? y > 40 : y > 72;
-    if (next === headerCompact) return;
-    headerCompact = next;
-    headerBar.classList.toggle('is-compact', headerCompact);
-  }
-  window.addEventListener('scroll', updateHeader, {passive: true});
 
   const previewSpaces = {
     journal: {title: 'Journal', empty: 'Aucune note de lecture.'},
