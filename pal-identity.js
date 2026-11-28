@@ -1,8 +1,5 @@
 function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, editCover, signal}) {
  root.classList.add('ep-pal-identity');
- root.dataset.pastilles='galets';
- root.dataset.repere='points';
- root.dataset.saisie='ligne';
  root.innerHTML=`<div class="livre">
  <button type="button" class="couverture" aria-label="Modifier la couverture et la fiche"></button>
  <div class="identite">
@@ -17,11 +14,6 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
 
   </div>
  </div>
- <section class="palette" id="ep-pal-palette" hidden><label class="barre-ecrire"><input class="saisie-genre" type="text" autocomplete="off" enterkeyhint="done"></label>
-  <div class="piste-genres" id="ep-pal-piste" role="region" aria-roledescription="carrousel"></div>
-  <div class="pages-genres" hidden><span class="repere-points" role="group"></span><span class="lecture-page sr-only" aria-live="polite"></span></div>
-  <button type="button" class="creer-genre" hidden></button><span class="annonce-genre sr-only" role="status"></span>
- </section>
  <section class="collection reperes" aria-labelledby="ep-reperes-title">
   <h3 class="libelle-groupe" id="ep-reperes-title">Mes repères de lecture</h3>
   <div class="reperes-champs">
@@ -35,7 +27,34 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  </section>
  <button type="button" class="collection" data-champ="subgenres"><span class="libelle-groupe">Sous-genres</span><span class="valeurs"></span></button>
  <button type="button" class="collection" data-champ="tropes"><span class="libelle-groupe">Tropes</span><span class="valeurs"></span></button>
-</div>`;
+</div>
+<dialog class="palette ep-tag-sheet" id="ep-pal-palette" aria-labelledby="ep-tag-sheet-title">
+ <div class="ep-tag-sheet-inner">
+  <div class="ep-tag-sheet-handle" aria-hidden="true"></div>
+  <header class="ep-tag-sheet-heading">
+   <svg viewBox="0 0 34 30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h15v19l-7.5-5L3 25zM7 11h7M23 2l1.5 4.5L29 8l-4.5 1.5L23 14l-1.5-4.5L17 8l4.5-1.5z"/>
+    <circle cx="30" cy="16" r="1"/>
+   </svg>
+   <h3 id="ep-tag-sheet-title" tabindex="-1" autofocus></h3>
+   <button type="button" class="ep-tag-sheet-close" aria-label="Fermer le volet">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8"/></svg>
+   </button>
+  </header>
+  <label class="ep-tag-sheet-input">
+   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="4.5"/><path d="m12 12 4 4"/></svg>
+   <input class="saisie-genre" type="text" autocomplete="off" enterkeyhint="done">
+  </label>
+  <div class="ep-tag-sheet-group" data-tags-selected hidden>
+   <p>Pour ce livre</p><div class="ep-tag-sheet-chips"></div>
+  </div>
+  <div class="ep-tag-sheet-group" data-tags-results hidden>
+   <p></p><div class="ep-tag-sheet-chips"></div>
+  </div>
+  <button type="button" class="creer-genre" hidden></button>
+  <span class="annonce-genre sr-only" role="status"></span>
+ </div>
+</dialog>`;
  const livre=root.querySelector('.livre'),ligneGenreDate=livre.querySelector('.rangee-genre-date');
  const boutons=Object.fromEntries([...livre.querySelectorAll('[data-champ]')].map(b=>[b.dataset.champ,b]));
  const blocDate=livre.querySelector('.bloc-parution'),champs=blocDate.querySelector('.champs-date'),apercu=root;
@@ -89,7 +108,11 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  function el(tag,cl,tx){const n=document.createElement(tag);if(cl)n.className=cl;if(tx!==undefined)n.textContent=tx;return n}
  function bouton(tx,cl,fn){const b=el('button',cl,tx);b.type='button';b.addEventListener('click',fn);return b}
  function afficher(c){
-  if(c==='genre'){boutons.genre.textContent=donnees.genre||'Ajouter un genre';return}
+  if(c==='genre'){
+   boutons.genre.textContent=donnees.genre||'Ajouter un genre';
+   boutons.genre.setAttribute('aria-label',donnees.genre?'Modifier le genre : '+donnees.genre:'Ajouter un genre');
+   return;
+  }
   const valeurs=donnees[c];
   const liste=boutons[c].querySelector('.valeurs');
   liste.replaceChildren();
@@ -177,173 +200,115 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   liste.addEventListener('keydown',e=>{const items=[...liste.querySelectorAll('button')],pos=items.indexOf(e.target);if(pos<0)return;const idx={ArrowDown:Math.min(pos+1,items.length-1),ArrowUp:Math.max(0,pos-1),Home:0,End:items.length-1}[e.key];if(idx!==undefined){e.preventDefault();items[idx].focus()}});
  }
  const cleGenre=t=>t.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/œ/g,'oe').replace(/[-’']/g,' ').replace(/\s+/g,' ');
- const palette=root.querySelector('.palette'),saisie=palette.querySelector('.saisie-genre'),piste=palette.querySelector('.piste-genres');
- const creer=palette.querySelector('.creer-genre'),points=palette.querySelector('.repere-points'),navPoints=palette.querySelector('.pages-genres'),annonce=palette.querySelector('.annonce-genre');
- const genreAncre=document.createComment('Palette du genre');palette.before(genreAncre);
+ const palette=root.querySelector('.palette'),saisie=palette.querySelector('.saisie-genre');
+ const titreVolet=palette.querySelector('h3');
+ const fermerVolet=palette.querySelector('.ep-tag-sheet-close');
+ const creer=palette.querySelector('.creer-genre');
+ const annonce=palette.querySelector('.annonce-genre');
+ const groupeSelection=palette.querySelector('[data-tags-selected]');
+ const groupeResultats=palette.querySelector('[data-tags-results]');
  const rubriquesTags={
-  genre:{nom:'genre',pluriel:'genres',colonnes:3,source:[...tagOptions.genres],priorites:['Romantasy','Fantasy','Thriller','Dark romance','Policier','Science-fiction','Mystère','Aventure','Fantastique']},
-  subgenres:{nom:'sous-genre',pluriel:'sous-genres',colonnes:4,source:[...tagOptions.subgenres],priorites:['High fantasy','Fae fantasy','Grimdark','Cozy fantasy','Epic fantasy','Dark fantasy','Royal','Dragon fantasy','Yakuza','Low fantasy','Small town','Gothique']},
-  tropes:{nom:'trope',pluriel:'tropes',colonnes:4,source:[...tagOptions.tropes,...defaultTropes,...["D’ennemis à amants", "Proximité forcée", "Amour interdit", "Slow burn", "Seconde chance", "Faux couple", "Âmes sœurs", "Famille choisie", "Rivaux", "Amis d’enfance", "Bal masqué", "Quête", "Double identité", "Garde du corps", "Pacte secret", "Mariage arrangé", "Un seul lit", "Amour secret", "Triangle amoureux", "Deuil", "Grincheux et solaire", "Coup de foudre", "Différence d’âge", "Mémoire perdue", "Héros malgré lui", "Alliance fragile", "Course contre la montre", "Retour au pays", "Lettre perdue", "Amis puis amants", "Voyage dans le temps", "Identité cachée", "Rédemption", "Échange de lettres", "Dernière chance", "Rivalité familiale"]],priorites:[]}
+  genre:{nom:'genre',titre:'Genre',champ:'genres',source:()=>tagOptions.genres},
+  subgenres:{nom:'sous-genre',titre:'Sous-genres',champ:'subgenres',source:()=>tagOptions.subgenres},
+  tropes:{nom:'trope',titre:'Tropes',champ:'tropes',source:()=>[...tagOptions.tropes,...defaultTropes,...["D’ennemis à amants", "Proximité forcée", "Amour interdit", "Slow burn", "Seconde chance", "Faux couple", "Âmes sœurs", "Famille choisie", "Rivaux", "Amis d’enfance", "Bal masqué", "Quête", "Double identité", "Garde du corps", "Pacte secret", "Mariage arrangé", "Un seul lit", "Amour secret", "Triangle amoureux", "Deuil", "Grincheux et solaire", "Coup de foudre", "Différence d’âge", "Mémoire perdue", "Héros malgré lui", "Alliance fragile", "Course contre la montre", "Retour au pays", "Lettre perdue", "Amis puis amants", "Voyage dans le temps", "Identité cachée", "Rédemption", "Échange de lettres", "Dernière chance", "Rivalité familiale"]]}
  };
- let rubrique='subgenres',indexPage=0,ordre=[],liste=[];
+ let rubrique='genre';
+ let catalogue=[];
+ let resultats=[];
  const mesures=document.createElement('canvas').getContext('2d');
  const canon=s=>s.trim().replace(/\s+/g,' ');
- function uniques(items){const vus=new Set();return items.filter(n=>{const k=cleGenre(n);if(!k||vus.has(k))return false;vus.add(k);return true})}
- function selection(){return rubrique==='genre'?[donnees.genre]:donnees[rubrique]}
- function ordonner(){
-  const cfg=rubriquesTags[rubrique];
-  ordre=uniques([...selection(),...cfg.priorites,...cfg.source].filter(Boolean));
- }
- function effacerOuverture(focus=false){
-  const ligne=boutons[rubrique];palette.hidden=true;ligne.setAttribute('aria-expanded','false');saisie.value='';
-  if(focus)ligne.focus({preventScroll:true});
- }
- function ouvrirRubrique(k,focus=false){
-  effacerOuverture();replier();rubrique=k;const cfg=rubriquesTags[k];
-  (k==='genre'?genreAncre:boutons[k]).after(palette);
-  palette.dataset.rubrique=k;palette.hidden=false;boutons[k].setAttribute('aria-expanded','true');
-  palette.setAttribute('aria-label','Modifier les '+cfg.pluriel);
-  saisie.setAttribute('aria-label','Chercher ou écrire un '+cfg.nom);saisie.placeholder='Chercher ou écrire un '+cfg.nom+'…';
-  piste.setAttribute('aria-label',cfg.pluriel);points.setAttribute('aria-label','Pages de '+cfg.pluriel);
-  ordonner();rafraichir();if(focus)saisie.focus({preventScroll:true});
- }
- function hauteurActive(){
-  const h=piste.children[indexPage]?.offsetHeight;piste.style.height=h?h+'px':'';
- }
- function afficherPoints(index){
-  const total=piste.childElementCount;
-  indexPage=Math.max(0,Math.min(index,total-1));
-  const debut=Math.max(0,Math.min(indexPage-2,total-5)),fin=Math.min(total,debut+5);
-  if(points.dataset.fenetre!==[debut,fin,total,rubrique].join('-')){
-   const avant=document.activeElement;const garder=points.contains(avant)?avant.dataset.index:null;
-   points.replaceChildren();
-   for(let i=debut;i<fin;i++){
-    const b=bouton('','point-page',()=>allerPage(i));b.dataset.index=i;
-    b.setAttribute('aria-controls',piste.id);b.setAttribute('aria-label','Page '+(i+1)+' de '+rubriquesTags[rubrique].pluriel);points.append(b);
-   }
-   points.dataset.fenetre=[debut,fin,total,rubrique].join('-');
-   if(garder!=null)points.querySelector('[data-index="'+garder+'"]')?.focus({preventScroll:true});
-  }
-  for(const b of points.children)b.setAttribute('aria-current',Number(b.dataset.index)===indexPage?'page':'false');
-  navPoints.hidden=total<2;
-  Array.from(piste.children).forEach((p,i)=>{p.inert=i!==indexPage});
-  palette.querySelector('.lecture-page').textContent=total?'Page '+(indexPage+1)+' sur '+total:'';
-  hauteurActive();
- }
- function allerPage(i){
-  if(!piste.children[i])return;
-  piste.scrollTo({left:i*piste.clientWidth,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
- }
- piste.addEventListener('scroll',()=>{if(piste.clientWidth)afficherPoints(Math.round(piste.scrollLeft/piste.clientWidth))},{passive:true});
- function typographie(px){mesures.font=px+'px '+getComputedStyle(palette).getPropertyValue('--lettres-etiquettes').trim()}
- // Allocate space for whole words first, then distribute the remaining space toward the natural label widths.
- function ajusterLigne(row){
-  const boutonsLigne=[...row.children],n=boutonsLigne.length,gap=parseFloat(getComputedStyle(row).columnGap)||0;
-  const dispo=row.clientWidth-gap*(n-1);if(dispo<1||!n)return;
-  const multi=rubrique!=='genre';const maximum=parseFloat(getComputedStyle(palette).getPropertyValue(multi?'--taille-multiple':'--taille-genre'));
-  const pad=multi?5:9;typographie(maximum);
-  const mots=boutonsLigne.map(b=>Math.max(...b.textContent.split(/\s+/).map(m=>mesures.measureText(m).width)));
-
-  const mini=mots.reduce((a,v)=>a+v,0),base=pad*2+3;
-  const ratio=Math.min(1,(dispo-n*base)/Math.max(1,mini));
-  const padding=ratio>=.9?pad:2;
-  const cadre=padding*2+3;
-  const facteur=Math.min(1,(dispo-n*cadre)/Math.max(1,mini));
-  const taille=Math.max(1,Math.floor(maximum*facteur*10)/10);
-  typographie(taille);
-  const minima=boutonsLigne.map(b=>Math.ceil(Math.max(...b.textContent.split(/\s+/).map(m=>mesures.measureText(m).width)))+padding*2+2);
-  const souhaits=boutonsLigne.map((b,i)=>Math.max(minima[i],Math.ceil(mesures.measureText(b.textContent).width)+padding*2+2));
-  const sommeMin=minima.reduce((a,x)=>a+x,0),besoin=souhaits.reduce((a,x,i)=>a+x-minima[i],0);
-  const partage=besoin?Math.min(1,Math.max(0,dispo-sommeMin)/besoin):0;
-  boutonsLigne.forEach((b,i)=>{
-   const largeur=minima[i]+partage*(souhaits[i]-minima[i]);
-   const corps=Math.max(taille,11.5);
-   const texte=b.firstElementChild;
-   typographie(corps);
-   const motMax=Math.max(...texte.textContent.split(/\s+/).map(m=>mesures.measureText(m).width));
-   const espace=Math.max(1,largeur-2*padding-2);
-   const echelle=Math.min(1,espace/(motMax+.5));
-   b.style.fontSize=corps+'px';b.style.paddingInline=padding+'px';b.style.width=largeur+'px';
-   texte.style.width=(espace/echelle)+'px';texte.style.transform='scaleX('+echelle+')';
-
+ function uniques(items){
+  const vus=new Set();
+  return items.filter(n=>{
+   const k=cleGenre(n);
+   if(!k||vus.has(k))return false;
+   vus.add(k);
+   return true;
   });
  }
- function tailleDesLibelles(){
-  if(palette.hidden||!piste.clientWidth)return;
-  piste.querySelectorAll('.rangee-choix').forEach(ajusterLigne);hauteurActive();
+ function selection(){return rubrique==='genre'?[donnees.genre].filter(Boolean):donnees[rubrique]}
+ function effacerOuverture(){
+  if(!palette.open)return;
+  palette.close();
+  boutons[rubrique].setAttribute('aria-expanded','false');
+  saisie.value='';
  }
- let largeurRecente=0;
- const voirTaille=new ResizeObserver(()=>{const l=piste.clientWidth;if(!l||palette.hidden)return;if(l!==largeurRecente){largeurRecente=l;rafraichir()}else tailleDesLibelles()});voirTaille.observe(piste);
- function composerRangees(noms,colonnes){
-  if(!noms.length)return [];
-  typographie(11.4);
-  const dispo=palette.clientWidth-2;
-  const ecart=colonnes===3?6:4;
-  const poids=nom=>Math.ceil(Math.max(...nom.split(/\s+/).map(m=>mesures.measureText(m).width)))+7+ecart;
-  const poidsMax=dispo+ecart;
-  const elements=noms.map((nom,position)=>({nom,position,poids:poids(nom)}));
-  const lignes=[];
-  for(let i=0;i<elements.length;i+=colonnes){
-   const valeurs=elements.slice(i,i+colonnes);
-   lignes.push({valeurs,somme:valeurs.reduce((sum,x)=>sum+x.poids,0)});
-  }
-  // Pair long words with shorter neighbours so every word fits at a legible size.
-  for(const ligne of lignes){
-   while(ligne.somme>poidsMax){
-    let gain=0,echange=null;
-    for(const autre of lignes.slice(Math.floor(lignes.indexOf(ligne)/3)*3,Math.floor(lignes.indexOf(ligne)/3)*3+3)){
-     if(autre===ligne||autre.somme>=poidsMax)continue;
-     for(const a of ligne.valeurs)for(const b of autre.valeurs){
-      const delta=a.poids-b.poids;
-      if(delta>gain&&autre.somme+delta<=poidsMax){gain=delta;echange={autre,a,b}}
-     }
-    }
-    if(!echange)break;
-    const {autre,a,b}=echange;
-    ligne.valeurs[ligne.valeurs.indexOf(a)]=b;autre.valeurs[autre.valeurs.indexOf(b)]=a;
-    ligne.somme-=gain;autre.somme+=gain;
-   }
-  }
-  return lignes.map(ligne=>ligne.valeurs.sort((a,b)=>a.position-b.position).map(x=>x.nom));
+ function ajusterVolet(){
+  const viewport=window.visualViewport;
+  if(!viewport||!palette.open)return;
+  palette.style.setProperty('--volet-bas',Math.max(0,window.innerHeight-viewport.height-viewport.offsetTop)+'px');
+  palette.style.setProperty('--volet-hauteur',viewport.height+'px');
+ }
+ function ouvrirRubrique(k){
+  if(!book||palette.open)return;
+  replier();
+  fermerPriorite();
+  rubrique=k;
+  const cfg=rubriquesTags[k];
+  titreVolet.textContent=cfg.titre;
+  palette.dataset.rubrique=k;
+  saisie.placeholder='Chercher ou écrire un '+cfg.nom+'…';
+  saisie.setAttribute('aria-label',saisie.placeholder.slice(0,-1));
+  catalogue=uniques([...cfg.source(),...tagOptions.used(cfg.champ)]);
+  rafraichir();
+  boutons[k].setAttribute('aria-expanded','true');
+  palette.showModal();
+  palette.scrollTop=0;
+  ajusterVolet();
+ }
+ function afficherPastilles(groupe,noms,actifs){
+  groupe.hidden=noms.length===0;
+  groupe.querySelector('.ep-tag-sheet-chips').replaceChildren(...noms.map(nom=>{
+   const b=bouton('','option-genre',()=>choisirValeur(nom,true));
+   b.append(el('span','etiquette',nom));
+   b.setAttribute('aria-pressed',String(actifs.has(cleGenre(nom))));
+   return b;
+  }));
  }
  function rafraichir(){
-  const cfg=rubriquesTags[rubrique],cle=cleGenre(saisie.value),actifs=new Set(selection().map(cleGenre));
-  liste=ordre.filter(n=>!cle||cleGenre(n).includes(cle));piste.replaceChildren();indexPage=0;
-  const lignes=composerRangees(liste,cfg.colonnes);
-  for(let i=0;i<lignes.length;i+=3){
-   const page=el('div','page-genres');
-   page.setAttribute('role','group');page.setAttribute('aria-label','Page '+(1+i/3));
-   for(const groupe of lignes.slice(i,i+3)){
-    const ligne=el('div','rangee-choix');
-    for(const nom of groupe){
-     const b=bouton('','option-genre',()=>choisirValeur(nom,true));b.append(el('span','etiquette',nom));
-     b.setAttribute('aria-pressed',String(actifs.has(cleGenre(nom))));ligne.append(b);
-    }
-    page.append(ligne);
-   }
-   piste.append(page);
-  }
-  piste.scrollLeft=0;tailleDesLibelles();afficherPoints(0);
-  creer.hidden=!cle||ordre.some(n=>cleGenre(n)===cle);
-  creer.textContent='＋ Ajouter « '+canon(saisie.value)+' »';
-  annonce.textContent=cle&&!liste.length?'Aucun résultat. Tu peux ajouter ce libellé.':'';
+  const cfg=rubriquesTags[rubrique];
+  const terme=cleGenre(saisie.value);
+  const choisis=selection();
+  const actifs=new Set(choisis.map(cleGenre));
+  const recents=tagOptions.recent(cfg.champ);
+  const options=uniques([...recents,...choisis,...catalogue]);
+  resultats=terme?options.filter(n=>cleGenre(n).includes(terme))
+   .sort((a,b)=>Number(cleGenre(b).startsWith(terme))-Number(cleGenre(a).startsWith(terme))):recents;
+  const codesRecents=new Set(recents.map(cleGenre));
+  afficherPastilles(groupeSelection,terme?[]:choisis.filter(n=>!codesRecents.has(cleGenre(n))),actifs);
+  groupeResultats.querySelector('p').textContent=terme?'Résultats':'Récemment utilisés';
+  afficherPastilles(groupeResultats,resultats,actifs);
+  creer.hidden=!terme||options.some(n=>cleGenre(n)===terme);
+  creer.textContent='+ Ajouter « '+canon(saisie.value)+' »';
+  annonce.textContent=terme&&!resultats.length?'Aucun terme correspondant.':'';
  }
  function choisirValeur(texte,basculer){
-  const propre=canon(texte);if(!propre)return;
-  const cle=cleGenre(propre),cfg=rubriquesTags[rubrique];
-  const nom=ordre.find(n=>cleGenre(n)===cle)||propre;
-  if(!ordre.includes(nom)){ordre.push(nom);cfg.source.push(nom)}
+  const propre=canon(texte);
+  if(!propre)return;
+  const cle=cleGenre(propre);
+  const nom=resultats.find(n=>cleGenre(n)===cle)||propre;
   if(rubrique==='genre'){
-   change(book,'genres',[nom]);donnees.genre=nom;afficher('genre');boutons.genre.setAttribute('aria-label','Modifier le genre : '+nom);
-   effacerOuverture(true);ajusterGenreFerme();return;
+   change(book,'genres',[nom]);
+   donnees.genre=nom;
+   afficher('genre');
+   effacerOuverture();
+   ajusterGenreFerme();
+   return;
   }
-  const valeurs=donnees[rubrique],pos=valeurs.findIndex(n=>cleGenre(n)===cle);
-  if(pos>=0&&basculer)valeurs.splice(pos,1);else if(pos<0)valeurs.push(nom);
-  change(book,rubrique,[...valeurs]);afficher(rubrique);
-  if(basculer){
-   for(const b of piste.querySelectorAll('.option-genre'))if(cleGenre(b.textContent)===cle)b.setAttribute('aria-pressed',String(pos<0));
+  const valeurs=donnees[rubrique];
+  const pos=valeurs.findIndex(n=>cleGenre(n)===cle);
+  if(pos>=0&&basculer)valeurs.splice(pos,1);
+  else if(pos<0)valeurs.push(nom);
+  change(book,rubrique,[...valeurs]);
+  afficher(rubrique);
+  if(basculer&&!saisie.value.trim()){
+   rafraichir();
+   const suivant=[...palette.querySelectorAll('.option-genre')].find(b=>cleGenre(b.textContent)===cle);
+   (suivant||titreVolet).focus({preventScroll:true});
   }else{
-   saisie.value='';ordonner();rafraichir();saisie.focus({preventScroll:true});
+   saisie.value='';
+   rafraichir();
+   saisie.focus({preventScroll:true});
   }
   annonce.textContent=nom+(pos>=0&&basculer?' retiré.':' sélectionné.');
  }
@@ -375,26 +340,35 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   }
  }
  const suivreGenre=new ResizeObserver(ajusterGenreFerme);suivreGenre.observe(ligneGenreDate);
- document.fonts.ready.then(()=>{if(!palette.hidden)rafraichir();ajusterGenreFerme()});
- for(const k of Object.keys(rubriquesTags)){
-  const b=boutons[k];b.setAttribute('aria-controls',palette.id);b.setAttribute('aria-expanded','false');
+ document.fonts.ready.then(()=>{if(!signal.aborted)ajusterGenreFerme()});
+ for(const [k,b] of Object.entries(boutons)){
+  b.setAttribute('aria-controls',palette.id);
+  b.setAttribute('aria-haspopup','dialog');
+  b.setAttribute('aria-expanded','false');
   if(k!=='genre')afficher(k);
-  b.addEventListener('click',e=>{if(!palette.hidden&&rubrique===k)effacerOuverture();else ouvrirRubrique(k,e.detail===0)});
+  b.addEventListener('click',()=>ouvrirRubrique(k));
  }
  saisie.addEventListener('input',rafraichir);
  saisie.addEventListener('keydown',e=>{
   if(e.isComposing)return;
-  if(e.key==='Enter'&&saisie.value.trim()){e.preventDefault();choisirValeur(saisie.value,false)}
-  if(e.key==='ArrowDown'){const b=piste.children[indexPage]?.querySelector('button')||(!creer.hidden&&creer);if(b){e.preventDefault();b.focus()}}
+  if(e.key==='Enter'){
+   e.preventDefault();
+   const terme=cleGenre(saisie.value);
+   const existant=resultats.find(n=>cleGenre(n)===terme);
+   if(existant||!creer.hidden)choisirValeur(existant||saisie.value,false);
+  }
+  if(e.key==='ArrowDown'){
+   const premier=palette.querySelector('[data-tags-results] .option-genre')||(!creer.hidden&&creer);
+   if(premier){e.preventDefault();premier.focus()}
+  }
  });
  creer.addEventListener('click',()=>choisirValeur(saisie.value,false));
- palette.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){e.stopPropagation();e.preventDefault();effacerOuverture(true);return}
-  if(!piste.contains(e.target))return;
-  const pas={ArrowLeft:-1,ArrowRight:1}[e.key];if(!pas||!piste.children[indexPage+pas])return;
-  e.preventDefault();allerPage(indexPage+pas);const suivant=piste.children[indexPage+pas];suivant.inert=false;suivant.querySelector('button').focus({preventScroll:true});
- });
- livre.addEventListener('click',e=>{if(!palette.hidden&&!palette.contains(e.target)&&!e.target.closest('[data-champ="genre"],[data-champ="subgenres"],[data-champ="tropes"]'))effacerOuverture()});
+ fermerVolet.addEventListener('click',effacerOuverture);
+ palette.addEventListener('click',e=>{if(e.target===palette)effacerOuverture()});
+ palette.addEventListener('cancel',e=>{e.preventDefault();effacerOuverture()});
+ palette.addEventListener('keydown',e=>{if(e.key==='Escape')e.stopPropagation()});
+ window.visualViewport?.addEventListener('resize',ajusterVolet,{signal});
+ window.visualViewport?.addEventListener('scroll',ajusterVolet,{signal});
  const champsTexte=[...root.querySelectorAll('[data-texte]')];
  for(const field of champsTexte){
   const key=field.dataset.texte;
@@ -409,10 +383,10 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   field.addEventListener('blur',()=>{if(book)field.textContent=String(book[key]||'')});
  }
  const cover=livre.querySelector('.couverture');cover.addEventListener('click',editCover);
- document.addEventListener('pointerdown',e=>{if(!priorite.contains(e.target))fermerPriorite();if(!blocDate.contains(e.target))replier();if(!root.contains(e.target)&&!palette.hidden)effacerOuverture()},{signal});
+ document.addEventListener('pointerdown',e=>{if(!priorite.contains(e.target))fermerPriorite();if(!blocDate.contains(e.target))replier()},{signal});
  blocDate.addEventListener('keydown',e=>{if(e.key==='Escape'&&listeOuverte){e.preventDefault();e.stopPropagation();replier(true)}});
  blocDate.addEventListener('focusout',e=>{if(e.relatedTarget&&!blocDate.contains(e.relatedTarget))replier()});
- signal.addEventListener('abort',()=>{suivreGenre.disconnect();voirTaille.disconnect()},{once:true});
+ signal.addEventListener('abort',()=>{effacerOuverture();suivreGenre.disconnect()},{once:true});
  function update(next){
   if(!next)return;
   if(book!==next){fermerPriorite();effacerOuverture();replier();coverKey=''}
@@ -428,7 +402,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   donnees.genre=book.genres?.[0]||'';
   donnees.subgenres=[...(book.subgenres||[])];donnees.tropes=[...(book.tropes||[])];
   Object.keys(boutons).forEach(afficher);ajusterGenreFerme();peindre();
-  if(!palette.hidden){ordonner();rafraichir()}
+  if(palette.open)rafraichir()
  }
  return {update,close(){fermerPriorite();effacerOuverture();replier()},focusTitle(){champsTexte[0].focus()}};
 }

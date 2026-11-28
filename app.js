@@ -729,7 +729,40 @@ async function activateLibrary(root) {
     genre: sorted(genres.map(genre => genre.name)), subgenre: sorted(allSubgenres),
     trope: sorted(unique(books.flatMap(book => book.tropes))), status: statuses, author: sorted(unique(books.map(book => book.author).filter(Boolean))),
   };
-  const bookTagOptions = {genres: options.genre, subgenres: options.subgenre, get tropes() { return options.trope; }};
+  const tagFields = ['genres', 'subgenres', 'tropes'];
+  const TAG_RECENT_LIMIT = 8;
+  const initialTagBooks = [...books].sort((a,b)=>(b.addedAt ?? b.updatedAt ?? 0)-(a.addedAt ?? a.updatedAt ?? 0));
+  const tagKey = value => key(value).replace(/[-']/g, ' ').replace(/\s+/g, ' ');
+  function recentTagLabels(values) {
+    const seen = new Set();
+    return values.filter(value=>{
+      if(typeof value!=='string'||!value.trim())return false;
+      const normalized=tagKey(value);
+      if(seen.has(normalized))return false;
+      seen.add(normalized);
+      return true;
+    }).slice(0,TAG_RECENT_LIMIT);
+  }
+  const recentTags = Object.fromEntries(tagFields.map(field=>[
+    field, recentTagLabels(Array.isArray(preferences.recentTags?.[field])
+      ? preferences.recentTags[field] : initialTagBooks.flatMap(book=>book[field] ?? []))
+  ]));
+  const bookTagOptions = {
+    genres: options.genre, subgenres: options.subgenre, get tropes() { return options.trope; },
+    recent: field=>recentTags[field],
+    used: field=>unique(books.flatMap(book=>book[field] ?? [])),
+  };
+  function rememberBookTags(book, previous) {
+    let changed = false;
+    for(const field of tagFields){
+      const existing = new Set((previous?.[field] ?? []).map(tagKey));
+      const used = (book[field] ?? []).filter(value=>!existing.has(tagKey(value)));
+      if(!used.length)continue;
+      recentTags[field]=recentTagLabels([...used.reverse(),...recentTags[field]]);
+      changed=true;
+    }
+    if(changed)savePreferences().catch(showStorageError);
+  }
   const emptyFilters = () => Object.fromEntries(Object.keys(options).map(kind => [kind, []]));
   const copy = filters => Object.fromEntries(Object.entries(filters).map(([kind, values]) => [kind, [...values]]));
   const countFilters = filters => Object.values(filters).filter(values => values.length).length;
@@ -824,6 +857,7 @@ async function activateLibrary(root) {
       genreSort: sort,
       bookSort,
       annualReadingGoal,
+      recentTags,
     });
   }
   let sort = preferences.genreSort === 'alpha' ? 'alpha' : 'custom';
@@ -2781,6 +2815,7 @@ async function activateLibrary(root) {
     }
     if (!isCurrent()) return;
     const book = await storage.putBook(imported, file, folderId);
+    rememberBookTags(book, existing);
     if (existing) Object.assign(existing, book);
     else books.unshift(book);
     options.author = sorted(unique(books.map(item => item.author).filter(Boolean)));
@@ -2832,6 +2867,7 @@ async function activateLibrary(root) {
           changes.folderIds = [...new Set([folderId,...(existing.folderIds || []).slice(1)].filter(Boolean))];
         }
         const updated = await storage.patchBook(existing.id,changes);
+        rememberBookTags(updated, existing);
         Object.assign(existing,updated);
         if (current()) returnToBook();
       } : saveAddedBook,
