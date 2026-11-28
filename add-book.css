@@ -918,7 +918,19 @@
   --author:clamp(21px,2.8vw,26px);
   --series:clamp(19px,2.5vw,23px);
 }
-#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {gap:var(--pal-book-gap)}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {
+  inline-size:96%;
+  margin-inline:auto;
+  grid-template-columns:min(36%, clamp(185px, 28vw, 270px)) minmax(0, max-content);
+  justify-content:center;
+  align-items:center;
+  column-gap:clamp(28px, 5vw, 54px);
+}
+#bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-copy {
+  min-inline-size:0;
+  max-inline-size:38ch;
+  overflow-wrap:anywhere;
+}
 #bibliotheque-app #elp-add-book .ep-cover:has(img:not([hidden])) {
   background: transparent;
   border: 0;

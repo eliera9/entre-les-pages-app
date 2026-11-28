@@ -1457,7 +1457,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       const ready=prepareMetadata(imported,started);
       await ready;
       if (!current(version) || digitalBook!==imported) return;
-      importStep(2);
+      importStep(-1);
       formReady.then(()=>{
         if (current(version) && digitalBook===imported && selectedStatus==="to-read")
           promesseForm?.collect(imported,ready);
@@ -1466,7 +1466,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       titleField.hidden=Boolean(title);
       if (!title) recovery.hidden=false;
       const notes=[];
-      if (web?.web!=="sourcée") notes.push("Recherche web non confirmée.");
+
       if (imported.importReview?.length) notes.push("À vérifier : "+imported.importReview.join(", ")+".");
       reviewNotice.textContent=notes.join(" ");
       reviewNotice.hidden=!notes.length;
