@@ -2267,7 +2267,7 @@ body { margin: 0; }
 #app-lecture #bibliotheque-app[data-format="tablet"] [data-recent-clear] {font-size:22px}
 #app-lecture :is(.pile-title-link,#acc-bientot-title)::before,#app-lecture :is(.pile-title-link,#acc-bientot-title)::after {content:"";flex:1;height:1px;background:var(--rule)}
 #app-lecture #bibliotheque-app :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) .acc-count {font:italic 16px/1.2 var(--heading);padding:0;background:none;color:var(--muted)}
-#app-lecture :is([data-acc-row="pile"],[data-acc-row="sagas"]) .acc-dots {display:none}
+#app-lecture :is([data-acc-row="pile"],[data-acc-row="sagas"],[data-acc-row="bientot"]) .acc-dots {display:none}
 #app-lecture #bibliotheque-app[data-format="tablet"] :is(#acc-pile-title,#acc-sagas-title,#acc-bientot-title,#acc-lus-title) {font-size:30px}
 
 @font-face { font-family: "DM Sans"; src: url("./fonts/dm-sans.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }

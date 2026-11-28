@@ -3034,7 +3034,7 @@ async function activateLibrary(root) {
     motion.addEventListener('change', schedule);
     return schedule;
   }
-  const homeCarousels = new Map(['pile','sagas'].map(name => [
+  const homeCarousels = new Map(['pile','sagas','bientot'].map(name => [
     name, enableCarousel(find(`[data-acc-row="${name}"] [data-acc-track]`, accueil))
   ]));
   function accFill(name, items, total, moreTarget, noun) {
@@ -3044,14 +3044,14 @@ async function activateLibrary(root) {
     find('[data-acc-count]', row).textContent = (name === 'bientot' || name === 'lus') ? countLabel(total) : String(total);
     const track = find('[data-acc-track]', row);
     if (homeCarousels.has(name)) {
-      find('[data-acc-count]',row).textContent = name === 'pile' ? countLabel(total) : total + (total > 1 ? ' sagas' : ' saga');
+      find('[data-acc-count]',row).textContent = name === 'sagas' ? total + (total > 1 ? ' sagas' : ' saga') : countLabel(total);
       const previous = track.scrollLeft;
       track.replaceChildren(...items);
       track.scrollLeft = previous;
       homeCarousels.get(name)();
       return;
     }
-    const cards = name === 'bientot' ? items : items.slice(0, ACC_MAX);
+    const cards = items.slice(0, ACC_MAX);
     if (total > cards.length && moreTarget) cards.push(accMore(total - cards.length, noun(total - cards.length), moreTarget));
     track.replaceChildren(...cards);
     const dots = find('[data-acc-dots]', row);
