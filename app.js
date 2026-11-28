@@ -3527,6 +3527,7 @@ async function activateLibrary(root) {
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
         startInNote: openReadingSheet,
         returnToLibrary: fromLibrary ? returnFromSecondary : null,
+        sheetHome:home,
         setReaderTheme(theme) {setTheme(theme);savePreferences().catch(showStorageError);},
         onError: showStorageError,
         onSave(updated) { Object.assign(book, updated); refreshBookLists(); },

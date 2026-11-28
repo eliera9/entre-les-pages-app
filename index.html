@@ -35,13 +35,15 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./pal-identity.js?v=reperes-aquarelles"></script>
 <script defer src="./reading-journal.js?v=1"></script>
 <script defer src="./add-book.js?v=fin-lecture-1"></script>
+<link rel="stylesheet" href="./reading-sheet-tablet.css?v=1">
+<script defer src="./reading-sheet-tablet.js?v=1"></script>
 <link rel="stylesheet" href="./book-detail.css?v=decor-aquarelle-b">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
 <script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=fin-lecture-1"></script>
 <script defer src="./reading-status.js"></script>
 <script defer src="./veille-parutions.js?v=sorties-epub-1"></script>
-<script defer src="./app.js?v=sorties-defilement-1"></script>
+<script defer src="./app.js?v=lecture-tablette-1"></script>
 <link rel="stylesheet" href="./mobile-surface.css?v=1">
 <script defer src="./mobile-surface.js?v=1"></script>
 </head>
@@ -544,6 +546,7 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
           <textarea data-sheet-text aria-label="Ma fiche de lecture"></textarea>
           <button type="button" data-save-sheet>Enregistrer ma fiche</button>
           <p role="status" data-sheet-status></p>
+          <div data-tablet-sheet></div>
         </section>
         <section class="reading-edp" data-book-reader aria-label="Liseuse" hidden>
     <div class="reader livre" aria-label="Liseuse" data-reader-surface>

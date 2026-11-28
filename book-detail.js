@@ -21,7 +21,7 @@ function trackSpeed(printedPage, percent) {
 }
 let speedBook = null;
 
-function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, onSave, onRemove, onError}) {
+function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, sheetHome, onSave, onRemove, onError}) {
   speedBook = book;
   speedLast = null;
   const scope = new AbortController();
@@ -372,6 +372,21 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });
 
+  let tabletSheet;
+  const tabletMedia = matchMedia('(min-width: 700px)');
+  function openTabletSheet() {
+    if (root.dataset.format ? root.dataset.format !== 'tablet' : !tabletMedia.matches) return false;
+    tabletSheet ||= window.mountTabletReadingSheet({
+      node:q('[data-tablet-sheet]'),book,onBack:backFromNote,onHome:sheetHome || home,onSave:async patch=>{
+        const saved=await save(patch);
+        if (saved) {hasSheet=true; sheetText.value=patch.readingSheet.text;}
+        return saved;
+      }
+    });
+    root.setAttribute('data-tablet-reading-sheet','');
+    tabletSheet.open();
+    return true;
+  }
   const sheetText=q('[data-sheet-text]');
   const saveSheet=q('[data-save-sheet]');
   sheetText.value=typeof book.readingSheet==='string' ? book.readingSheet : book.readingSheet?.text || '';
@@ -394,9 +409,11 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     setText('#book-reading-sheet-title', 'Ma fiche de lecture');
     setText('[data-note-book]', book.title);
     render();
-    focus(hasSheet ? switcher : cancelNote);
+    if (!openTabletSheet()) focus(hasSheet ? switcher : cancelNote);
   }
   function backFromNote() {
+    tabletSheet?.close();
+    root.removeAttribute('data-tablet-reading-sheet');
     mode = 'book'; render(); focus(hasSheet ? switcher : create);
   }
   on(create, 'click', showNote);
@@ -1220,6 +1237,8 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   }
   return () => {
     carnet.remove(); scope.abort(); stopReader();
+    root.removeAttribute('data-tablet-reading-sheet');
+    tabletSheet?.close();
     for (const button of [edit, trash, homeButton, create]) button.hidden = true;
     host.replaceChildren();
     delete host.dataset.bookId;
