@@ -92,8 +92,7 @@
   color:#f5eaf7;
   padding:7px 12px;
 }
-#bibliotheque-app .book-folders-trail button,
-#bibliotheque-app .book-folders-remove {
+#bibliotheque-app .book-folders-trail button {
   border:0;
   background:none;
   color:var(--folder-accent);
@@ -101,7 +100,6 @@
   min-block-size:34px;
   text-align:start;
 }
-#bibliotheque-app .book-folders-remove {justify-self:start;font-size:14px}
 #bibliotheque-app .book-folders-feedback {margin:0;color:var(--folder-quiet);font-size:14px}
 #bibliotheque-app .book-folders-dialog :is(button,input):focus-visible {
   outline:2px solid var(--folder-accent);

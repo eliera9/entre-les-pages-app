@@ -34,7 +34,6 @@ function mountBookFolders({host, triggerClass, findFolder, folderEntries, folder
       </div>
       <div class="book-folders-results" id="${id}-results" aria-label="Dossiers existants" hidden></div>
       <button type="submit" class="book-folders-create" hidden>Créer et choisir ce dossier</button>
-      <button type="button" class="book-folders-remove" hidden>Retirer le dossier</button>
       <p class="book-folders-feedback" id="${id}-feedback" role="status" hidden></p>
     </form>`;
   host.append(dialog);
@@ -48,7 +47,6 @@ function mountBookFolders({host, triggerClass, findFolder, folderEntries, folder
   const results = q('.book-folders-results');
   const trail = q('.book-folders-trail');
   const submit = q('[type="submit"]');
-  const remove = q('.book-folders-remove');
   const feedback = q('.book-folders-feedback');
   let selected = initialFolder ?? null;
   let current = selected;
@@ -114,7 +112,7 @@ function mountBookFolders({host, triggerClass, findFolder, folderEntries, folder
         back.textContent = 'Dans';
         back.setAttribute('aria-label','Revenir aux dossiers principaux');
       }
-      back.addEventListener('click',() => visit(parent,false));
+      back.addEventListener('click',() => visit(parent,true));
       trail.append(back);
       if (!parent) break;
       const separator = document.createElement('span');
@@ -165,7 +163,6 @@ function mountBookFolders({host, triggerClass, findFolder, folderEntries, folder
     }));
     if (listingAll && !matches.length) results.textContent = 'Aucun dossier à cet emplacement.';
     submit.hidden = !query || entries.some(folder => normalize(folder.name) === query);
-    remove.hidden = !selected;
     trigger.title = selected ? folderLabel(selected) : 'Mes dossiers';
   }
 
@@ -203,10 +200,6 @@ function mountBookFolders({host, triggerClass, findFolder, folderEntries, folder
     listButton.setAttribute('aria-expanded','false');
     message('');
     renderResults();
-  });
-  remove.addEventListener('click', () => {
-    visit(null,true);
-    message('Dossier retiré.');
   });
   form.addEventListener('submit', async event => {
     event.preventDefault();
