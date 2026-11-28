@@ -30,14 +30,18 @@ function make(tag, className, text) {
 
 const analyses=new WeakMap();
 
-async function askServer(book, context, signal) {
+async function askServer(book, context, signal, phase) {
   const params={title:book.title || "",author:book.author || "",isbn:book.isbn || (book.isbns?.length===1 ? book.isbns[0] : "") || "",
     series:book.series || book.saga || "",volume:book.volume || "",publicationDate:book.publicationDate || "",
     publisher:book.publisher || "",language:book.language || "",format:book.format || book.type || "",
     genres:[...(book.genres || []),...(book.subgenres || []),...(book.subjects || [])].slice(0,20).join("|"),
-    summary:(book.summary || "").slice(0,4000),toc:context?.toc,opening:context?.opening,ending:context?.ending};
+    summary:(book.summary || "").slice(0,4000),phase,rechercheWeb:context?.rechercheWeb,toc:context?.toc,opening:context?.opening,ending:context?.ending};
   const {data,error}=await compteLecture.db.functions.invoke("catalogue",{body:{action:"promesse",params},signal});
   return error ? null : data;
+}
+
+export async function searchImportWeb(book,context,signal) {
+  return askServer(book,context,AbortSignal.any([signal,AbortSignal.timeout(50000)]),"recherche-web");
 }
 
 export function beginAnalysis(book, context, signal) {

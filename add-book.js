@@ -1083,7 +1083,14 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
         const sources=Promise.all([server,catalogues].map(source=>Promise.race([Promise.resolve(source).catch(()=>({})),stop])));
         return sources.then(async notices=>{
           if (!signal.aborted) {
+            const labels={volume:"tome",isbn:"ISBN",pageCount:"pagination",publicationDate:"date de sortie",publisher:"éditeur"};
+            const conflicts=new Set();
             for (const data of notices) {
+              for (const [key,label] of Object.entries(labels)) {
+                if (book[key] && data[key] && normTag(String(book[key]))!==normTag(String(data[key]))) {
+                  conflicts.add(label);
+                }
+              }
               classify(book,data);
               if (!editedFields.get(book)?.has("publicationDate")) book.publicationDate=meta.refineDate(book.publicationDate,data.publicationDate);
               if (!editedSummaries.has(book) && !book.summarySource && data.summarySource && data.summary) {
@@ -1098,6 +1105,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
             if (!["title","series","volume"].some(key=>editedFields.get(book)?.has(key))) separateSeriesTitle(book);
             const covers=[...(book.coverCandidates || []),...notices.flatMap(row=>[...(row.coverCandidates || []),row.coverData])];
             await improveCover(book,covers);
+            book.importReview=Array.from(conflicts);
             completedMetadata.add(book);
           }
           return book.summary;
@@ -1240,6 +1248,30 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     },delay);
   }
 
+  const progress=document.createElement("ol");
+  progress.className="ep-import-progress";
+  progress.hidden=true;
+  progress.setAttribute("aria-label","Préparation du livre");
+  const steps=["Analyse et recherche","Vérification","Fiche prête"].map(label=>{
+    const li=document.createElement("li");
+    li.textContent=label;
+    progress.append(li);
+    return li;
+  });
+  const reviewNotice=document.createElement("p");
+  reviewNotice.className="ep-message";
+  reviewNotice.hidden=true;
+  importStatus.before(progress,reviewNotice);
+  function importStep(index) {
+    progress.hidden=index<0;
+    if (index<2) reviewNotice.hidden=true;
+    steps.forEach((item,i)=>{
+      item.classList.toggle("complete",i<index);
+      if(i===index) item.setAttribute("aria-current","step");
+      else item.removeAttribute("aria-current");
+    });
+  }
+
   function message(text="") {
     importStatus.textContent=text;
     importStatus.hidden=!text;
@@ -1355,6 +1387,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     recovery.hidden=coverModes.hidden=pages.hidden=pagesLabel.hidden=true;
     coverTools.open=false;
     pages.replaceChildren();
+    importStep(-1);
     message("Lecture du fichier…");
     try {
       if (file.size>100*1024*1024) throw new Error("L’aperçu accepte les fichiers jusqu’à 100 Mo.");
@@ -1371,14 +1404,27 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       if (!current(version)) return;
       separateSeriesTitle(info);
       const fileName=file.name.replace(/\.(epub|pdf)$/i,"").trim();
-      let started;
-      if (format==="EPUB") {
-        message("Gemini analyse le résumé, le sommaire et les extraits disponibles…");
-        started=analyse({...info,title:info.title || fileName},info.analysisContext);
-        await started;
-        if (!current(version)) return;
+      const context={...info.analysisContext};
+      if (format==="PDF") {
+        const sample=[];
+        for (let n=1;n<=Math.min(3,info.document.numPages);n++) {
+          if (!current(version)) return;
+          const page=await info.document.getPage(n);
+          const content=await page.getTextContent().catch(()=>null);
+          if (content) sample.push(content.items.map(item=>item.str || "").join(" ").slice(0,4500));
+        }
+        context.opening=sample.join("\n");
       }
-      message("Recherche dans le catalogue…");
+      if (!current(version)) return;
+      const identity={...info,title:info.title || fileName,format};
+      importStep(0);
+      message("Analyse du fichier et consultation des sources…");
+      const web=await analysisModule.then(module=>module.searchImportWeb(identity,context,signal)).catch(()=>null);
+      if (!current(version)) return;
+      context.rechercheWeb=web?.notes || "";
+      const started=analyse(identity,context);
+      importStep(1);
+      message("Vérification de l’édition et enrichissement de la fiche…");
       const matched=await matchDocument(info,fileName);
       if (!current(version)) return;
       const title=info.title || matched?.title || fileName;
@@ -1409,7 +1455,9 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       if (info.analysisContext) ebookSamples.set(imported,info.analysisContext);
       if (started) await analysisModule.then(module=>module.reuseAnalysis(imported,started)).catch(()=>{});
       const ready=prepareMetadata(imported,started);
-      ready.then(()=>{if (current(version) && digitalBook===imported) drawDigital();});
+      await ready;
+      if (!current(version) || digitalBook!==imported) return;
+      importStep(2);
       formReady.then(()=>{
         if (current(version) && digitalBook===imported && selectedStatus==="to-read")
           promesseForm?.collect(imported,ready);
@@ -1417,6 +1465,11 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       manualTitle.value=digitalBook.title;
       titleField.hidden=Boolean(title);
       if (!title) recovery.hidden=false;
+      const notes=[];
+      if (web?.web!=="sourcée") notes.push("Recherche web non confirmée.");
+      if (imported.importReview?.length) notes.push("À vérifier : "+imported.importReview.join(", ")+".");
+      reviewNotice.textContent=notes.join(" ");
+      reviewNotice.hidden=!notes.length;
       message();
       drawDigital();
       if (format==="PDF") {
@@ -1440,6 +1493,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
         }
       }
     } catch (error) {
+      if (current(version)) importStep(-1);
       if (current(version)) message(error.name==="PasswordException" ? "Ce PDF est protégé par un mot de passe." : error.message || "Impossible d’ouvrir ce fichier.");
     }
   }

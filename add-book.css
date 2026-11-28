@@ -958,3 +958,11 @@
   inset:0 0 auto;
   pointer-events:none;
 }
+
+.ep-import-progress:not([hidden]) {display:flex;list-style:none;padding:0;gap:4px;margin:16px auto;color:var(--ep-muted);font-size:clamp(14px,2vw,17px);text-align:center}
+.ep-import-progress li {flex:1;position:relative}
+.ep-import-progress li::before {display:block;content:"○";font-size:20px;color:var(--ep-accent)}
+.ep-import-progress li.complete::before {content:"✓"}
+.ep-import-progress li[aria-current] {color:var(--ep-title);font-weight:600}
+.ep-import-progress li[aria-current]::before {content:"●"}
+.ep-import-progress li+li::after {content:"";position:absolute;right:60%;top:12px;width:80%;border-top:1px solid var(--ep-line)}
