@@ -184,8 +184,8 @@
 #bibliotheque-app [data-rs-mobile] .rs-date {font-size:11px;gap:4px;flex-wrap:wrap}
 #bibliotheque-app [data-rs-mobile] .rs-date > svg {width:15px;height:15px}
 #bibliotheque-app [data-rs-mobile] .rs-rating > div {left:0}
-#bibliotheque-app [data-rs-mobile] .rs-rating [data-rs="heart"] {width:32px;height:40px}
-#bibliotheque-app [data-rs-mobile] .rs-rating [data-rs="heart"] svg {width:28px;height:28px}
+#bibliotheque-app [data-rs-mobile] .rs-rating [data-rs="heart"] {width:36px;height:44px}
+#bibliotheque-app [data-rs-mobile] .rs-rating [data-rs="heart"] svg {width:34px;height:34px}
 #bibliotheque-app [data-rs-mobile] .rs-columns,
 #bibliotheque-app [data-rs-mobile] .rs-column {gap:9px}
 #bibliotheque-app [data-rs-mobile]:not([data-rs-wizard]) .rs-card {padding:9px}
@@ -216,37 +216,40 @@
 #bibliotheque-app .rs-progress button[data-filled]::after {background:var(--rs-ring);opacity:1}
 #bibliotheque-app [data-rs-wizard] .rs-mobile-nav > button {width:40px;height:40px;flex:none}
 #bibliotheque-app [data-rs-wizard] .rs-heading {
-  grid-template-columns:minmax(0,1fr);justify-items:center;gap:19px;margin:22px 0 16px;
+  grid-template-columns:minmax(0,1fr);justify-items:center;gap:19px;margin:auto 0;padding-block:22px 16px;
 }
 #bibliotheque-app [data-rs-wizard] .rs-cover img {width:138px}
 #bibliotheque-app [data-rs-wizard] .rs-book {width:100%;max-width:310px;box-sizing:border-box;background:none;padding:0;text-align:center}
 #bibliotheque-app [data-rs-wizard] .rs-title {align-items:center;gap:7px}
-#bibliotheque-app [data-rs-wizard] .rs-title input {font-size:25px;text-align:center}
+#bibliotheque-app [data-rs-wizard] .rs-title input {font-size:27px;text-align:center}
 #bibliotheque-app [data-rs-wizard] .rs-title > span {display:none}
 #bibliotheque-app [data-rs-wizard] .rs-author {justify-content:center}
 #bibliotheque-app [data-rs-wizard] .rs-author input {flex:0 1 auto;width:clamp(88px,30vw,180px);field-sizing:content}
-#bibliotheque-app [data-rs-wizard] .rs-date {justify-content:center;font-size:13px}
+#bibliotheque-app [data-rs-wizard] .rs-author input {font-size:16px}
+#bibliotheque-app [data-rs-wizard] .rs-date {justify-content:center;font-size:14px}
 #bibliotheque-app [data-rs-wizard] .rs-rating {grid-template-columns:auto auto;justify-content:center;gap:28px;padding-block-start:8px}
 #bibliotheque-app [data-rs-wizard] .rs-stars {padding-inline:6px}
-#bibliotheque-app [data-rs-wizard] .rs-rating [data-rs="heart"] {padding:0;width:28px}
-#bibliotheque-app [data-rs-wizard] .rs-columns:has([data-step]:not([hidden])) {display:block;padding-top:12px}
+#bibliotheque-app [data-rs-wizard] .rs-rating [data-rs="heart"] {padding:0}
+#bibliotheque-app [data-rs-wizard] .rs-columns:has([data-step]:not([hidden])) {display:block;margin-block:auto;padding-block:12px}
 #bibliotheque-app [data-rs-wizard] .rs-columns:not(:has([data-step]:not([hidden]))) {display:none}
 #bibliotheque-app [data-rs-wizard] .rs-column {display:contents}
-#bibliotheque-app [data-rs-wizard] .rs-card {padding:18px 16px 14px}
+#bibliotheque-app [data-rs-wizard] .rs-card {padding:18px 8px 14px;background:transparent;border-radius:0}
+#bibliotheque-app [data-rs-wizard] .rs-card > h2 {font-size:26px}
 #bibliotheque-app [data-rs-wizard] .rs-card > h2 span::before,
 #bibliotheque-app [data-rs-wizard] .rs-card > h2 span::after {inline-size:18px}
-#bibliotheque-app [data-rs-wizard] .rs-opinion,
-#bibliotheque-app [data-rs-wizard] .rs-passage {min-height:360px}
-#bibliotheque-app [data-rs-wizard] .rs-card textarea {margin:10px 0 0;padding:0 4px;min-width:0;min-height:280px}
+#bibliotheque-app [data-rs-wizard] .rs-card textarea {
+  margin:14px 0 0;padding:0 4px;min-width:0;min-height:120px;
+  font-size:18px;line-height:30px;
+  background:radial-gradient(circle at 1px 27px,var(--rs-line) .65px,transparent 1px) top left / 5px 30px repeat;
+}
 #bibliotheque-app [data-rs-wizard] .rs-opinion textarea {
-  width:100%;padding-inline-end:58px;line-height:27px;
-  background-size:5px 27px;
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 82px),calc(100% - 62px) calc(100% - 82px),calc(100% - 62px) 100%,0 100%);
+  width:100%;padding-inline-end:60px;font-size:27px;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 78px),calc(100% - 58px) calc(100% - 78px),calc(100% - 58px) 100%,0 100%);
 }
 #bibliotheque-app [data-rs-wizard] .rs-opinion picture {width:50px;bottom:8px}
 #bibliotheque-app [data-rs-wizard] .rs-opinion picture img {display:block}
 #bibliotheque-app [data-rs-wizard] .rs-mood-group {gap:5px 6px}
-#bibliotheque-app [data-rs-wizard] .rs-mood {min-height:36px}
+#bibliotheque-app [data-rs-wizard] .rs-mood {min-height:38px;font-size:15px}
 #bibliotheque-app [data-rs-wizard] .rs-character {padding-top:24px}
 #bibliotheque-app [data-rs-wizard] .rs-role-line {display:flex;align-items:center;justify-content:center;gap:7px}
 #bibliotheque-app [data-rs-wizard] .rs-role-line::before {content:"♥";color:var(--rs-ring);font-size:13px}
@@ -254,14 +257,31 @@
 #bibliotheque-app [data-rs-wizard] .rs-character .rs-arch {width:151px;margin-block:21px 12px}
 #bibliotheque-app [data-rs-wizard] .rs-character .rs-character-name {font-size:20px}
 #bibliotheque-app [data-rs-wizard] .rs-character .rs-quote {font-size:16px;white-space:pre-wrap}
-#bibliotheque-app [data-rs-wizard] .rs-chapter {font-size:20px;margin:0 0 14px}
-#bibliotheque-app .rs-mobile-questions {padding:clamp(24px,8dvh,56px) 0;display:grid;gap:24px}
-#bibliotheque-app .rs-mobile-questions h2 {margin:0 auto 12px;max-width:320px;text-align:center;font:400 21px/1.2 "Baskervville Formulaire",Georgia,serif}
+#bibliotheque-app [data-rs-wizard] .rs-chapter {font-size:24px;margin:0 0 14px;gap:0}
+#bibliotheque-app [data-rs-wizard] .rs-chapter::before {flex:none;margin-inline-end:10px}
+#bibliotheque-app [data-rs-wizard] .rs-chapter::after {flex:none;margin-inline-start:10px}
+#bibliotheque-app [data-rs-wizard] .rs-chapter input {margin-inline-start:6px;min-width:2ch;max-width:35%}
+#bibliotheque-app [data-rs-wizard] .rs-chapter input:placeholder-shown:not(:focus) {
+  width:0;min-width:0;max-width:0;margin:0;
+}
+#bibliotheque-app .rs-mobile-questions {margin-block:auto;padding:25px 0;display:grid;gap:15px}
+#bibliotheque-app .rs-mobile-questions h2 {margin:0 auto 12px;max-width:320px;text-align:center;font:400 23px/1.2 "Baskervville Formulaire",Georgia,serif}
 #bibliotheque-app .rs-mobile-questions .rs-answers {gap:clamp(13px,6vw,24px)}
-#bibliotheque-app .rs-mobile-questions .rs-answers button {min-height:40px;font-size:16px}
+#bibliotheque-app .rs-mobile-questions .rs-answers button {min-height:44px;font-size:17px}
+#bibliotheque-app .rs-mobile-questions section + section::before {
+  content:"";display:block;width:86px;height:7px;margin:0 auto 17px;
+  background:
+    linear-gradient(var(--rs-line),var(--rs-line)) left center / 36px 1px no-repeat,
+    linear-gradient(var(--rs-line),var(--rs-line)) right center / 36px 1px no-repeat,
+    radial-gradient(circle,var(--rs-ring) 2px,transparent 2.5px) center / 7px 7px no-repeat;
+}
+#bibliotheque-app .rs-mobile-questions .rs-answers button[aria-pressed=true] span {border-color:var(--rs-ring)}
+#bibliotheque-app .rs-mobile-questions .rs-answers button[aria-pressed=true] span::after {
+  inset:3px;width:auto;height:auto;border:0;border-radius:50%;background:var(--rs-ring);transform:none;
+}
 #bibliotheque-app .rs-mobile-footer {
   position:sticky;bottom:0;z-index:4;display:flex;gap:8px;align-items:center;
-  margin-top:auto;padding:12px 3px 4px;background:var(--rs-page);
+  padding:12px 3px 4px;background:var(--rs-page);
 }
 #bibliotheque-app .rs-mobile-footer .rs-primary {
   position:relative;flex:1;min-height:45px;padding:0 35px;border:0;border-radius:23px;

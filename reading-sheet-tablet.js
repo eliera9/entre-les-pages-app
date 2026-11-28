@@ -7,7 +7,11 @@
     download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
     pencil: '<path d="m13.5 6.5 4 4M5 19l1-5L16 4a2.8 2.8 0 0 1 4 4L10 18z"/>',
     calendar: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-12 5h2m4 0h2m-8 3h2"/>',
-    heart: '<path d="M12 20c-1.1-1.2-8-5.4-8-10a4.3 4.3 0 0 1 8-2.1A4.3 4.3 0 0 1 20 10c0 4.6-6.9 8.8-8 10z"/>',
+    heart: `<g stroke-width="1.1">
+        <path stroke="none" d="M10.9 11.7C10.1 7.9 7.8 3.1 5.2 3.1 2.6 3.1 2 5.5 2.5 8.9c.7 5 3.4 10.5 7.4 13.2l.7-.6c2.4-2.1 9.3-8.1 10.9-13.1 1.1-3.3-.6-5.1-3-5.1-3.5 0-6.9 4.6-7.6 8.4Z"/>
+        <path fill="none" d="M10.7 14.4c.5-1.4.4-2.4 0-3.8C9.8 7.1 7.7 3.1 5.2 3.1 2.6 3.1 2 5.5 2.5 8.9c.7 5 3.4 10.5 7.4 13.2m.7-.6c2.4-2.1 9.3-8.1 10.9-13.1 1.1-3.3-.6-5.1-3-5.1-3.7 0-7.6 5.2-7.7 8.5"/>
+        <path fill="none" stroke-width="1.42" d="M10.9 12.8c0 .6-.1 1.1-.2 1.6m-2.3 6.4c.5.5 1 .9 1.5 1.3"/>
+      </g>`,
     plus: '<path d="M12 5v14M5 12h14"/>'
   };
   symbols['mobile-download'] = symbols.download;
@@ -74,7 +78,7 @@
           <div class="rs-column">
             <section class="rs-card rs-feelings" data-step="2"><h2><span>Ce que j’ai ressenti</span></h2><div class="rs-moods"></div></section>
             <section class="rs-card rs-passage" data-step="4" aria-label="Passages">
-              <div class="rs-chapter"><span>Chapitre</span><input data-rs="chapter" aria-label="Chapitre" placeholder="—"></div>
+              <label class="rs-chapter"><span>Chapitre</span><input data-rs="chapter" aria-label="Chapitre" placeholder="—"></label>
               <textarea data-rs="passage" aria-label="Passage" rows="4"></textarea>
               <div class="rs-controls"><div class="rs-dots"></div>${button('plus','Ajouter un passage')}</div>
             </section>
@@ -179,9 +183,20 @@
     }
 
     function grow(node) {
+      if (!node.getClientRects().length) return;
       node.style.height='0px';
-      node.style.height=Math.max(node.scrollHeight,112)+'px';
+      const lineHeight=mobile && editing ? parseFloat(getComputedStyle(node).lineHeight) : 0;
+      const height=lineHeight ? Math.ceil(node.scrollHeight/lineHeight)*lineHeight : Math.max(node.scrollHeight,112);
+      node.style.height=height+'px';
     }
+    let writingWidth=0;
+    const writingResize=new ResizeObserver(([entry])=>{
+      const width=entry.contentRect.width;
+      if (!width || width===writingWidth) return;
+      writingWidth=width;
+      grow(control('opinion'));
+      grow(control('passage'));
+    });
     const bind = (name,write) => control(name).addEventListener('input',event=>{
       if (!editing) return;
       write(event.target.value);
@@ -449,6 +464,7 @@
       const wizard=mobile && editing;
       sheet.toggleAttribute('data-rs-mobile',mobile);
       sheet.toggleAttribute('data-rs-wizard',wizard);
+      control('chapter').placeholder=wizard?' ':'—';
       sheet.querySelector('.rs-rating-label').textContent=wizard?'Ma note':'Note';
       toolbar.hidden=wizard;
       mobileNav.hidden=!wizard;
@@ -635,11 +651,12 @@
         setDownload(false);
         status.textContent='';
         sheet.hidden=false;
+        if(mobile){writingWidth=0;writingResize.observe(sheet);}
         renderLayout();render();
         node.scrollIntoView({block:'start',behavior:'instant'});
         (mobile && editing ? steps[0] : control('home')).focus({preventScroll:true});
       },
-      close(){ revision++;sheet.hidden=true;closeDate(); },
+      close(){ revision++;writingResize.disconnect();sheet.hidden=true;closeDate(); },
       get visible(){return !sheet.hidden;}
     };
   }
