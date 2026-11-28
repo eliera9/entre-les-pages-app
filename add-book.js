@@ -1387,8 +1387,8 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     recovery.hidden=coverModes.hidden=pages.hidden=pagesLabel.hidden=true;
     coverTools.open=false;
     pages.replaceChildren();
-    importStep(-1);
-    message("Lecture du fichier…");
+    importStep(0);
+    message();
     try {
       if (file.size>100*1024*1024) throw new Error("L’aperçu accepte les fichiers jusqu’à 100 Mo.");
       const bytes=new Uint8Array(await file.arrayBuffer());
@@ -1417,14 +1417,11 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       }
       if (!current(version)) return;
       const identity={...info,title:info.title || fileName,format};
-      importStep(0);
-      message("Analyse du fichier et consultation des sources…");
       const web=await analysisModule.then(module=>module.searchImportWeb(identity,context,signal)).catch(()=>null);
       if (!current(version)) return;
       context.rechercheWeb=web?.notes || "";
       const started=analyse(identity,context);
       importStep(1);
-      message("Vérification de l’édition et enrichissement de la fiche…");
       const matched=await matchDocument(info,fileName);
       if (!current(version)) return;
       const title=info.title || matched?.title || fileName;
