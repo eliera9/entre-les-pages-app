@@ -943,3 +943,18 @@
   gap: 10px;
   text-align: start;
 }
+
+#bibliotheque-app #elp-add-book .ep-digital { position:relative }
+#bibliotheque-app #elp-add-book .ep-drop {
+  border:2px dotted light-dark(#986d79,#b39bb4);
+  border-radius:18px;
+}
+#bibliotheque-app[data-theme="dark"] #elp-add-book .ep-drop .ep-art-reader {
+  background-color:#d4c5ee;
+  --ep-art-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 48' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='2' width='34' height='44' rx='4'/%3E%3Crect x='8.5' y='6' width='27' height='32' rx='2'/%3E%3Cpath d='M14 18h16m-16 4h12m-12 4h9m-4 16h6'/%3E%3C/svg%3E");
+}
+#bibliotheque-app #elp-add-book .ep-drop.ep-drop-leaving {
+  position:absolute;
+  inset:0 0 auto;
+  pointer-events:none;
+}

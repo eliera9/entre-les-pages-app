@@ -1255,8 +1255,25 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     pdfTask=null;
   }
   function drawDigital() {
+    const showTransition=digitalBook && digitalPreview.hidden && drop.getClientRects().length &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (showTransition) {
+      const outgoing=drop.cloneNode(true);
+      outgoing.querySelector("input").remove();
+      outgoing.classList.add("ep-drop-leaving");
+      outgoing.inert=true;
+      outgoing.setAttribute("aria-hidden","true");
+      digital.append(outgoing);
+      const exit=outgoing.animate([{opacity:1,transform:"translateY(0)"},{opacity:0,transform:"translateY(-16px)"}],
+        {duration:550,easing:"ease",fill:"forwards"});
+      exit.finished.then(()=>outgoing.remove(),()=>outgoing.remove());
+    }
     fileChoice.hidden=Boolean(digitalBook);
     digitalPreview.hidden=!digitalBook;
+    if (showTransition) {
+      digitalPreview.animate([{opacity:0,transform:"translateY(24px)"},{opacity:1,transform:"translateY(0)"}],
+        {duration:650,delay:50,easing:"ease",fill:"backwards"});
+    }
     if (digitalBook) {
       get("[data-ep-snapshot]").replaceChildren(drawBook(digitalBook,true));
       for (const button of startButtons) button.disabled=!digitalBook.title;
