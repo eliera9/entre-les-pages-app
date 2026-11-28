@@ -201,6 +201,7 @@
 /* Mobile writing steps share the controls and draft with the finished review. */
 #bibliotheque-app:not([data-theme="dark"]) [data-rs-wizard] {--rs-button:#e7d1d9}
 #bibliotheque-app [data-rs-wizard] {
+  --rs-writing-line:26px;
   min-height:calc(100dvh - env(safe-area-inset-top));
   display:flex;flex-direction:column;padding-bottom:max(16px,env(safe-area-inset-bottom));
 }
@@ -231,6 +232,9 @@
 #bibliotheque-app [data-rs-wizard] .rs-stars {padding-inline:6px}
 #bibliotheque-app [data-rs-wizard] .rs-rating [data-rs="heart"] {padding:0}
 #bibliotheque-app [data-rs-wizard] .rs-columns:has([data-step]:not([hidden])) {display:block;margin-block:auto;padding-block:12px}
+#bibliotheque-app [data-rs-wizard] .rs-columns:has(:is(.rs-opinion,.rs-character,.rs-passage):not([hidden])) {
+  margin-block:0 auto;padding-block:4px 8px;
+}
 #bibliotheque-app [data-rs-wizard] .rs-columns:not(:has([data-step]:not([hidden]))) {display:none}
 #bibliotheque-app [data-rs-wizard] .rs-column {display:contents}
 #bibliotheque-app [data-rs-wizard] .rs-card {padding:18px 8px 14px;background:transparent;border-radius:0}
@@ -238,25 +242,37 @@
 #bibliotheque-app [data-rs-wizard] .rs-card > h2 span::before,
 #bibliotheque-app [data-rs-wizard] .rs-card > h2 span::after {inline-size:18px}
 #bibliotheque-app [data-rs-wizard] .rs-card textarea {
-  margin:14px 0 0;padding:0 4px;min-width:0;min-height:120px;
-  font-size:18px;line-height:30px;
-  background:radial-gradient(circle at 1px 27px,var(--rs-line) .65px,transparent 1px) top left / 5px 30px repeat;
+  margin:14px 0 0;padding:0 4px;min-width:0;min-height:calc(20 * var(--rs-writing-line));
+  font-size:18px;line-height:var(--rs-writing-line);
+  background:radial-gradient(circle at 1px calc(var(--rs-writing-line) - 3px),var(--rs-line) .65px,transparent 1px)
+    top left / 5px var(--rs-writing-line) repeat;
 }
 #bibliotheque-app [data-rs-wizard] .rs-opinion textarea {
-  width:100%;padding-inline-end:60px;font-size:27px;
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 78px),calc(100% - 58px) calc(100% - 78px),calc(100% - 58px) 100%,0 100%);
+  width:100%;padding-inline-end:60px;font-size:26px;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 3 * var(--rs-writing-line)),calc(100% - 58px) calc(100% - 3 * var(--rs-writing-line)),calc(100% - 58px) 100%,0 100%);
 }
 #bibliotheque-app [data-rs-wizard] .rs-opinion picture {width:50px;bottom:8px}
 #bibliotheque-app [data-rs-wizard] .rs-opinion picture img {display:block}
 #bibliotheque-app [data-rs-wizard] .rs-mood-group {gap:5px 6px}
 #bibliotheque-app [data-rs-wizard] .rs-mood {min-height:38px;font-size:15px}
-#bibliotheque-app [data-rs-wizard] .rs-character {padding-top:24px}
+#bibliotheque-app [data-rs-wizard] .rs-columns:has(.rs-character:not([hidden])) {
+  display:flex;flex:1;flex-direction:column;margin-block:0;
+}
+#bibliotheque-app [data-rs-wizard] .rs-character {
+  display:flex;flex:1;flex-direction:column;padding-top:24px;
+}
 #bibliotheque-app [data-rs-wizard] .rs-role-line {display:flex;align-items:center;justify-content:center;gap:7px}
 #bibliotheque-app [data-rs-wizard] .rs-role-line::before {content:"♥";color:var(--rs-ring);font-size:13px}
 #bibliotheque-app [data-rs-wizard] .rs-role-line .rs-role {field-sizing:content;width:auto;max-width:calc(100% - 20px);margin:0}
-#bibliotheque-app [data-rs-wizard] .rs-character .rs-arch {width:151px;margin-block:21px 12px}
-#bibliotheque-app [data-rs-wizard] .rs-character .rs-character-name {font-size:20px}
-#bibliotheque-app [data-rs-wizard] .rs-character .rs-quote {font-size:16px;white-space:pre-wrap}
+#bibliotheque-app [data-rs-wizard] .rs-character .rs-arch {width:clamp(174px,52vw,204px);margin-block:21px 12px}
+#bibliotheque-app [data-rs-wizard] .rs-character .rs-character-name {
+  min-height:42px;margin:5px auto 13px;font-size:20px;
+}
+#bibliotheque-app [data-rs-wizard] .rs-character .rs-quote {
+  max-width:min(calc(100% - 12px),310px);box-sizing:border-box;
+  padding:8px 14px;margin:0 auto 16px;font-size:16px;white-space:pre-wrap;
+}
+#bibliotheque-app [data-rs-wizard] .rs-character .rs-controls {margin-top:auto;min-height:42px}
 #bibliotheque-app [data-rs-wizard] .rs-chapter {font-size:24px;margin:0 0 14px;gap:0}
 #bibliotheque-app [data-rs-wizard] .rs-chapter::before {flex:none;margin-inline-end:10px}
 #bibliotheque-app [data-rs-wizard] .rs-chapter::after {flex:none;margin-inline-start:10px}
@@ -292,6 +308,12 @@
 #bibliotheque-app .rs-mobile-footer [data-rs="mobile-download"] {width:45px;height:45px;background:none;border:1px solid var(--rs-line)}
 #bibliotheque-app .rs-mobile-footer .rs-download {top:auto;right:3px;bottom:calc(100% - 1px)}
 #bibliotheque-app .rs-mobile-footer .rs-download button {min-height:39px}
+@media (max-height:740px) {
+  #bibliotheque-app [data-rs-wizard] {--rs-writing-line:24px}
+}
+@media (min-height:840px) {
+  #bibliotheque-app [data-rs-wizard] {--rs-writing-line:30px}
+}
 
 @media print {
   @page {size:A4;margin:13mm}
