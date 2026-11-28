@@ -4,31 +4,42 @@ const metadata=globalThis.BookMetadata;
 // Ce module sert à la fois dans l'app et dans la fonction Supabase « catalogue ».
 
 export const HUMEURS = [
-  ["reconfort", "Réconfort", "il prend dans les bras"],
-  ["energie", "Énergie", "il donne envie de bouger"],
-  ["melancolie", "Mélancolie", "il serre le cœur"],
-  ["tension", "Tension", "il secoue"],
-  ["calme", "Calme", "il apaise"],
+  ["reconfort", "Une lecture doudou", "Une histoire qui fait du bien."],
+  ["energie", "Une lecture pétillante", "Une histoire pleine de vie qui te donne le sourire."],
+  ["melancolie", "Une lecture triste", "Une histoire qui te met les larmes aux yeux."],
+  ["tension", "Une lecture sous tension", "Tu sens que quelque chose peut basculer à tout moment."],
+  ["sensuelle", "Une lecture sensuelle", "Les regards et les frôlements te font ressentir le désir."],
+  ["angoissante", "Une lecture angoissante", "Tu redoutes ce qui pourrait arriver aux personnages."],
+  ["glacante", "Une lecture glaçante", "Une scène ou une révélation te donne froid dans le dos."],
+  ["emerveille", "Une lecture qui émerveille", "Chaque découverte du monde ou de sa magie te laisse les yeux grands ouverts."],
+  ["epique", "Une lecture épique", "Les épreuves et les grands choix des personnages te donnent envie de les suivre jusqu’au bout."],
+  ["romantique", "Une lecture romantique", "Tu t’attaches à leur histoire d’amour et tu espères qu’ils se choisiront."],
 ];
 export const EMOTIONS = [
-  ["sourire", "Sourire toute seule"],
-  ["coeur-fond", "Avoir le cœur qui fond"],
-  ["emerveillee", "Être émerveillée"],
-  ["moins-seule", "Me sentir moins seule"],
+  ["sourire", "Garder le sourire"],
+  ["pleurer", "Avoir les larmes aux yeux"],
+  ["surprise", "Rester bouche bée"],
+  ["frissons", "Avoir encore des frissons"],
+  ["depaysage", "Me sentir dépaysée"],
+  ["coeur-fond", "Avoir le cœur réchauffé"],
+  ["reconnaitre", "Me reconnaître dans l’histoire"],
   ["rire", "Rire aux éclats"],
-  ["frissons", "Avoir des frissons"],
-  ["peur", "Avoir peur"],
-  ["pleurer", "Pleurer pour de vrai"],
+  ["songeuse", "Rester songeuse"],
+  ["revoltee", "Me sentir révoltée"],
 ];
 export const DECORS = [
-  ["hiver", "Sous un plaid, en plein hiver"],
-  ["ete", "Au soleil, en été"],
+  ["hiver", "Au cœur de l’hiver"],
+  ["ete", "En plein été"],
   ["mer", "Au bord de la mer"],
   ["campagne", "À la campagne"],
-  ["ville-nuit", "En ville, la nuit"],
+  ["ville-nuit", "Après minuit"],
   ["campus", "Sur un campus"],
-  ["chateau", "Dans un château plein de magie"],
+  ["chateau", "Dans un château enchanté"],
   ["autre-monde", "Dans un autre monde"],
+  ["petite-ville", "Dans une petite ville"],
+  ["manoir", "Dans un manoir isolé"],
+  ["foret-ancienne", "Dans une forêt ancienne"],
+  ["ville-autrefois", "Dans une ville d’autrefois"],
 ];
 export const NOIRCEUR = [
   [1, "Doux", "aucune ombre, on reste dans la lumière"],
@@ -49,6 +60,12 @@ export const SPICE = [
 const ids = list => list.map(item => item[0]);
 export const ANSWERS = {humeur: ids(HUMEURS), emotions: ids(EMOTIONS), decor: ids(DECORS)};
 
+export function normalizeHumeurs(values) {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values.map(value => value === "calme" ? "reconfort" : value))]
+    .filter(value => ANSWERS.humeur.includes(value));
+}
+
 export function emptyPromesse() {
   return {humeur: [], emotions: [], decor: [], noirceur: null, spice: null, pages: null, avertissements: []};
 }
@@ -61,41 +78,77 @@ export function isRomance(book = {}) {
 
 // Table de correspondance : un mot trouvé dans les genres, sujets ou tags coche une réponse précise.
 const RULES = [
-  [/dark romance/i, {noirceur: 5, spice: 4, humeur: ["tension"], emotions: ["frissons"]}],
-  [/cosy|cozy|feel[- ]?good|doudou|comfort|réconfort|heartwarming|wholesome/i, {noirceur: 1, humeur: ["reconfort", "calme"], emotions: ["sourire", "coeur-fond"]}],
-  [/romance|romantic|love stor|sentimental|histoire d'amour/i, {humeur: ["reconfort"], emotions: ["coeur-fond", "sourire"], unless: /dark romance|bully|mafia/i}],
-  [/humou?r|funny|comedy|comédie|comique|drôle|hilarious/i, {humeur: ["energie"], emotions: ["rire", "sourire"]}],
-  [/thriller|suspense|mystery|mystère|polar|policier|crime|detective|enquête/i, {noirceur: 4, humeur: ["tension"], emotions: ["frissons"]}],
-  [/horror|horreur|épouvante|ghost|fantôme|haunted|gothic|gothique/i, {noirceur: 5, humeur: ["tension"], emotions: ["peur", "frissons"]}],
-  [/romantasy|fantasy|fantastique|magic|magie|fae|fées|dragon|witch|sorcière|wizard|sorcier/i, {decor: ["chateau"], emotions: ["emerveillee"]}],
-  [/high fantasy|epic fantasy|fantasy épique|science[- ]fiction|\bsf\b|space|espace|dystop|other world|autre monde|portal|portail/i, {decor: ["autre-monde"], emotions: ["emerveillee"]}],
+  [/\bangoi[sn]|dread|anxiogène|inquiétant/i, {humeur: ["angoissante"]}],
+  [/\bglaçant|\bchilling\b|froid dans le dos/i, {humeur: ["glacante"]}],
+  [/érotique|erotic|sensual|sensuel|steamy/i, {humeur: ["sensuelle"]}],
+  [/high fantasy|epic fantasy|fantasy épique|saga épique/i, {humeur: ["epique"]}],
+  [/\bwhimsical\b|merveilleux|fairy tale|conte de fées/i, {humeur: ["emerveille"]}],
+  [/dark romance/i, {noirceur: 5, spice: 4, humeur: ["tension"]}],
+  [/cosy|cozy|feel[- ]?good|doudou|comfort|réconfort|heartwarming|wholesome/i, {noirceur: 1, humeur: ["reconfort"]}],
+  [/romance|romantic|love stor|sentimental|histoire d'amour/i, {humeur: ["romantique"], unless: /dark romance|bully|mafia/i}],
+  [/humou?r|funny|comedy|comédie|comique|drôle|hilarious/i, {humeur: ["energie"]}],
+  [/thriller|suspense|mystery|mystère|polar|policier|crime|detective|enquête/i, {noirceur: 4, humeur: ["tension"]}],
+  [/horror|horreur|épouvante|ghost|fantôme|haunted|gothic|gothique/i, {noirceur: 5, humeur: ["tension"]}],
+  [/romantasy|fantasy|fantastique|magic|magie|fae|fées|dragon|witch|sorcière|wizard|sorcier/i, {decor: ["chateau"]}],
+  [/high fantasy|epic fantasy|fantasy épique|science[- ]fiction|\bsf\b|space|espace|dystop|other world|autre monde|portal|portail/i, {decor: ["autre-monde"]}],
   [/dystop|post-apo|apocalyp/i, {noirceur: 4, humeur: ["tension"]}],
   [/christmas|noël|winter|hiver|snow|neige|holiday/i, {decor: ["hiver"], humeur: ["reconfort"]}],
   [/summer|été|vacances|vacation|beach|plage|\bsun\b|soleil/i, {decor: ["ete"]}],
   [/\bsea\b|\bmer\b|ocean|océan|island|\bîle\b|coast|côte|beach|plage/i, {decor: ["mer"]}],
-  [/small town|village|countryside|campagne|farm|ferme|ranch|rural/i, {decor: ["campagne"], humeur: ["calme"]}],
+  [/small town|village|countryside|campagne|farm|ferme|ranch|rural/i, {decor: ["campagne"], humeur: ["reconfort"]}],
   [/college|university|université|campus|academy|académie|school|école|lycée|fac\b/i, {decor: ["campus"]}],
-  [/new york|london|londres|paris|city|ville|urban|urbain|mafia|nightlife/i, {decor: ["ville-nuit"]}],
-  [/grief|deuil|death|mort|loss|perte|illness|maladie|cancer|tragedy|tragédie|tearjerker|sad|triste/i, {noirceur: 3, humeur: ["melancolie"], emotions: ["pleurer"]}],
-  [/friendship|amitié|found family|famille choisie|loneliness|solitude|coming of age|apprentissage/i, {emotions: ["moins-seule"], humeur: ["reconfort"]}],
+  [/grief|deuil|death|mort|loss|perte|illness|maladie|cancer|tragedy|tragédie|tearjerker|sad|triste/i, {noirceur: 3, humeur: ["melancolie"]}],
+  [/friendship|amitié|found family|famille choisie|loneliness|solitude|coming of age|apprentissage/i, {humeur: ["reconfort"]}],
   [/adventure|aventure|action|quest|quête|heist/i, {humeur: ["energie"]}],
-  [/literary|littéraire|contemplati|poetic|poétique|slow|lent|quiet/i, {humeur: ["calme"]}],
+  [/literary|littéraire|contemplati|poetic|poétique|slow|lent|quiet/i, {humeur: ["reconfort"]}],
   // Humeurs des lecteurs (Hardcover)
   [/\badventurous\b|\bfast-paced\b/i, {humeur: ["energie"]}],
-  [/\bfunny\b|\blighthearted\b|\blight-hearted\b/i, {humeur: ["energie"], emotions: ["rire", "sourire"]}],
+  [/\bfunny\b|\blighthearted\b|\blight-hearted\b/i, {humeur: ["energie"]}],
   [/\bdark\b/i, {noirceur: 4, humeur: ["tension"]}],
-  [/\btense\b|\bsuspenseful\b/i, {humeur: ["tension"], emotions: ["frissons"]}],
-  [/\bmysterious\b/i, {emotions: ["frissons"]}],
-  [/\bemotional\b/i, {emotions: ["coeur-fond", "pleurer"]}],
-  [/\bsad\b/i, {noirceur: 3, humeur: ["melancolie"], emotions: ["pleurer"]}],
-  [/\bhopeful\b|\bheartwarming\b/i, {humeur: ["reconfort"], emotions: ["moins-seule"]}],
-  [/\breflective\b|\brelaxing\b/i, {humeur: ["calme"]}],
-  [/\binspiring\b|\bwhimsical\b/i, {emotions: ["emerveillee"]}],
+  [/\btense\b|\bsuspenseful\b/i, {humeur: ["tension"]}],
+  [/\bsad\b/i, {noirceur: 3, humeur: ["melancolie"]}],
+  [/\bhopeful\b|\bheartwarming\b/i, {humeur: ["reconfort"]}],
+  [/\breflective\b|\brelaxing\b/i, {humeur: ["reconfort"]}],
   [/\bchallenging\b/i, {noirceur: 3}],
   [/war|guerre|violence|abuse|maltraitance|trauma|assault|agression|torture|murder|meurtre/i, {noirceur: 4, avertissements: true}],
   [/erotic|érotique|erotica|steamy|spicy|explicit|explicite|smut/i, {spice: 4}],
   [/sweet romance|clean romance|closed door|porte fermée|christian|chrétien/i, {spice: 1}],
 ];
+
+// Les suggestions reposent sur la présentation du livre, jamais sur un extrait de sa fin.
+const FEELING_SIGNALS = [
+  ["sourire", /feel[- ]?good|comédie romantique|rom[ -]?com|bonne humeur|light[- ]?hearted/i],
+  ["pleurer", /tearjerker|déchirant|bouleversant|(?:aux|jusqu’aux|jusqu'aux) larmes|(?:récit|roman|lecture) triste/i],
+  ["surprise", /plot twist|retournements? de situation|rebondissements? inattendu|révélations? inattendue|surprises? à répétition/i],
+  ["frissons", /glaçant|frissons?|chilling|épouvante|\bhorreur\b|\bhorror\b|angoissant|terrifiant/i],
+  ["depaysage", /high fantasy|worldbuilding|monde imaginaire|monde inédit|royaumes? imaginaires?|univers.{0,20}(?:foisonnant|imaginaire|dépaysant)|portail vers un autre monde/i],
+  ["coeur-fond", /romance tendre|comédie romantique tendre|heartwarming|bienveillance|pleine de tendresse|tendresse entre/i],
+  ["reconnaitre", /mettre des mots sur|se reconna[îi]tre dans|\bautofiction\b|(?:témoignage|récit intime).{0,30}(?:deuil|solitude|reconstruction)/i],
+  ["rire", /rire aux éclats|éclats? de rire|hilarant|\bhilarious\b|laugh[- ]out[- ]loud|\bburlesque\b/i],
+  ["songeuse", /dilemme moral|question éthique|fait réfléchir|invite à réfléchir|interroge nos|questionne notre/i],
+  ["revoltee", /\binjustices?\b|discriminations?|abus de pouvoir|oppression|\bimpunité\b/i],
+];
+const PRECISE_DECOR_SIGNALS = [
+  ["petite-ville", /small[- ]town|petite ville|bourgade/i],
+  ["manoir", /isolated manor|remote manor|secluded manor|manoir isolé|manoir à l'écart|manoir reculé/i],
+  ["foret-ancienne", /ancient forest|old-growth forest|forêt ancienne|forêt primordiale|forêt millénaire/i],
+  ["ville-autrefois", /victorian london|londres victorien|ville d'autrefois|historical city|paris (?:de la belle époque|du xixe siècle)|ville au xixe siècle/i],
+  ["ville-nuit", /after midnight|après minuit|à la tombée de la nuit|nightlife|vie nocturne|ville la nuit|city at night|ville.{0,30}la nuit|la nuit.{0,30}ville/i],
+];
+
+export function readingPresentation(book = {}) {
+  const fields = [book.genres, book.subgenres, book.tropes];
+  const tags = fields.flatMap(values => Array.isArray(values) ? values : []);
+  return [book.summary, ...tags].filter(value => typeof value === "string").join(" · ").replaceAll("’", "'");
+}
+
+export function inferReadingFeelings(presentation = "") {
+  return FEELING_SIGNALS.filter(([, pattern]) => pattern.test(presentation)).map(([id]) => id).slice(0, 3);
+}
+
+export function inferPreciseDecors(presentation = "") {
+  return PRECISE_DECOR_SIGNALS.filter(([, pattern]) => pattern.test(presentation)).map(([id]) => id);
+}
 
 const WARNINGS = [
   [/grief|deuil|loss|perte/i, "deuil"], [/death|mort/i, "mort"], [/violence|violent/i, "violence"],
@@ -112,7 +165,7 @@ export function mapSignals(signals = {}) {
   let darkest = null;
   for (const [pattern, effect] of RULES) {
     if (!pattern.test(text) || effect.unless?.test(text)) continue;
-    for (const key of ["humeur", "emotions", "decor"]) {
+    for (const key of ["humeur", "decor"]) {
       for (const value of effect[key] || []) if (!result[key].includes(value)) result[key].push(value);
     }
     if (effect.noirceur) darkest = Math.max(darkest || 0, effect.noirceur);
@@ -123,16 +176,19 @@ export function mapSignals(signals = {}) {
   for (const [pattern, label] of WARNINGS) if (pattern.test(text) && !result.avertissements.includes(label)) result.avertissements.push(label);
   const pages = Number(signals.pages);
   if (metadata.editionPages(pages)) result.pages = pages;
-  result.humeur = result.humeur.slice(0, 2);
-  result.emotions = result.emotions.slice(0, 3);
-  result.decor = result.decor.slice(0, 2);
+  result.humeur = normalizeHumeurs(result.humeur).slice(0, 2);
+  const presentation = typeof signals.presentation === "string" ? signals.presentation : "";
+  result.emotions = inferReadingFeelings(presentation);
+  result.decor = [...new Set([...inferPreciseDecors(presentation), ...result.decor])].slice(0, 2);
   return result;
 }
 
 // Ne remplit que ce qui manque dans « base »
 export function fillGaps(base, extra) {
   const next = {...emptyPromesse(), ...base};
-  for (const key of ["humeur", "emotions", "decor", "avertissements"]) {
+  next.humeur = normalizeHumeurs(next.humeur);
+  if (!next.humeur.length) next.humeur = normalizeHumeurs(extra?.humeur);
+  for (const key of ["emotions", "decor", "avertissements"]) {
     if (!next[key]?.length && extra?.[key]?.length) next[key] = extra[key].filter(value => key === "avertissements" || ANSWERS[key].includes(value));
   }
   for (const key of ["noirceur", "spice", "pages"]) if (next[key] == null && extra?.[key] != null) next[key] = extra[key];
@@ -213,5 +269,5 @@ export async function guessPromesse(book, signal, {googleKey = ""} = {}) {
   const counts=[...new Set(found.map(item=>item.pages).filter(Boolean))];
   const pages=counts.length===1?counts[0]:undefined;
   const description = found.find(item => item.description)?.description || "";
-  return {promesse: mapSignals({words, pages}), words, description, catalogueWords:found.flatMap(item=>item.words || []), publicationDate:found.find(item=>item.publicationDate)?.publicationDate || "", romance: isRomance({genres: words}), sources: status};
+  return {promesse: mapSignals({words, pages, presentation: readingPresentation(book)}), words, description, catalogueWords:found.flatMap(item=>item.words || []), publicationDate:found.find(item=>item.publicationDate)?.publicationDate || "", romance: isRomance({genres: words}), sources: status};
 }

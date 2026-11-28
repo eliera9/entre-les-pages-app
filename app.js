@@ -3030,7 +3030,7 @@ async function activateLibrary(root) {
   accDice?.addEventListener('click', async () => {
     try {
       if (!questionnaire) {
-        const module = await import('./questionnaire.js?v=carte-prochaine-lecture-1');
+        const module = await import('./questionnaire.js?v=promesse-litteraire-1');
         questionnaire = module.mountQuestionnaire({
           host: root,
           books: () => books,

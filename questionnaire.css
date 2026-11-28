@@ -197,3 +197,42 @@ html.qz-lock, html.qz-lock body { overflow: hidden; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .qz-small { inline-size: 140px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .qz-small-cover { inline-size: 96px; block-size: 144px; }
 #app-lecture #bibliotheque-app[data-format="tablet"] .qz-end, #app-lecture #bibliotheque-app[data-format="tablet"] .qz-end-foot { inline-size: min(100%, 680px); }
+
+/* Illustrations au trait des humeurs, partagées avec la fiche de lecture. */
+#bibliotheque-app .reading-mood-art {
+  display: block;
+  position: relative;
+  flex: none;
+  inline-size: 54px;
+  block-size: 54px;
+  border-radius: 50%;
+  background: light-dark(#e4ddea, #34303e);
+  color: light-dark(#534762, #c4bdd8);
+}
+#bibliotheque-app .reading-mood-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  -webkit-mask: var(--mood-art) center / contain no-repeat;
+  mask: var(--mood-art) center / contain no-repeat;
+}
+#app-lecture #bibliotheque-app #elp-add-book[data-pal] :is(.slide-humeur,.slide-emotions) .reading-mood-art {
+  width: 44px;
+  height: 44px;
+}
+#app-lecture #bibliotheque-app[data-format="tablet"] #elp-add-book[data-pal] :is(.slide-humeur,.slide-emotions) .reading-mood-art {
+  width: 48px;
+  height: 48px;
+}
+#app-lecture #bibliotheque-app #elp-add-book :is(.slide-humeur,.slide-emotions) .ep-promesse-check {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+#app-lecture #bibliotheque-app .qz-decor-art {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 1.65;
+  object-fit: cover;
+  border-radius: 8px;
+}

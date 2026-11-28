@@ -555,7 +555,7 @@ function mountAddBook(stage, {initialBook, engine, folderOptions, initialFolder,
     promesseForm.setVisible(pile);
     if (pile && currentBook) pendingPromesse=promesseForm.prefill(currentBook,prepareMetadata(currentBook));
   }
-  const analysisModule=import("./promesse-form.js?v=edition-officielle-1");
+  const analysisModule=import("./promesse-form.js?v=promesse-litteraire-1");
   const formReady=analysisModule.then(module=>{
     if (signal.aborted) return;
     promesseForm=module.mountPromesse(promesseSection,{signal,onPages(book,pages) {
@@ -625,6 +625,7 @@ function mountAddBook(stage, {initialBook, engine, folderOptions, initialFolder,
   summaryCopy.addEventListener('input',()=>{
     if (!currentBook) return;
     currentBook.summary=summaryCopy.innerText.trim();
+    summaryCopy.toggleAttribute('data-empty', !currentBook.summary);
     currentBook.summarySource='manual';
     editedSummaries.add(currentBook);
   });
@@ -637,6 +638,7 @@ function mountAddBook(stage, {initialBook, engine, folderOptions, initialFolder,
     } else if (document.activeElement===summaryCopy && editedSummaries.has(book)) return;
     const value=book.summary || '';
     if (summaryCopy.innerText!==value) summaryCopy.textContent=value;
+    summaryCopy.toggleAttribute('data-empty', !value.trim());
   }
   const journalHost=document.createElement('section');
   summaryFrame.after(journalHost);

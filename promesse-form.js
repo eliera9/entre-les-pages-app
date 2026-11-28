@@ -1,5 +1,5 @@
 // Partie « Ce qu'il me promet » du formulaire d'ajout : carrousel de quatre slides.
-import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, guessPromesse, fillGaps} from "./promesse.js?v=edition-officielle-1";
+import {HUMEURS, EMOTIONS, DECORS, NOIRCEUR, SPICE, emptyPromesse, normalizeHumeurs, guessPromesse, fillGaps, readingPresentation, inferReadingFeelings, inferPreciseDecors} from "./promesse.js?v=promesse-litteraire-1";
 
 const svg = (body, box = "0 0 32 32") => `<svg viewBox="${box}" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 const ICONS = {
@@ -19,12 +19,18 @@ const SLIDES = [
   {key: "noirceur", title: "Son côté sombre"},
 ];
 const SPICE_SLIDE = {key: "spice", title: "Ça chauffe ?"};
-const moodArt = {reconfort:"calin",energie:"energie",melancolie:"coeur-lourd",tension:"secoue-moi",calme:"calme"};
 
 function make(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+export function makeReadingArt(group, id, className = "") {
+  const node = make("span", `reading-mood-art ${className}`.trim());
+  node.style.setProperty("--mood-art", `url("./art/reading-${group}/${id}.webp")`);
+  node.setAttribute("aria-hidden", "true");
   return node;
 }
 
@@ -72,13 +78,23 @@ export async function findPromesse(book, signal) {
   }
   if (signal?.aborted) return null;
   const fromServer = server ? fillGaps(emptyPromesse(), server.promesse) : emptyPromesse();
-  const full = ["humeur", "emotions", "decor"].every(key => fromServer[key].length) && fromServer.noirceur != null && fromServer.pages != null && fromServer.spice != null;
+  const presentation = readingPresentation(book);
+  fromServer.emotions = inferReadingFeelings(presentation);
+  const preciseDecors = inferPreciseDecors(presentation);
+  const bookDecors = decors => [...new Set([...preciseDecors, ...(decors || [])])]
+    .filter(id => id !== "ville-nuit" || preciseDecors.includes(id))
+    .slice(0, 2);
+  fromServer.decor = bookDecors(fromServer.decor);
+  const full = Boolean(fromServer.humeur.length && fromServer.decor.length) && fromServer.noirceur != null && fromServer.pages != null && fromServer.spice != null;
   if (full) return {promesse: fromServer, romance: Boolean(server.romance), sources};
   // Ce qui manque encore : l'appareil cherche aussi de son côté (Google Books + Open Library)
   try {
     const guess = await guessPromesse(book, signal);
     for (const [name, value] of Object.entries(guess.sources || {})) sources[`${name} (téléphone)`] = value;
-    return {promesse: fillGaps(fromServer, guess.promesse), romance: Boolean(server?.romance) || guess.romance, sources};
+    const promesse = fillGaps(fromServer, guess.promesse);
+    promesse.emotions = fromServer.emotions;
+    promesse.decor = bookDecors(promesse.decor);
+    return {promesse, romance: Boolean(server?.romance) || guess.romance, sources};
   } catch (error) {
     sources.telephone = `erreur ${String(error?.message || "").slice(0, 40)}`;
     return {promesse: fromServer, romance: Boolean(server?.romance), sources};
@@ -185,10 +201,13 @@ export function mountPromesse(section, {onPages, signal} = {}) {
       const text = make("span", "ep-promesse-label");
       text.append(make("b", "", label));
       if (detail) text.append(make("small", "", detail));
-      const art = make("img", "ep-choice-art");
-      art.alt = "";
-      art.src = slide.key === "decor" ? "./art/pal-decors/" + id + ".webp"
-        : "./art/questionnaire/" + (slide.key === "humeur" ? "humeur-" + moodArt[id] : "emo-" + id) + ".webp";
+      const art = slide.key === "decor"
+        ? make("img", "ep-choice-art")
+        : makeReadingArt(slide.key === "humeur" ? "moods" : "feelings", id, "ep-choice-art");
+      if (slide.key === "decor") {
+        art.alt = "";
+        art.src = "./art/pal-decors/" + id + ".webp";
+      }
       option.append(input, box, art, text);
       input.addEventListener("change", () => {
         touched.add(slide.key);
@@ -383,7 +402,7 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     const controller = new AbortController();
     request = controller;
     if (book.promesse) {
-      state = {...emptyPromesse(), ...book.promesse};
+      state = {...emptyPromesse(), ...book.promesse, humeur: normalizeHumeurs(book.promesse.humeur)};
       onPages?.(book,state.pages);
       loading = false;
       notFound = false;
@@ -437,7 +456,7 @@ export function mountPromesse(section, {onPages, signal} = {}) {
     const result = {...state};
     const filled = result.humeur.length || result.emotions.length || result.decor.length ||
       result.noirceur != null || result.spice != null || result.pages != null;
-    return filled ? result : null;
+    return filled || touched.size ? result : null;
   }
 
   render();
@@ -501,7 +520,7 @@ export function renderPalDetail(root,book,save,statusChange) {
   }
   const promise=book.promesse || {},rows=node('div','pal-detail-rows');
   for(const slide of [...SLIDES,SPICE_SLIDE]){
-    const key=slide.key,value=promise[key];
+    const key=slide.key,value=key==="humeur"?normalizeHumeurs(promise.humeur):promise[key];
     if(value==null)continue;
     const row=node('section'),h=node('h3');h.innerHTML=ICONS[key];h.append(node('span','',slide.title));row.append(h);
     if(slide.list){

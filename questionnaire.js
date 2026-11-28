@@ -1,32 +1,17 @@
 // Le dé de la pile et le questionnaire « Ta prochaine lecture ».
 // Validé slide par slide le 24 novembre (cahier des charges, zone 3).
-import {findPromesse} from "./promesse-form.js?v=edition-officielle-1";
+import {findPromesse, makeReadingArt} from "./promesse-form.js?v=promesse-litteraire-1";
+import {HUMEURS, EMOTIONS, DECORS, normalizeHumeurs} from "./promesse.js?v=promesse-litteraire-1";
 
 const ART = name => `./art/questionnaire/${name}.webp`;
 const DAY = 86400000;
 
-const HUMEURS = [
-  ["calin", "J'ai besoin qu'on me prenne dans les bras", "humeur-calin", ["reconfort"]],
-  ["energie", "Je déborde d'énergie", "humeur-energie", ["energie"]],
-  ["lourd", "J'ai le cœur un peu lourd", "humeur-coeur-lourd", ["melancolie", "reconfort"]],
-  ["secoue", "Je m'ennuie, secoue-moi", "humeur-secoue-moi", ["tension"]],
-  ["calme", "Je suis fatiguée, j'ai besoin de calme", "humeur-calme", ["calme"]],
-];
-const EMOTIONS = [
-  ["Tout en douceur", [
-    ["sourire", "Sourire toute seule", "emo-sourire"], ["coeur-fond", "Avoir le cœur qui fond", "emo-coeur-fond"],
-    ["emerveillee", "Être émerveillée", "emo-emerveillee"], ["moins-seule", "Me sentir moins seule", "emo-moins-seule"],
-    ["rire", "Rire aux éclats", "emo-rire"],
-  ]],
-  ["Plus fort", [
-    ["frissons", "Avoir des frissons", "emo-frissons"], ["peur", "Avoir peur", "emo-peur"], ["pleurer", "Pleurer pour de vrai", "emo-pleurer"],
-  ]],
-];
-const DECORS = [
-  ["Une saison", [["hiver", "Sous un plaid, en plein hiver", "decor-plaid-hiver"], ["ete", "Au soleil, en été", "decor-soleil-ete"]]],
-  ["Un lieu", [["mer", "Au bord de la mer", "decor-mer"], ["campagne", "À la campagne", "decor-campagne"], ["ville-nuit", "En ville, la nuit", "decor-ville-nuit"], ["campus", "Sur un campus", "decor-campus"]]],
-  ["Ailleurs", [["chateau", "Dans un château plein de magie", "decor-chateau"], ["autre-monde", "Dans un autre monde", "decor-autre-monde"]]],
-];
+const decorOptions = new Map(DECORS);
+const decorGroups = [
+  ["Une saison", ["hiver", "ete"]],
+  ["Un lieu", ["mer", "campagne", "ville-nuit", "campus", "petite-ville", "manoir", "foret-ancienne", "ville-autrefois"]],
+  ["Ailleurs", ["chateau", "autre-monde"]],
+].map(([name, ids]) => [name, ids.map(id => [id, decorOptions.get(id)])]);
 const TROPE_ART = {
   "found family": "trope-found-family", "second chance": "trope-second-chance", "forced proximity": "trope-forced-proximity",
   "grumpy sunshine": "trope-grumpy-sunshine", "grumpy x sunshine": "trope-grumpy-sunshine", "grumpy/sunshine": "trope-grumpy-sunshine",
@@ -132,10 +117,10 @@ export function mountQuestionnaire({host, books, cover, openBook, startBook, sav
 
   // Les slides (ordre validé). « visible » cache une slide sans réponse possible.
   const SLIDES = [
-    {key: "humeur", text: "Tu te sens comment ce soir ?", weight: 3, kind: "cards", idk: true,
-      groups: () => [["", HUMEURS.map(([id, label, image]) => [id, label, image])]]},
-    {key: "emotions", text: "En refermant le livre, tu veux…", weight: 3, kind: "cards", idk: true, groups: () => EMOTIONS},
-    {key: "decor", text: "En lisant, tu veux être…", weight: 2, kind: "cards", idk: true, groups: () => DECORS},
+    {key: "humeur", text: "De quelle humeur de lecture as-tu envie ?", weight: 3, kind: "cards", idk: true,
+      groups: () => [["", HUMEURS.map(([id, label, detail]) => [id, label, null, null, detail])]]},
+    {key: "emotions", text: "En refermant le livre, tu veux…", weight: 3, kind: "cards", idk: true, groups: () => [["", EMOTIONS]]},
+    {key: "decor", text: "En lisant, tu veux être…", weight: 2, kind: "cards", idk: true, groups: () => decorGroups},
     {key: "tropes", text: "Côté histoire, tu as envie de…", weight: 1, kind: "cards", surprise: true,
       groups: () => [["", countValues(pile(), book => book.tropes).slice(0, 12).map(([name, count]) => [name, name, TROPE_ART[lower(name)] || null, count])]],
       visible: () => pile().some(book => book.tropes?.length)},
@@ -189,7 +174,7 @@ export function mountQuestionnaire({host, books, cover, openBook, startBook, sav
     let max = 0;
     const add = (weight, ok) => { max += weight; if (ok) got += weight; };
     const has = (list, wanted) => (list || []).some(value => wanted.includes(value));
-    if (answers.humeur?.length) add(3, has(promesse.humeur, answers.humeur.flatMap(id => HUMEURS.find(item => item[0] === id)?.[3] || [])));
+    if (answers.humeur?.length) add(3, has(normalizeHumeurs(promesse.humeur), answers.humeur));
     if (answers.emotions?.length) add(3, has(promesse.emotions, answers.emotions));
     if (answers.decor?.length) add(2, has(promesse.decor, answers.decor));
     if (answers.tropes?.length) add(1, (book.tropes || []).some(name => answers.tropes.includes(String(name).trim())));
@@ -453,14 +438,22 @@ export function mountQuestionnaire({host, books, cover, openBook, startBook, sav
     state.answers[slide.key] = [...list];
   }
 
-  function choiceCard(slide, [id, label, image, count], refresh, extraClass = "") {
+  function choiceCard(slide, [id, label, image, count, detail], refresh, extraClass = "") {
     const button = make("button", `qz-choice cursor-interaction ${extraClass}`.trim());
     button.type = "button";
     const selected = () => (state.answers[slide.key] || []).includes(id);
     button.setAttribute("aria-pressed", String(selected()));
-    if (image) button.append(art(image));
+    if (id !== "__vide" && (slide.key === "humeur" || slide.key === "emotions")) {
+      button.append(makeReadingArt(slide.key === "humeur" ? "moods" : "feelings", id));
+    } else if (id !== "__vide" && slide.key === "decor") {
+      const decor = make("img", "qz-decor-art");
+      decor.alt = "";
+      decor.src = "./art/pal-decors/" + id + ".webp";
+      button.append(decor);
+    } else if (image) button.append(art(image));
     const text = make("span", "qz-choice-text");
     text.append(make("b", "", label));
+    if (detail) text.append(make("small", "", detail));
     if (count) text.append(make("small", "", `${count} livre${count > 1 ? "s" : ""}`));
     const tick = make("i", "qz-tick");
     tick.innerHTML = CHECK;

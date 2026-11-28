@@ -1,11 +1,12 @@
 function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, editCover, signal}) {
  root.classList.add('ep-pal-identity');
+ const etoile = '<svg class="repere-etoile" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" aria-hidden="true"><path d="m8 1 1.8 5.2L15 8l-5.2 1.8L8 15 6.2 9.8 1 8l5.2-1.8Z"/></svg>';
  root.innerHTML=`<div class="livre">
  <button type="button" class="couverture" aria-label="Modifier la couverture et la fiche"></button>
  <div class="identite">
   <div class="texte-infos">
    <span class="titre-livre" data-texte="title" data-vide="Ajouter un titre" role="textbox" contenteditable="plaintext-only" aria-label="Titre du livre"></span>
-   <span class="autrice" data-texte="author" data-vide="Ajouter un nom" role="textbox" contenteditable="plaintext-only" aria-label="Autrice ou auteur"></span>
+   <div class="autrice"><span class="prefixe-autrice">par </span><span data-texte="author" data-vide="Ajouter un nom" role="textbox" contenteditable="plaintext-only" aria-label="Autrice ou auteur"></span></div>
    <div class="saga"><span data-texte="series" data-vide="Ajouter une saga" role="textbox" contenteditable="plaintext-only" aria-label="Saga"></span><span aria-hidden="true"> · </span><span class="prefixe-tome">Tome </span><span data-texte="volume" data-vide="n°" role="textbox" contenteditable="plaintext-only" aria-label="Tome"></span></div>
    <div class="saga spin" hidden>Spin-Off de <span data-texte="spinOffOf" role="textbox" contenteditable="plaintext-only" aria-label="Livre ou saga d’origine"></span></div>
   </div>
@@ -14,8 +15,10 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
 
   </div>
  </div>
+ <button type="button" class="collection" data-champ="subgenres"><span class="libelle-groupe">${etoile}Sous-genres</span><span class="valeurs"></span></button>
+ <button type="button" class="collection" data-champ="tropes"><span class="libelle-groupe">${etoile}Tropes</span><span class="valeurs"></span></button>
  <section class="collection reperes" aria-labelledby="ep-reperes-title">
-  <h3 class="libelle-groupe" id="ep-reperes-title">Mes repères de lecture</h3>
+  <h3 class="libelle-groupe" id="ep-reperes-title">${etoile}Mes repères de lecture</h3>
   <div class="reperes-champs">
    <div class="bloc-parution"><span class="intitule-sortie">Date de sortie</span><div class="champs-date" role="group" aria-label="Date de sortie"></div></div>
    <div class="repere-priorite"><span class="intitule-sortie" id="ep-priorite-label">Priorité de lecture</span>
@@ -25,8 +28,6 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
    <label class="repere-pages"><span class="intitule-sortie">Nombre de pages</span><input type="number" min="1" step="1" inputmode="numeric" placeholder="—"></label>
   </div>
  </section>
- <button type="button" class="collection" data-champ="subgenres"><span class="libelle-groupe">Sous-genres</span><span class="valeurs"></span></button>
- <button type="button" class="collection" data-champ="tropes"><span class="libelle-groupe">Tropes</span><span class="valeurs"></span></button>
 </div>
 <dialog class="palette ep-tag-sheet" id="ep-pal-palette" aria-labelledby="ep-tag-sheet-title">
  <div class="ep-tag-sheet-inner">
