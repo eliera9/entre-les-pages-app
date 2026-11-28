@@ -1279,6 +1279,11 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     importStatus.textContent=text;
     importStatus.hidden=!text;
   }
+  function showDropError(text) {
+    message();
+    dropError.hidden=false;
+    dropError.querySelector("[data-drop-error-text]").textContent=text;
+  }
   function current(version) {
     return !signal.aborted && version===documentVersion;
   }
@@ -1488,12 +1493,12 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       if (current(version)) importStep(-1);
       if (!current(version)) return;
       const reason=error.message || "Impossible d’ouvrir ce fichier.";
-      if (error.name==="PasswordException" || fileChoice.hidden || file.size>100*1024*1024) {
-        message(error.name==="PasswordException" ? "Ce PDF est protégé par un mot de passe." : reason);
+      if (error.name==="PasswordException") {
+        showDropError("Ce PDF est protégé par un mot de passe. Choisis une copie sans mot de passe.");
+      } else if (fileChoice.hidden || file.size>100*1024*1024) {
+        message(reason);
       } else {
-        message();
-        dropError.hidden=false;
-        dropError.querySelector("[data-drop-error-text]").textContent="Ce fichier est illisible. Choisis un autre EPUB ou PDF.";
+        showDropError("Ce fichier est illisible. Choisis un autre EPUB ou PDF.");
       }
     }
   }
