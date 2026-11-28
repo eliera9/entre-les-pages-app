@@ -1882,7 +1882,12 @@ body { margin: 0; }
 #app-lecture .acc-name { margin-block-start: 3px; font: 400 14px/1.2 var(--heading); color: var(--title); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #app-lecture .acc-sub { font: italic 12px var(--heading); color: var(--muted); }
 #app-lecture .acc-stamp { position: absolute; inset-inline-start: 4px; inset-block-end: 4px; padding: 2px 6px; border-radius: 8px; background: light-dark(rgba(247,238,235,.92), rgba(33,29,32,.9)); font: 600 9.5px var(--body); font-style: normal; color: var(--accent); }
-#app-lecture .acc-heart { position: absolute; inset-block-start: 5px; inset-inline-end: 5px; inline-size: 24px; block-size: 24px; border-radius: 12px; background: light-dark(rgba(247,238,235,.94), rgba(33,29,32,.9)); font: 13px/24px var(--body); font-style: normal; color: light-dark(#9b3b4a, #E3A2B2); text-align: center; }
+#app-lecture .acc-heart {
+  position:absolute; inset-block-start:5px; inset-inline-end:5px; inline-size:24px; block-size:24px;
+  display:grid; place-items:center; border-radius:50%; pointer-events:none;
+  background:light-dark(#99666b,#584754); color:light-dark(#ffe2d7,#e1c3df);
+}
+#app-lecture .acc-heart svg {display:block;inline-size:72%;block-size:72%;}
 #app-lecture .acc-status { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #app-lecture .acc-pill-tag { font: 600 10.5px var(--body); padding: 2px 8px; border-radius: 9px; }
 #app-lecture .acc-pill-tag.pile { background: var(--button); color: var(--button-text); }

@@ -262,6 +262,10 @@
   background: light-dark(#f7eeeb, #342a35);
   box-shadow: 0 2px 7px light-dark(#52233316, #09050940);
 }
+#app-lecture #bibliotheque-app[data-accueil-page] .library-scroll-top {
+  inset-inline-start: max(13px, env(safe-area-inset-left));
+  inset-inline-end: auto;
+}
 #app-lecture #bibliotheque-app[data-catalogue-open] .library-scroll-top {
   inset-block-end: calc(13px + env(safe-area-inset-bottom));
 }

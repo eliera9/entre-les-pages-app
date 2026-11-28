@@ -2936,7 +2936,8 @@ async function activateLibrary(root) {
     cover.append(catalogueCover(book));
     if (volumeLabel) cover.append(el('span', 'acc-band', volumeLabel));
     if (heart) {
-      const mark = el('i', 'acc-heart', '♥');
+      const mark = el('span', 'acc-heart');
+      mark.innerHTML = '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.6 28C12.8 22.1 3.2 15.6 3.2 9.8c0-6.7 8.2-8.5 12.4.9C17.9.9 28.1.6 28.1 8.2c0 6.1-7.4 13.1-15.7 20.1"/></svg>';
       mark.setAttribute('aria-hidden', 'true');
       cover.append(mark);
     }
