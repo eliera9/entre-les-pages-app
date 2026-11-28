@@ -1308,27 +1308,24 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     }
     if (digitalBook) {
       const snapshot=drawBook(digitalBook,true);
-      const chooseCover=digitalBook.format==="EPUB" && (!digitalBook.coverData || selectedCovers.has(digitalBook));
-      coverTools.hidden=chooseCover;
-      if (chooseCover) {
-        const frame=snapshot.querySelector(".ep-cover");
-        const button=document.createElement("button");
-        button.type="button";
-        button.className="ep-cover ep-cover-picker";
-        button.addEventListener("click",()=>imageInput.click());
-        if (digitalBook.coverData) {
-          button.setAttribute("aria-label","Changer la couverture");
-          button.append(frame.querySelector("img"));
-        } else {
-          button.innerHTML=`<svg aria-hidden="true" viewBox="0 0 64 72" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path class="ep-binding" d="M12 6Q7 6 7 12v45q0 6 5 7h35V12q0-6-6-6Z"/>
-            <path d="M13 7v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2M30 17l3 4-3 4-3-4Z"/>
-            <path class="ep-page-edges" d="M47 55H14q-7 0-7 5t7 5h33M14 60l27-2"/>
-            <path class="ep-cover-plus" d="M52 51v15m-7.5-7.5h15" stroke-width="2.6"/>
-          </svg><span>Ajouter une couverture</span>`;
-        }
-        frame.replaceWith(button);
+      coverTools.hidden=true;
+      const frame=snapshot.querySelector(".ep-cover");
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="ep-cover ep-cover-picker";
+      button.addEventListener("click",()=>imageInput.click());
+      if (digitalBook.coverData) {
+        button.setAttribute("aria-label","Changer la couverture");
+        button.append(frame.querySelector("img"));
+      } else {
+        button.innerHTML=`<svg aria-hidden="true" viewBox="0 0 64 72" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path class="ep-binding" d="M12 6Q7 6 7 12v45q0 6 5 7h35V12q0-6-6-6Z"/>
+          <path d="M13 7v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2M30 17l3 4-3 4-3-4Z"/>
+          <path class="ep-page-edges" d="M47 55H14q-7 0-7 5t7 5h33M14 60l27-2"/>
+          <path class="ep-cover-plus" d="M52 51v15m-7.5-7.5h15" stroke-width="2.6"/>
+        </svg><span>Ajouter une couverture</span>`;
       }
+      frame.replaceWith(button);
       get("[data-ep-snapshot]").replaceChildren(snapshot);
       for (const button of startButtons) button.disabled=!digitalBook.title;
     }
@@ -1371,31 +1368,9 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       message();
     } catch (error) {
       if (current(version) && ticket===coverVersion && error.name!=="RenderingCancelledException") {
-        message("Cette page est illisible. Essaie une autre page ou choisis une image.");
+        message("Touche l’encadré pour choisir une image.");
       }
     }
-  }
-
-  async function drawPdfPages(version) {
-    for (let number=1; number<=Math.min(pdfDocument?.numPages || 0,4); number++) {
-      let canvas;
-      try { canvas=await engine.renderPage(pdfDocument,number,230); } catch { continue; }
-      if (!current(version)) return;
-      const button=document.createElement("button");
-      button.type="button";
-      button.className="cover-page cursor-interaction";
-      button.dataset.page=String(number);
-      button.setAttribute("aria-pressed",String(number===1 && Boolean(sourceCanvas)));
-      const image=document.createElement("img");
-      image.src=canvas.toDataURL("image/png");
-      image.alt="";
-      const label=document.createElement("span");
-      label.textContent="Page "+number;
-      button.append(image,label);
-      button.addEventListener("click",()=>choosePdfPage(number,documentVersion,true));
-      pages.append(button);
-    }
-    if (current(version)) pages.hidden=pagesLabel.hidden=!pages.children.length;
   }
 
   async function importDocument(file) {
@@ -1495,7 +1470,6 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
         pdfDocument=info.document;
         recovery.hidden=false;
         await choosePdfPage(1,version);
-        if (current(version)) await drawPdfPages(version);
       } else if (info.cover) {
         try {
           const canvas=await engine.imageCanvas(info.cover);
@@ -1530,6 +1504,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   });
   imageInput.addEventListener("change",async()=>{
     const file=imageInput.files?.[0];
+    imageInput.value="";
     if (!file || !digitalBook) return;
     const version=documentVersion;
     const ticket=++coverVersion;
