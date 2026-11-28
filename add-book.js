@@ -1307,7 +1307,29 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
         {duration:650,delay:50,easing:"ease",fill:"backwards"});
     }
     if (digitalBook) {
-      get("[data-ep-snapshot]").replaceChildren(drawBook(digitalBook,true));
+      const snapshot=drawBook(digitalBook,true);
+      const chooseCover=digitalBook.format==="EPUB" && (!digitalBook.coverData || selectedCovers.has(digitalBook));
+      coverTools.hidden=chooseCover;
+      if (chooseCover) {
+        const frame=snapshot.querySelector(".ep-cover");
+        const button=document.createElement("button");
+        button.type="button";
+        button.className="ep-cover ep-cover-picker";
+        button.addEventListener("click",()=>imageInput.click());
+        if (digitalBook.coverData) {
+          button.setAttribute("aria-label","Changer la couverture");
+          button.append(frame.querySelector("img"));
+        } else {
+          button.innerHTML=`<svg aria-hidden="true" viewBox="0 0 64 72" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path class="ep-binding" d="M12 6Q7 6 7 12v45q0 6 5 7h35V12q0-6-6-6Z"/>
+            <path d="M13 7v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2m0 3v2M30 17l3 4-3 4-3-4Z"/>
+            <path class="ep-page-edges" d="M47 55H14q-7 0-7 5t7 5h33M14 60l27-2"/>
+            <path class="ep-cover-plus" d="M52 51v15m-7.5-7.5h15" stroke-width="2.6"/>
+          </svg><span>Ajouter une couverture</span>`;
+        }
+        frame.replaceWith(button);
+      }
+      get("[data-ep-snapshot]").replaceChildren(snapshot);
       for (const button of startButtons) button.disabled=!digitalBook.title;
     }
   }
@@ -1484,10 +1506,6 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       }
       if (current(version) && !digitalBook.coverData) {
         recovery.hidden=false;
-        if (format==="EPUB") {
-          coverTools.open=true;
-          message("Aucune couverture intégrée. Tu peux choisir une image.");
-        }
       }
     } catch (error) {
       if (current(version)) importStep(-1);

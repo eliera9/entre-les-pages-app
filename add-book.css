@@ -978,3 +978,18 @@
 .ep-import-progress li[aria-current] {color:var(--ep-title);font-weight:600}
 .ep-import-progress li[aria-current]::before {content:"●"}
 .ep-import-progress li+li::after {content:"";position:absolute;right:60%;top:12px;width:80%;border-top:1px solid var(--ep-line)}
+
+#bibliotheque-app #elp-add-book .ep-digital button.ep-cover-picker {
+  border:1px dotted currentColor; border-radius:8px; box-shadow:none; cursor:pointer;
+  background:transparent; color:light-dark(#78445f,#d4c5ee);
+  font:500 clamp(14px,2.3vw,20px)/1.12 "Cormorant Garamond",Georgia,serif;
+}
+#bibliotheque-app #elp-add-book .ep-cover-picker::before { display:none }
+#bibliotheque-app #elp-add-book .ep-cover-picker svg { width:48%; max-width:70px; height:auto }
+.ep-cover-picker .ep-binding { fill:light-dark(transparent,#67485f) }
+.ep-cover-picker .ep-page-edges { fill:light-dark(transparent,#9d839b) }
+#bibliotheque-app #elp-add-book .ep-digital .ep-cover-picker:has(img) { border:0; padding:0 }
+@media (prefers-reduced-motion:no-preference) {
+  .ep-cover-plus { animation:ep-cover-invite 3s ease-in-out infinite }
+  @keyframes ep-cover-invite { 50% { opacity:.62 } }
+}
