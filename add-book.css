@@ -921,7 +921,7 @@
 #bibliotheque-app[data-format="tablet"] #elp-add-book .ep-digital .ep-book-snapshot {
   inline-size:96%;
   margin-inline:auto;
-  grid-template-columns:min(36%, clamp(185px, 28vw, 270px)) minmax(0, max-content);
+  grid-template-columns:min(36%, clamp(148px, 22.5vw, 216px)) minmax(0, max-content);
   justify-content:center;
   align-items:center;
   column-gap:clamp(28px, 5vw, 54px);
