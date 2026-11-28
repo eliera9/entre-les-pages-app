@@ -993,3 +993,26 @@
   .ep-cover-plus { animation:ep-cover-invite 3s ease-in-out infinite }
   @keyframes ep-cover-invite { 50% { opacity:.62 } }
 }
+
+#bibliotheque-app #elp-add-book .ep-drop-error:not([hidden]) {
+  display:grid; justify-items:center; gap:8px; margin-top:7px;
+  font-size:clamp(16px,2vw,18px); font-weight:400; line-height:1.35; text-align:center;
+}
+#bibliotheque-app #elp-add-book .ep-retry {
+  display:inline-flex; align-items:center; gap:6px; font-weight:600; color:var(--ep-accent);
+}
+#bibliotheque-app #elp-add-book .ep-retry svg { width:18px; height:18px }
+
+#bibliotheque-app #elp-add-book .ep-drop:has(.ep-drop-error:not([hidden])) {
+  min-height:152px; padding:20px; gap:6px;
+}
+#bibliotheque-app #elp-add-book .ep-drop:has(.ep-drop-error:not([hidden])) > :is(.ep-art,.ep-drop-detail,.ep-drop-drag) { display:none }
+#bibliotheque-app #elp-add-book .ep-drop:has(.ep-drop-error:not([hidden])) > .ep-art + span {
+  font:500 26px/1.15 "Cormorant Garamond",Georgia,serif;
+}
+#bibliotheque-app #elp-add-book .ep-drop-error:not([hidden]) { margin:0; gap:6px; font-size:16px }
+#bibliotheque-app #elp-add-book .ep-drop-error .ep-retry {
+  padding:4px 11px; gap:5px; border:1px solid var(--ep-line); border-radius:99px;
+  font-size:15px; font-weight:400;
+}
+#bibliotheque-app #elp-add-book .ep-drop-error .ep-retry svg { width:23px; height:23px }

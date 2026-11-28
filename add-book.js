@@ -1272,7 +1272,10 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     });
   }
 
+  const dropError=drop.querySelector(".ep-drop-error");
   function message(text="") {
+    dropError.hidden=true;
+    dropError.querySelector("[data-drop-error-text]").textContent="";
     importStatus.textContent=text;
     importStatus.hidden=!text;
   }
@@ -1483,7 +1486,15 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
       }
     } catch (error) {
       if (current(version)) importStep(-1);
-      if (current(version)) message(error.name==="PasswordException" ? "Ce PDF est protégé par un mot de passe." : error.message || "Impossible d’ouvrir ce fichier.");
+      if (!current(version)) return;
+      const reason=error.message || "Impossible d’ouvrir ce fichier.";
+      if (error.name==="PasswordException" || fileChoice.hidden || file.size>100*1024*1024) {
+        message(error.name==="PasswordException" ? "Ce PDF est protégé par un mot de passe." : reason);
+      } else {
+        message();
+        dropError.hidden=false;
+        dropError.querySelector("[data-drop-error-text]").textContent="Ce fichier est illisible. Choisis un autre EPUB ou PDF.";
+      }
     }
   }
 
