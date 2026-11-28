@@ -82,7 +82,7 @@ const EbookReleases = (() => {
         const id=method==='putBook'?patch.id:args[0];
         const newFavorite=patch?.coupDeCoeur===true&&!books().find(b=>b.id===id)?.coupDeCoeur;
         const saved=await write.apply(this,args);
-        if(newFavorite&&saved?.coupDeCoeur&&saved.author&&!has(saved.author)&&lastOffer!==id){
+        if(newFavorite&&patch?.readingSheet?.answers?.follow!=='Oui'&&saved?.coupDeCoeur&&saved.author&&!has(saved.author)&&lastOffer!==id){
           lastOffer=id;setTimeout(()=>{offer(saved.author);lastOffer='';},0);
         }
         return saved;

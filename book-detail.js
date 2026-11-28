@@ -21,7 +21,7 @@ function trackSpeed(printedPage, percent) {
 }
 let speedBook = null;
 
-function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, sheetHome, onSave, onRemove, onError}) {
+function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, sheetHome, searchAuthor, onSave, onRemove, onError}) {
   speedBook = book;
   speedLast = null;
   const scope = new AbortController();
@@ -56,7 +56,6 @@ function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, ro
   const homeButton = bar('[data-book-home]');
   const create = bar('[data-create-note]');
   const switcher = q('[data-open-note]');
-  const cancelNote = q('[data-cancel-note]');
   const trigger = q('[data-status-trigger]');
   const favorite = q('[data-saved-favorite]');
   const popup = q('[data-status-popup]');
@@ -144,7 +143,6 @@ function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, ro
     edit.setAttribute('aria-expanded', String(editing));
     homeButton.hidden = false;
     create.hidden = !viewing || book.status !== 'Terminé' || hasSheet;
-    cancelNote.hidden = !readingNote || hasSheet;
     const parent = readingNote ? note : q('[data-cover-column]');
     if (switcher.parentElement !== parent) parent.prepend(switcher);
     switcher.hidden = !hasSheet || !(viewing || readingNote);
@@ -379,52 +377,44 @@ function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, ro
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });
 
-  let tabletSheet;
+  let readingSheet;
   const tabletMedia = matchMedia('(min-width: 700px)');
-  function openTabletSheet() {
-    if (root.dataset.format ? root.dataset.format !== 'tablet' : !tabletMedia.matches) return false;
-    tabletSheet ||= window.mountTabletReadingSheet({
-      node:q('[data-tablet-sheet]'),book,onBack:backFromNote,onHome:sheetHome || home,onSave:async patch=>{
-        const saved=await save(patch);
-        if (saved) {hasSheet=true; sheetText.value=patch.readingSheet.text;}
-        return saved;
+  function openReadingSheet() {
+    readingSheet ||= window.mountReadingSheet({
+      node:q('[data-tablet-sheet]'),book,onBack:backFromNote,onHome:sheetHome || home,
+      onSearchAuthor:searchAuthor,
+      onSave:async patch=>{
+        if (!await save(patch)) return false;
+        hasSheet=true;
+        const author=patch.author;
+        if (author && patch.readingSheet.answers.follow==='Oui') {
+          try {
+            if (!releaseWatch.has(author)) await releaseWatch.follow(author,true);
+          } catch {
+            return {followError:true};
+          }
+        }
+        return {followError:false};
       }
     });
     root.setAttribute('data-tablet-reading-sheet','');
-    tabletSheet.open();
-    return true;
+    const mobile=root.dataset.format ? root.dataset.format==='phone' : !tabletMedia.matches;
+    readingSheet.open(mobile);
   }
-  const sheetText=q('[data-sheet-text]');
-  const saveSheet=q('[data-save-sheet]');
-  sheetText.value=typeof book.readingSheet==='string' ? book.readingSheet : book.readingSheet?.text || '';
-  on(sheetText,'input',()=>setText('[data-sheet-status]',''));
-  on(saveSheet,'click',async()=>{
-    if(saveSheet.disabled)return;
-    saveSheet.disabled=true;
-    const previous=book.readingSheet;
-    const readingSheet={...(previous && typeof previous==='object' ? previous : {}),text:sheetText.value};
-    if(await save({readingSheet})){
-      hasSheet=true;
-      render();
-      setText('[data-sheet-status]','Fiche enregistrée.');
-    }
-    saveSheet.disabled=false;
-  });
   function showNote() {
     setPopup(false); setDelete(false);
     mode = 'note';
     setText('#book-reading-sheet-title', 'Ma fiche de lecture');
     setText('[data-note-book]', book.title);
     render();
-    if (!openTabletSheet()) focus(hasSheet ? switcher : cancelNote);
+    openReadingSheet();
   }
   function backFromNote() {
-    tabletSheet?.close();
+    readingSheet?.close();
     root.removeAttribute('data-tablet-reading-sheet');
     mode = 'book'; render(); focus(hasSheet ? switcher : create);
   }
   on(create, 'click', showNote);
-  on(cancelNote, 'click', backFromNote);
   on(switcher, 'click', async () => {
     if (switcher.hasAttribute('data-turning')) return;
     const opening = mode === 'book';
@@ -1245,7 +1235,7 @@ function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, ro
   return () => {
     carnet.remove(); scope.abort(); stopReader();
     root.removeAttribute('data-tablet-reading-sheet');
-    tabletSheet?.close();
+    readingSheet?.close();
     for (const button of [edit, trash, homeButton, create]) button.hidden = true;
     host.replaceChildren();
     delete host.dataset.bookId;

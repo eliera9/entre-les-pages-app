@@ -2914,6 +2914,16 @@ async function activateLibrary(root) {
     const months = Math.round(days / 30);
     return months < 12 ? `il y a ${months} mois` : `il y a ${Math.floor(days / 365)} an${days >= 730 ? 's' : ''}`;
   }
+  function accSagaDecision(read) {
+    let newest=-Infinity, answer='';
+    for (const book of read) {
+      const value=book.readingSheet?.answers?.saga;
+      if (!value) continue;
+      const date=accFinishedAt(book);
+      if (date>=newest) {newest=date;answer=value;}
+    }
+    return answer;
+  }
   /* Pour chaque saga commencée (au moins un tome lu), le tome suivant déjà présent dans la bibliothèque. */
   function accNextVolumes() {
     const groups = new Map();
@@ -2928,12 +2938,13 @@ async function activateLibrary(root) {
     for (const group of groups.values()) {
       group.sort((a, b) => accVolume(a) - accVolume(b));
       const read = group.filter(book => book.status === 'Terminé');
-      if (!read.length || group.some(book => book.status === 'En cours')) continue;
+      const decision=accSagaDecision(read);
+      if (!read.length || decision==='Non' || group.some(book => book.status === 'En cours')) continue;
       const lastRead = Math.max(...read.map(accVolume));
       const candidate = group.find(book => accVolume(book) > lastRead && book.status !== 'Terminé');
       if (!candidate) continue;
       const total = Math.ceil(Math.max(...group.map(accVolume), ...group.map(book => Number(book.seriesTotal) || 0), ...(parutions?.series?.[candidate.saga] || []).map(item => Number(item.position) || 0)));
-      next.push({book: candidate, readVolumes:new Set(read.map(accVolume)), total, readAt: Math.max(...read.map(accFinishedAt))});
+      next.push({book: candidate, preferred: decision==='Oui', readVolumes:new Set(read.map(accVolume)), total, readAt: Math.max(...read.map(accFinishedAt))});
     }
     return next.sort((a, b) => b.readAt - a.readAt);
   }
@@ -3211,7 +3222,8 @@ async function activateLibrary(root) {
     const out = [];
     for (const group of accSagaGroups()) {
       const read = group.books.filter(book => book.status === 'Terminé');
-      if (!read.length || group.books.some(book => book.status === 'En cours')) continue;
+      const decision=accSagaDecision(read);
+      if (!read.length || decision==='Non' || group.books.some(book => book.status === 'En cours')) continue;
       const lastRead = Math.max(...read.map(accVolume).filter(Number.isFinite), 0);
       const owned = new Set(group.books.map(accVolume).filter(Number.isFinite));
       if ([...owned].some(volume => volume > lastRead)) continue; // le tome suivant est déjà chez elle
@@ -3224,7 +3236,7 @@ async function activateLibrary(root) {
       const total = Math.ceil(Math.max(number, ...volumes.map(v => Number(v.position) || 0), ...group.books.map(b => Number(b.seriesTotal) || 0)));
       const status = sagaProgress(new Set(read.map(accVolume)), total);
       const sub = 'Tome ' + String(next.position).replace('.', ',');
-      out.push({readAt: Math.max(...read.map(accFinishedAt)), card: remoteCard({
+      out.push({readAt: Math.max(...read.map(accFinishedAt)), preferred: decision==='Oui', card: remoteCard({
         label:group.name, volumeLabel:sub, image:next.image, extra:status,
         onOpen(read, anchor) {
           const dialog = find('[data-saga-details]');
@@ -3291,15 +3303,15 @@ async function activateLibrary(root) {
     const pile = books.filter(book => book.status === 'À lire').sort((a,b) =>
       publicationRank(b) - publicationRank(a) || accAddedRank(b) - accAddedRank(a));
     accFill('pile', pile.slice(0,10).map(book => accCard(book, {homeCover:true})), pile.length);
-    const sagaCards = nextVolumes.map(({book, readVolumes, total, readAt}) => ({
-      readAt,
+    const sagaCards = nextVolumes.map(({book, readVolumes, total, readAt, preferred}) => ({
+      readAt, preferred,
       card: accCard(book, {
         homeCover:true, label:book.saga, volumeLabel:'Tome ' + String(book.volume).replace('.', ','),
         extra:sagaProgress(readVolumes, total)
       })
     }));
     for (const item of accToBuy()) sagaCards.push(item);
-    sagaCards.sort((a, b) => b.readAt - a.readAt);
+    sagaCards.sort((a, b) => Number(b.preferred) - Number(a.preferred) || b.readAt - a.readAt);
     accFill('sagas', sagaCards.map(item => item.card), sagaCards.length);
     const soonCards = accSoon();
     accFill('bientot', soonCards, soonCards.length, null, () => '');
@@ -3540,6 +3552,12 @@ async function activateLibrary(root) {
         startInNote: openReadingSheet,
         returnToLibrary: fromLibrary ? returnFromSecondary : null,
         sheetHome:home,
+        searchAuthor(name) {
+          home();
+          search.value=name;
+          renderContent();
+          search.focus({preventScroll:true});
+        },
         setReaderTheme(theme) {setTheme(theme);savePreferences().catch(showStorageError);},
         onError: showStorageError,
         onSave(updated) { Object.assign(book, updated); refreshBookLists(); },

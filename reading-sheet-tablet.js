@@ -1,6 +1,7 @@
 (function() {
   const symbols = {
-    back: '<path d="m15 18-6-6 6-6"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>',
+    arrow: '<path d="M4 12h15m-5-5 5 5-5 5"/>',
     home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
     save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/>',
     download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
@@ -9,6 +10,7 @@
     heart: '<path d="M12 20c-1.1-1.2-8-5.4-8-10a4.3 4.3 0 0 1 8-2.1A4.3 4.3 0 0 1 20 10c0 4.6-6.9 8.8-8 10z"/>',
     plus: '<path d="M12 5v14M5 12h14"/>'
   };
+  symbols['mobile-download'] = symbols.download;
   const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${symbols[name]}</svg>`;
   const button = (name,label) => `<button type="button" class="rs-icon cursor-interaction" data-rs="${name}" aria-label="${label}" title="${label}">${icon(name)}</button>`;
   const moods = [
@@ -34,33 +36,34 @@
     return Number.isNaN(date.getTime()) ? {} : {day:date.getDate(),month:date.getMonth()+1,year:date.getFullYear()};
   }
 
-  function mountTabletReadingSheet({node,book,onBack,onHome,onSave}) {
+  function mountReadingSheet({node,book,onBack,onHome,onSave,onSearchAuthor}) {
     node.innerHTML = `
       <section class="rs-tablet" hidden aria-label="Ma fiche de lecture">
         <nav class="rs-toolbar" aria-label="Navigation de la fiche de lecture">
-          <div>${button('back','Retour')}${button('home','Accueil')}</div>
+          <div>${button('home','Accueil')}</div>
           <div>${button('pencil','Modifier')}${button('save','Enregistrer')}${button('download','Télécharger')}
-            <div class="rs-download" hidden><button type="button" data-rs="pdf">Télécharger en PDF</button></div>
           </div>
         </nav>
-        <div class="rs-heading">
+        <nav class="rs-mobile-nav" aria-label="Progression de la fiche" hidden>
+          <div class="rs-progress"></div>${button('close','Annuler la rédaction')}
+        </nav>
+        <div class="rs-heading" data-step="0">
           <div class="rs-cover"><img alt="" hidden></div>
           <div class="rs-book">
-            <img class="rs-book-art" src="./art/reading-sheet/book.webp" alt="">
-            <label class="rs-title"><span>Titre</span><input data-rs="title"></label>
+            <label class="rs-title"><span>Titre</span><input data-rs="title" aria-label="Titre"></label>
             <label class="rs-author"><span>Écrit par</span><input data-rs="author"></label>
             <div class="rs-date">${icon('calendar')}<span>Terminé le</span><div data-rs="date"></div></div>
-            <div class="rs-rating"><div><span>Note</span><div class="rs-stars" aria-label="Note sur cinq"></div></div>${button('heart','Coup de cœur')}</div>
+            <div class="rs-rating"><div><span class="rs-rating-label">Note</span><div class="rs-stars" aria-label="Note sur cinq"></div></div>${button('heart','Coup de cœur')}</div>
           </div>
         </div>
         <div class="rs-columns">
           <div class="rs-column">
-            <section class="rs-card rs-opinion"><h2><span>Mon avis</span></h2>
+            <section class="rs-card rs-opinion" data-step="1"><h2><span>Mon avis</span></h2>
               <textarea data-rs="opinion" aria-label="Mon avis" rows="4"></textarea>
               <picture><img src="./art/reading-sheet/ink.webp" alt=""></picture>
             </section>
-            <section class="rs-card rs-character" aria-label="Personnages">
-              <input class="rs-role" data-rs="role" aria-label="Intitulé du personnage" placeholder="Personnage">
+            <section class="rs-card rs-character" data-step="3" aria-label="Personnages">
+              <div class="rs-role-line"><input class="rs-role" data-rs="role" aria-label="Intitulé du personnage" placeholder="Personnage"></div>
               <button type="button" class="rs-arch cursor-interaction" data-rs="portrait" aria-label="Ajouter ou remplacer un portrait"><img alt="" hidden></button>
               <input type="file" data-rs="file" accept="image/*" hidden>
               <input class="rs-character-name" data-rs="name" aria-label="Nom du personnage" placeholder="Nom">
@@ -69,8 +72,8 @@
             </section>
           </div>
           <div class="rs-column">
-            <section class="rs-card rs-feelings"><h2><span>Ce que j’ai ressenti</span></h2><div class="rs-moods"></div></section>
-            <section class="rs-card rs-passage" aria-label="Passages">
+            <section class="rs-card rs-feelings" data-step="2"><h2><span>Ce que j’ai ressenti</span></h2><div class="rs-moods"></div></section>
+            <section class="rs-card rs-passage" data-step="4" aria-label="Passages">
               <div class="rs-chapter"><span>Chapitre</span><input data-rs="chapter" aria-label="Chapitre" placeholder="—"></div>
               <textarea data-rs="passage" aria-label="Passage" rows="4"></textarea>
               <div class="rs-controls"><div class="rs-dots"></div>${button('plus','Ajouter un passage')}</div>
@@ -80,7 +83,18 @@
         <section class="rs-card rs-final" aria-label="Dernières questions">
           <h2 class="rs-question" aria-live="polite"></h2><div class="rs-answers"></div>
           <div class="rs-dots"></div><img alt="" class="rs-final-sticker">
+          <button type="button" class="rs-search-author" data-rs="search-author" hidden>Rechercher ses livres</button>
         </section>
+        <section class="rs-mobile-questions" data-step="5" aria-label="Dernières questions" hidden></section>
+        <div class="rs-mobile-footer" hidden>
+          <button type="button" class="rs-primary" data-rs="next">Suivant${icon('arrow')}</button>
+          <button type="button" class="rs-primary" data-rs="finish" hidden>Enregistrer</button>
+          ${button('mobile-download','Télécharger')}
+        </div>
+        <div class="rs-download" hidden>
+          <button type="button" data-rs="pdf">Télécharger en PDF</button>
+          <button type="button" data-rs="world">Envoyer au Monde d’Eli</button>
+        </div>
         <p class="rs-status" role="status"></p>
       </section>`;
     const sheet=node.firstElementChild;
@@ -90,7 +104,13 @@
     const final=sheet.querySelector('.rs-final');
     const status=sheet.querySelector('.rs-status');
     const menu=sheet.querySelector('.rs-download');
-    let draft,editing,page,saving=false,revision=0,portraitTask;
+    const toolbar=sheet.querySelector('.rs-toolbar');
+    const mobileNav=sheet.querySelector('.rs-mobile-nav');
+    const footer=sheet.querySelector('.rs-mobile-footer');
+    const mobileQuestions=sheet.querySelector('.rs-mobile-questions');
+    const downloadButtons=[control('download'),control('mobile-download')];
+    const stepLabels=['Le livre','Mon avis','Ce que j’ai ressenti','Personnages','Passages','Dernières questions'];
+    let draft,editing,page,mobile=false,step=0,furthest=0,saving=false,revision=0,portraitTask;
     const setPressed=(node,value)=>node.setAttribute('aria-pressed',String(value));
     let dateParts={};
     const dateUI=control('date');
@@ -133,10 +153,12 @@
     }
     sheet.addEventListener('pointerdown',event=>{
       if (!dateUI.contains(event.target)) closeDate();
-      if (!menu.contains(event.target) && !control('download').contains(event.target)) setDownload(false);
+      if (!menu.contains(event.target) && !downloadButtons.some(button=>button.contains(event.target))) setDownload(false);
     });
     sheet.addEventListener('keydown',event=>{
-      if (event.key==='Escape') {closeDate();setDownload(false);}
+      if (event.key==='Escape' && (!menu.hidden || Object.values(dateParts).some(part=>!part.list.hidden))) {
+        event.stopPropagation();closeDate();setDownload(false);
+      }
     });
 
     function readBook() {
@@ -253,7 +275,7 @@
         b.disabled=!editing;
       }
     }
-    const slides = () => ['recommend','follow',...[book.saga || book.series ? 'saga' : null].filter(Boolean)];
+    const slides = () => (book.saga || book.series || '').trim() ? ['recommend','follow','saga'] : ['recommend','follow'];
     const pager=(node,active,total,move)=>{
       const indexWindow=Math.max(0,Math.min(active-3,total-7));
       const items=Array.from({length:Math.min(7,total)},(_,i)=>indexWindow+i);
@@ -362,28 +384,107 @@
       grow(control('passage'));
       pager(passage.querySelector('.rs-dots'),page.passage,draft.passages.length,(i,f)=>changePage('passage',i,f));
     }
-    function renderFinal() {
-      const all=slides(), key=all[page.final];
-      final.dataset.slide=key;
-      final.querySelector('h2').textContent=key==='follow' && draft.author.trim()
+    function questionTitle(key) {
+      return key==='follow' && draft.author.trim()
         ? 'Est-ce que je veux suivre '+draft.author.trim()+' ?' : questions[key].title;
-      const image=final.querySelector('img');
-      image.src='./art/reading-sheet/'+key+'.webp';
-      const row=final.querySelector('.rs-answers');
+    }
+    function renderAnswers(row,key) {
       if (!row.children.length) row.replaceChildren(...choices.map(choice=>{
         const b=document.createElement('button');
         b.type='button';
         b.className='cursor-interaction';
         b.innerHTML='<span aria-hidden="true"></span>';
         b.append(document.createTextNode(choice));
-        b.onclick=()=>{draft.answers[slides()[page.final]]=choice;renderFinal();};
+        b.onclick=()=>{
+          if (!editing) return;
+          draft.answers[row.dataset.question]=choice;
+          renderFinal();
+        };
         return b;
       }));
+      row.dataset.question=key;
       [...row.children].forEach((b,i)=>{
         setPressed(b,draft.answers[key]===choices[i]);
         b.disabled=!editing;
       });
+    }
+    function renderFinal() {
+      const all=slides(), key=all[page.final];
+      final.dataset.slide=key;
+      final.querySelector('h2').textContent=questionTitle(key);
+      final.querySelector('img').src='./art/reading-sheet/'+key+'.webp';
+      renderAnswers(final.querySelector('.rs-answers'),key);
       pager(final.querySelector('.rs-dots'),page.final,all.length,(i,f)=>changePage('final',i,f));
+
+      if (mobileQuestions.childElementCount!==all.length) {
+        mobileQuestions.replaceChildren(...all.map(id=>{
+          const item=document.createElement('section');
+          const title=document.createElement('h2');
+          title.id='rs-mobile-question-'+id;
+          item.setAttribute('aria-labelledby',title.id);
+          const row=document.createElement('div');
+          row.className='rs-answers';
+          item.append(title,row);
+          return item;
+        }));
+      }
+      all.forEach((id,i)=>{
+        const [title,row]=mobileQuestions.children[i].children;
+        title.textContent=questionTitle(id);
+        renderAnswers(row,id);
+      });
+      const search=final.querySelector('[data-rs="search-author"]');
+      search.hidden=editing || key!=='follow' || draft.answers.follow!=='Oui' || !draft.author.trim() || !onSearchAuthor;
+    }
+    const progress=mobileNav.querySelector('.rs-progress');
+    const steps=stepLabels.map((name,i)=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.setAttribute('aria-label',name);
+      b.onclick=()=>showStep(i);
+      progress.append(b);
+      return b;
+    });
+    function renderLayout() {
+      const wizard=mobile && editing;
+      sheet.toggleAttribute('data-rs-mobile',mobile);
+      sheet.toggleAttribute('data-rs-wizard',wizard);
+      sheet.querySelector('.rs-rating-label').textContent=wizard?'Ma note':'Note';
+      toolbar.hidden=wizard;
+      mobileNav.hidden=!wizard;
+      footer.hidden=!wizard;
+      final.hidden=wizard;
+      mobileQuestions.hidden=!wizard || step!==5;
+      sheet.querySelectorAll('[data-step]:not(.rs-mobile-questions)').forEach(panel=>{
+        panel.hidden=wizard && Number(panel.dataset.step)!==step;
+      });
+      steps.forEach((b,i)=>{
+        b.disabled=i>furthest;
+        b.toggleAttribute('data-filled',i<=step);
+        if(i===step)b.setAttribute('aria-current','step');
+        else b.removeAttribute('aria-current');
+      });
+      control('next').hidden=step===5;
+      control('finish').hidden=step!==5;
+      control('mobile-download').hidden=step!==5;
+      const target=wizard?control('mobile-download'):control('download');
+      target.after(menu);
+    }
+    function showStep(value) {
+      if(saving) return;
+      if (!value || draft.title.trim()) {
+        step=value;
+        furthest=Math.max(furthest,step);
+        closeDate();
+        setDownload(false);
+        status.textContent='';
+        renderLayout();
+        render();
+        sheet.scrollIntoView({block:'start',behavior:'instant'});
+        steps[step].focus({preventScroll:true});
+      } else {
+        control('title').focus();
+      }
     }
     function render() {
       control('title').value=draft.title;
@@ -399,19 +500,31 @@
       renderDate();renderRating();renderMoods();renderCharacter();renderPassage();renderFinal();
       grow(control('opinion'));
     }
-    control('pencil').onclick=()=>{editing=true;render();control('save').focus({preventScroll:true});};
-    control('back').onclick=onBack;
-    control('home').onclick=onHome;
+    control('pencil').onclick=()=>{
+      editing=true;
+      step=0;furthest=0;
+      renderLayout();render();
+      (mobile?steps[0]:control('save')).focus({preventScroll:true});
+    };
+    control('close').onclick=()=>{if(!saving)onBack();};
+    control('home').onclick=()=>{if(!saving)onHome();};
+    control('next').onclick=()=>showStep(step+1);
+    control('search-author').onclick=()=>onSearchAuthor?.(draft.author.trim());
     function setDownload(open) {
       menu.hidden=!open;
-      control('download').setAttribute('aria-expanded',String(open));
+      downloadButtons.forEach(button=>button.setAttribute('aria-expanded',String(open)));
     }
-    control('download').onclick=()=>setDownload(menu.hidden);
-    control('save').onclick=async()=>{
+    downloadButtons.forEach(button=>button.onclick=()=>setDownload(menu.hidden));
+    control('world').onclick=()=>{
+      setDownload(false);
+      status.textContent='L’envoi direct au Monde d’Eli n’est pas encore disponible.';
+    };
+    control('save').onclick=control('finish').onclick=async()=>{
       if(saving)return;
       const title=draft.title.trim();
-      if(!title){control('title').focus();return;}
-      saving=true;control('save').disabled=true;
+      if(!title){if(mobile)showStep(0);control('title').focus();return;}
+      const saveButtons=[control('save'),control('finish')];
+      saving=true;saveButtons.forEach(button=>button.disabled=true);
       try{
         await portraitTask;
         const previous=book.readingSheet;
@@ -425,52 +538,110 @@
           patch.readingEnd={...draft.date};
           if(year && month && day){patch.finishedAt=new Date(Number(year),Number(month)-1,Number(day),12).getTime();patch.finishDateUnknown=false;}
         }
-        if(await onSave(patch))onBack();
-        else status.textContent='La fiche n’a pas pu être enregistrée. Réessaie.';
-      }finally{saving=false;control('save').disabled=false;}
+        const result=await onSave(patch);
+        if (!result) {
+          status.textContent='La fiche n’a pas pu être enregistrée. Réessaie.';
+          return;
+        }
+        if (!mobile && !result.followError) {
+          onBack();
+          return;
+        }
+        editing=false;
+        setDownload(false);
+        renderLayout();render();
+        sheet.scrollIntoView({block:'start',behavior:'instant'});
+        control('home').focus({preventScroll:true});
+        status.textContent=result.followError
+          ? 'Fiche enregistrée. Le suivi de l’auteur a échoué. Tu peux réessayer depuis Modifier.'
+          : 'Fiche enregistrée.';
+      }finally{saving=false;saveButtons.forEach(button=>button.disabled=false);}
     };
-    control('pdf').onclick=()=>{
+    control('pdf').onclick=async()=>{
+      if (document.body.classList.contains('rs-printing')) return;
       setDownload(false);
+      await portraitTask;
+      if (document.body.classList.contains('rs-printing')) return;
       const paper=document.createElement('article');
       paper.className='rs-print';
-      const section=(title,text)=>{
-        if(!text?.trim())return;
-        const h=document.createElement('h2');h.textContent=title;
-        const p=document.createElement('p');p.textContent=text;
-        paper.append(h,p);
+      const add=(parent,tag,text='',className='')=>{
+        const element=document.createElement(tag);
+        element.textContent=text;
+        if(className)element.className=className;
+        parent.append(element);
+        return element;
       };
-      const h=document.createElement('h1');h.textContent=draft.title;paper.append(h);
-      section('Écrit par',draft.author);
-      section('Ma note',draft.rating?draft.rating+' / 5'+(draft.favorite?' · Coup de cœur':''):draft.favorite?'Coup de cœur':'');
-      section('Mon avis',draft.text);section('Ce que j’ai ressenti',draft.moods.join(' · '));
-      for(const row of draft.characters)if(row.name||row.quote||validPortrait(row.image)){
-        section(row.role||'Personnage',[row.name,row.quote].filter(Boolean).join('\n'));
-        if(validPortrait(row.image)){const image=document.createElement('img');image.src=row.image;image.alt=row.name;paper.append(image);}
+      const info=add(paper,'header','','rs-print-heading');
+      if(book.coverData) {
+        const cover=add(info,'img','','rs-print-cover');
+        cover.src=book.coverData;cover.alt='';
       }
-      for(const row of draft.passages)section(row.chapter?'Chapitre '+row.chapter:'Passage',row.text);
-      for(const key of slides())section(key==='follow' && draft.author.trim()
-        ? 'Est-ce que je veux suivre '+draft.author.trim()+' ?' : questions[key].title,draft.answers[key]);
+      const facts=add(info,'div');
+      add(facts,'h1',draft.title);
+      if(draft.author.trim())add(facts,'p','Écrit par '+draft.author.trim());
+      const {day,month,year}=draft.date;
+      const date=[day,month?monthLabel(Number(month)):'',year].filter(Boolean).join(' ');
+      if(date)add(facts,'p','Terminé le '+date);
+      if(draft.rating || draft.favorite) add(facts,'p',
+        [draft.rating?'Ma note · '+String(draft.rating).replace('.',',')+' / 5':'',draft.favorite?'Coup de cœur':''].filter(Boolean).join(' · '));
+      const columns=add(paper,'div','','rs-print-columns');
+      const left=add(columns,'div'),right=add(columns,'div');
+      function block(parent,title,text) {
+        const card=add(parent,'section','','rs-print-card');
+        if(title)add(card,'h2',title);
+        if(text?.trim())add(card,'p',text);
+        return card;
+      }
+      if(draft.text.trim())block(left,'Mon avis',draft.text);
+      if(draft.moods.length)block(right,'Ce que j’ai ressenti',draft.moods.join(' · '));
+      for(const row of draft.characters) {
+        if(!row.name.trim() && !row.quote.trim() && !validPortrait(row.image))continue;
+        const card=block(left,row.role||'Personnage');
+        if(validPortrait(row.image)) {
+          const img=add(card,'img','','rs-print-portrait');
+          img.src=row.image;img.alt=row.name;
+        }
+        if(row.name.trim())add(card,'h3',row.name);
+        if(row.quote.trim())add(card,'p','« '+row.quote.trim()+' »','rs-print-quote');
+      }
+      for(const row of draft.passages) {
+        if(row.chapter.trim() || row.text.trim())
+          block(right,row.chapter?'Chapitre '+row.chapter:'Passage',row.text);
+      }
+      const answered=slides().filter(key=>draft.answers[key]);
+      if(answered.length) {
+        const summary=add(paper,'section','','rs-print-card rs-print-final');
+        for(const key of answered)add(summary,'p',questionTitle(key)+' '+draft.answers[key]);
+      }
       document.body.append(paper);
       document.body.classList.add('rs-printing');
-      window.addEventListener('afterprint',()=>{paper.remove();document.body.classList.remove('rs-printing');},{once:true});
+      const pageTitle=document.title;
+      document.title='Fiche de lecture — '+draft.title;
+      window.addEventListener('afterprint',()=>{
+        paper.remove();
+        document.body.classList.remove('rs-printing');
+        document.title=pageTitle;
+      },{once:true});
       window.print();
     };
     return {
-      open(){
+      open(onMobile){
         revision++;
+        mobile=onMobile;
         draft=readBook();
         page={character:0,passage:0,final:0};
+        step=0;furthest=0;
         editing=!book.readingSheet || typeof book.readingSheet==='string' || !Array.isArray(book.readingSheet.characters);
         setDownload(false);
         status.textContent='';
         sheet.hidden=false;
-        render();
+        renderLayout();render();
         node.scrollIntoView({block:'start',behavior:'instant'});
-        control('back').focus({preventScroll:true});
+        (mobile && editing ? steps[0] : control('home')).focus({preventScroll:true});
       },
       close(){ revision++;sheet.hidden=true;closeDate(); },
       get visible(){return !sheet.hidden;}
     };
   }
-  window.mountTabletReadingSheet=mountTabletReadingSheet;
+  window.mountReadingSheet=mountReadingSheet;
 })();
