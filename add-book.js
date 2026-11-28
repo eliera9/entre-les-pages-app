@@ -1,4 +1,4 @@
-function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, createLibraryFolder, folderLabel, folderHome, initialFolder, openFolderEditor, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
+function mountAddBook(stage, {initialBook, engine, folderOptions, initialFolder, saveBook, close, home, openSidebar, bookTagOptions, refreshIcons}) {
   const root=stage;
   const copy=selector=>root.querySelector(selector).content.cloneNode(true);
   const lifecycle=new AbortController();
@@ -86,167 +86,6 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     following.addEventListener("focusout",event=>dismissOutside(event.relatedTarget));
     window.addEventListener("resize",()=>{if (openedMenu) positionMenu(openedMenu);},{signal:lifecycle.signal});
     return {setOptions,closeMenu};
-  }
-
-  function mountFolders(following) {
-    const get = selector => following.querySelector(selector);
-    const disclosure = get("[data-book-folders]");
-    const panel = get("[data-book-folder-panel]");
-    const path = get("[data-book-folder-path]");
-    const parent = get("[data-book-folder-parent]");
-    const grid = get("[data-book-folder-grid]");
-    const choose = get("[data-book-folder-choose]");
-    const create = get("[data-book-folder-create]");
-    const remove = get("[data-book-folder-remove]");
-    const status = get("[data-creation-status]");
-    const created = get("[data-book-folder-created]");
-    const createdPath = get("[data-book-folder-created-path]");
-    let selected = initialFolder ?? null;
-    let browsing = null;
-
-    const toggle=get(".collection-title");
-    const content=get("#ep-collection-content");
-    const trail=get(".collection-path");
-    const isPal=()=>stage.hasAttribute("data-pal");
-    const editor=get("#ep-folder-inline");
-    const nameInput=get("#ep-folder-inline-name");
-    const submit=get('[form="ep-folder-inline"]');
-    const feedback=get("#ep-folder-inline-feedback");
-    let editVersion=0;
-    function resetDraft() {
-      editVersion++;
-      editor.reset();
-      feedback.textContent="";
-      nameInput.removeAttribute("aria-invalid");
-      submit.disabled=false;
-      nameInput.readOnly=false;
-    }
-    toggle.addEventListener("click",()=>{
-      content.inert=!content.inert;
-      toggle.setAttribute("aria-expanded",String(!content.inert));
-    });
-    editor.addEventListener("submit",async event=>{
-      event.preventDefault();
-      const name=nameInput.value.trim();
-      if (submit.disabled) return;
-      if (!name) {
-        feedback.textContent="Donne un nom à ton dossier.";
-        nameInput.setAttribute("aria-invalid","true");
-        nameInput.focus();
-        return;
-      }
-      const version=editVersion;
-      submit.disabled=true;
-      nameInput.readOnly=true;
-      try {
-        const folder=await createLibraryFolder(name,(panel.hidden ? selected : browsing)?.id ?? folderHome);
-        if (version!==editVersion || lifecycle.signal.aborted) return;
-        if (folder) {
-          resetDraft();
-          panel.hidden=false;
-          disclosure.setAttribute("aria-expanded","true");
-          browse(folder,true);
-          status.textContent="Dossier créé : "+folder.name;
-        } else {
-          feedback.textContent="Un dossier porte déjà ce nom ici.";
-          nameInput.setAttribute("aria-invalid","true");
-          nameInput.focus();
-        }
-      } catch {
-        if (version===editVersion) feedback.textContent="Le dossier n’a pas pu être créé. Réessaie.";
-      } finally {
-        if (version===editVersion) {submit.disabled=false;nameInput.readOnly=false;}
-      }
-    });
-    nameInput.addEventListener("input",()=>{feedback.textContent="";nameInput.removeAttribute("aria-invalid");});
-    get("[data-folder-inline-cancel]").addEventListener("click",()=>{
-      resetDraft();
-      browsing=selected;
-      close(false);
-      disclosure.focus();
-    });
-    function paintTrail() {
-      const chain=[],seen=new Set();
-      for (let f=browsing; f && !seen.has(f.id); f=findFolder(f.parent)) {
-        seen.add(f.id);chain.unshift(f);
-      }
-      trail.replaceChildren();
-      for (const f of [null,...chain]) {
-        const button=document.createElement("button");
-        button.type="button";button.textContent=f?.name || "Tous les dossiers";
-        if (f===browsing) button.setAttribute("aria-current","location");
-        button.addEventListener("click",()=>browse(f,true));
-        if (trail.childNodes.length) trail.append(" › ");
-        trail.append(button);
-      }
-    }
-    function renderSelection() {
-      get("[data-book-folder-value]").textContent = selected ? folderLabel(selected) : isPal() ? "Ma collection" : "Voir les dossiers";
-      remove.hidden = !selected;
-    }
-
-    function browse(folder, focusCards = false) {
-      browsing = folder;
-      if (isPal()) paintTrail();
-      choose.textContent=isPal() ? "Ranger ici" : "Choisir ce dossier";
-      path.hidden = !folder;
-      path.textContent = folder ? folderLabel(folder) : "";
-      parent.hidden = !folder;
-      choose.hidden = !folder;
-      const cards = folderCards(folder?.id ?? null, child => browse(child, true));
-      grid.replaceChildren(...cards);
-      grid.hidden = !cards.length;
-      get("[data-book-folder-empty]").hidden = cards.length > 0;
-      refreshIcons();
-      if (focusCards) (grid.querySelector("button") ?? (folder ? choose : isPal() ? nameInput : create)).focus({preventScroll:true});
-    }
-
-    function close(returnFocus = true) {
-      if (panel.hidden) return false;
-      panel.hidden = true;
-      disclosure.setAttribute("aria-expanded","false");
-      if (returnFocus) disclosure.focus({preventScroll:true});
-      return true;
-    }
-
-    function select(folder, message, creationPath = "") {
-      selected = folder;
-      renderSelection();
-      close(false);
-      disclosure.focus({preventScroll:true});
-      created.hidden = !creationPath;
-      createdPath.textContent = creationPath;
-      status.textContent = message;
-    }
-
-    disclosure.addEventListener("click", () => {
-      created.hidden = true;
-      createdPath.textContent = "";
-      if (close()) return;
-      panel.hidden = false;
-      disclosure.setAttribute("aria-expanded","true");
-      browse(selected);
-    });
-    parent.addEventListener("click", () => browse(findFolder(browsing?.parent) ?? null, true));
-    choose.addEventListener("click", () => {
-      if (browsing) select(browsing,"Dossier choisi : " + folderLabel(browsing));
-    });
-    function newFolder(trigger) {
-      if (isPal()) { nameInput.focus(); return; }
-      openFolderEditor({
-        trigger,
-        destination: browsing?.id ?? folderHome,
-        home: folderHome,
-        onCreated: (folder, destination) => {
-          if (lifecycle.signal.aborted) return;
-          select(folder,"",folder.name + " · " + destination);
-        },
-      });
-    }
-    create.addEventListener("click",()=>newFolder(create));
-    remove.addEventListener("click", () => select(null,"Dossier retiré."));
-    renderSelection();
-    return {id: () => selected?.id ?? null, close, refresh(){if (!isPal()) { content.inert=false; toggle.setAttribute("aria-expanded","true"); } renderSelection();}};
   }
 
   const datePartLabels={day:"Jour",month:"Mois",year:"Année"};
@@ -703,7 +542,8 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   for (const card of cards) card.setAttribute("aria-controls",card.dataset.book==="digital" ? digital.id : paper.id);
   for (const date of following.querySelectorAll("[data-reading-date]")) mountDatePickers(date);
   const pickers=mountPickers(following,form);
-  const folderPicker=mountFolders(following);
+  const folderPicker=mountBookFolders({host:stage, ...folderOptions, initialFolder, signal,
+    triggerClass:"ep-icon-button cursor-interaction"});
   const readingFields=mountReadingFields(following,pickers);
   // « Ce qu'il me promet » : seulement pour un livre de la pile, pré-rempli par l'app
   const promesseSection=following.querySelector("[data-promesse]");
@@ -830,7 +670,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     palHost.setAttribute('aria-label','Informations du livre');
     palHost.querySelector('.reperes').hidden=inProgress||finished;
 
-    folderPicker.refresh();
+    folderPicker.trigger.hidden=!useBookHeader;
     palHost.hidden=!(useBookHeader)||!editForm.hidden;
     if(stage.dataset.step==='next')nextBook.hidden=useBookHeader||!editForm.hidden;
     summaryFrame.hidden=palHost.hidden;
@@ -838,7 +678,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     if(!useBookHeader){palIdentity.close();return}
     nav.hidden=false;legacyHeader.hidden=true;decoration.hidden=true;back.hidden=true;
     paperBack.hidden=false;paperBack.setAttribute('aria-label',lastStep==='digital'?'Retour aux trois cartes de statut':'Revenir aux résultats de recherche');
-    actions.append(exit);exit.hidden=false;
+    actions.append(folderPicker.trigger,exit);exit.hidden=false;
     editToolbar.append(editButton);editToolbar.hidden=editForm.hidden;editButton.hidden=editForm.hidden;
     if(!palHost.hidden)palIdentity.update(currentBook);
   }
@@ -901,6 +741,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     if (currentBook!==book) {
       readingFields.clear();
       promesseForm?.clear();
+      folderPicker.reset(initialFolder);
     }
     currentBook=book;
     syncPromesse();
@@ -1607,8 +1448,8 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   const menu=get("[data-add-menu]");
   menu.addEventListener("click",()=>openSidebar(menu));
   stage.addEventListener("keydown",event=>{
-    if (event.defaultPrevented || event.key!=="Escape" || folderDialog.open || scanner.active()) return;
-    if (pickers.closeMenu(true) || folderPicker.close()) event.preventDefault();
+    if (event.defaultPrevented || event.key!=="Escape" || scanner.active()) return;
+    if (pickers.closeMenu(true)) event.preventDefault();
     else if (!editForm.hidden) {
       setEditing(false);
       editButton.focus({preventScroll:true});
@@ -1637,7 +1478,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
     if (!reading) return;
     if(selectedStatus==='reading'){const values=journal.values();if(!values)return;Object.assign(reading,values);}
     const pile=selectedStatus==="to-read";
-    const collection=folderPicker.id();
+    const collection=initialBook && !folderPicker.changed() ? undefined : folderPicker.id();
     addButton.disabled=true;
     saveStatus.textContent="Préparation de la fiche…";
     following.inert=true;
@@ -1661,7 +1502,7 @@ function mountAddBook(stage, {initialBook, engine, findFolder, folderCards, crea
   readingFields.clear();
   if(initialBook){
     const draft=structuredClone(initialBook);
-    draft.series ??= draft.saga || "";
+    draft.series=draft.saga ?? draft.series ?? "";
     draft.promesse ??= {};
     draft.pageCount ??= draft.promesse.pages || draft.pages;
     palTitle.textContent="MODIFIER MA FICHE";

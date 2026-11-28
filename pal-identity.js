@@ -9,7 +9,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
   <div class="texte-infos">
    <span class="titre-livre" data-texte="title" data-vide="Ajouter un titre" role="textbox" contenteditable="plaintext-only" aria-label="Titre du livre"></span>
    <span class="autrice" data-texte="author" data-vide="Ajouter un nom" role="textbox" contenteditable="plaintext-only" aria-label="Autrice ou auteur"></span>
-   <div class="saga"><span data-texte="series" data-vide="Ajouter une saga" role="textbox" contenteditable="plaintext-only" aria-label="Saga"></span><span aria-hidden="true"> · </span><span class="prefixe-tome">Tome </span><span data-texte="volume" data-vide="…" role="textbox" contenteditable="plaintext-only" aria-label="Tome"></span></div>
+   <div class="saga"><span data-texte="series" data-vide="Ajouter une saga" role="textbox" contenteditable="plaintext-only" aria-label="Saga"></span><span aria-hidden="true"> · </span><span class="prefixe-tome">Tome </span><span data-texte="volume" data-vide="n°" role="textbox" contenteditable="plaintext-only" aria-label="Tome"></span></div>
    <div class="saga spin" hidden>Spin-Off de <span data-texte="spinOffOf" role="textbox" contenteditable="plaintext-only" aria-label="Livre ou saga d’origine"></span></div>
   </div>
   <div class="rangee-genre-date">
@@ -398,6 +398,7 @@ function mountPalIdentity(root, {tagOptions, defaultTropes, change, coverOf, edi
  const champsTexte=[...root.querySelectorAll('[data-texte]')];
  for(const field of champsTexte){
   const key=field.dataset.texte;
+  if(key==='series'||key==='volume')field.setAttribute('aria-placeholder',field.dataset.vide);
   field.addEventListener('input',()=>{if(book)change(book,key,field.textContent.trim())});
   field.addEventListener('focus',()=>{field.dataset.avant=String(book?.[key]||'');effacerOuverture();replier()});
   field.addEventListener('keydown',e=>{

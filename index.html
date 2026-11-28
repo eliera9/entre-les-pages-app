@@ -26,24 +26,26 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
 <script defer src="./storage.js?v=7"></script>
 <script defer src="./library-sync.js?v=3"></script>
 <link rel="stylesheet" href="./catalogue.css?v=coeur-accueil-1">
-<link rel="stylesheet" href="./add-book.css?v=livre-importe-mobile-1">
+<link rel="stylesheet" href="./add-book.css?v=mes-dossiers-1">
 <link rel="stylesheet" href="./questionnaire.css?v=3">
 <script defer src="./book-metadata.js?v=edition-officielle-1"></script>
 <script defer src="./book-scan.js?v=pal-priorite-edition"></script>
 <script defer src="./book-tags.js?v=3"></script>
-<link rel="stylesheet" href="./pal-identity.css?v=fin-lecture-1">
-<script defer src="./pal-identity.js?v=reperes-aquarelles"></script>
+<link rel="stylesheet" href="./pal-identity.css?v=mes-dossiers-1">
+<script defer src="./pal-identity.js?v=mes-dossiers-1"></script>
 <script defer src="./reading-journal.js?v=1"></script>
-<script defer src="./add-book.js?v=fin-lecture-1"></script>
+<link rel="stylesheet" href="./book-folders.css?v=1">
+<script defer src="./book-folders.js?v=1"></script>
+<script defer src="./add-book.js?v=mes-dossiers-1"></script>
 <link rel="stylesheet" href="./reading-sheet-tablet.css?v=1">
 <script defer src="./reading-sheet-tablet.js?v=1"></script>
-<link rel="stylesheet" href="./book-detail.css?v=decor-aquarelle-b">
+<link rel="stylesheet" href="./book-detail.css?v=mes-dossiers-1">
 <link rel="stylesheet" href="./reader.css?v=141">
 <script defer src="./reader.js?v=5"></script>
-<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=fin-lecture-1"></script>
+<script defer src="./reader-edition.js?v=140"></script><script defer src="./reader-pagination.js?v=4"></script><script defer src="./book-detail.js?v=mes-dossiers-1"></script>
 <script defer src="./reading-status.js"></script>
 <script defer src="./veille-parutions.js?v=sorties-epub-1"></script>
-<script defer src="./app.js?v=lecture-tablette-1"></script>
+<script defer src="./app.js?v=mes-dossiers-1"></script>
 <link rel="stylesheet" href="./mobile-surface.css?v=1">
 <script defer src="./mobile-surface.js?v=1"></script>
 </head>
@@ -1045,41 +1047,6 @@ html:has(#app-lecture[data-starting]):not(:has(#elp-connexion:not([hidden]))) bo
         </div>
       </section>
       <section class="ep-promesse" data-promesse aria-label="Ce qu’il me promet" hidden></section>
-      <section class="ep-folder-zone" aria-labelledby="ep-collections-heading">
-        <h3 class="ep-summary-heading" id="ep-collections-heading"><button type="button" class="pal-only collection-title" aria-expanded="true" aria-controls="ep-collection-content"><i data-lucide="folder"></i>Ma collection</button><span class="other-status">Mes collections</span></h3>
-        <div id="ep-collection-content"><div class="collection-content-inner">
-        <div class="catalogue-folder-created" data-book-folder-created role="status" hidden>
-          <span class="catalogue-folder-created-mark" aria-hidden="true"><i data-lucide="check"></i></span>
-          <span class="catalogue-folder-created-copy"><strong>Dossier créé</strong><span data-book-folder-created-path></span></span>
-        </div>
-        <div class="collection-entry"><form id="ep-folder-inline" class="collection-inline" aria-label="Créer un dossier ici">
-          <label for="ep-folder-inline-name">Nom du dossier</label>
-          <input id="ep-folder-inline-name" name="name" type="text" maxlength="45" autocomplete="off" enterkeyhint="done" placeholder="Ex. Lectures du soir" aria-describedby="ep-folder-inline-feedback" required>
-          </form><button type="button" class="ep-folder-disclosure cursor-interaction" data-book-folders aria-controls="ep-book-folders" aria-expanded="false">
-          <i data-lucide="folders" aria-hidden="true"></i>
-          <span data-book-folder-value>Voir les dossiers</span>
-          <i data-lucide="chevron-down" aria-hidden="true"></i>
-        </button>
-        </div><nav class="pal-only collection-path" aria-label="Chemin du dossier"></nav>
-        <div class="ep-folder-panel" id="ep-book-folders" data-book-folder-panel hidden>
-          <p class="catalogue-folder-location-path" data-book-folder-path hidden></p>
-          <button type="button" class="catalogue-folder-index-choice catalogue-folder-up ep-folder-parent cursor-interaction" data-book-folder-parent hidden>
-            <i data-lucide="chevron-left" aria-hidden="true"></i><span>Dossier parent</span>
-          </button>
-          <ul class="genre-grid collection-grid catalogue-collection-grid catalogue-folder-destination-grid" data-book-folder-grid aria-label="Dossiers à cet emplacement"></ul>
-          <p class="catalogue-folder-picker-empty" data-book-folder-empty hidden>Aucun dossier ici.</p>
-          <button type="button" class="catalogue-folder-submit ep-folder-choose cursor-interaction" data-book-folder-choose hidden>Choisir ce dossier</button>
-          <button type="button" class="ep-folder-add cursor-interaction" data-book-folder-create aria-haspopup="dialog">
-            <i data-lucide="plus" aria-hidden="true"></i><span>Créer un dossier</span>
-          </button>
-        </div>
-        <div class="collection-inline-actions"><button type="submit" form="ep-folder-inline">Créer le dossier</button><button type="button" data-folder-inline-cancel>Annuler</button></div>
-          <p id="ep-folder-inline-feedback" role="status"></p>
-        <button type="button" class="ep-folder-remove cursor-interaction" data-book-folder-remove hidden>Retirer le dossier</button>
-        <p class="sr-only" role="status" data-creation-status></p>
-</div></div>
-      </section>
-
       <dialog class="finished-choice" data-finished-choice aria-labelledby="finished-choice-title">
         <h2 id="finished-choice-title">Et maintenant ?</h2>
         <button type="button" data-finish="alone"><img src="./art/add-book/lu.png" alt="">Ajouter le livre seul</button>

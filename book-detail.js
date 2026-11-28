@@ -21,7 +21,7 @@ function trackSpeed(printedPage, percent) {
 }
 let speedBook = null;
 
-function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, sheetHome, onSave, onRemove, onError}) {
+function mountSavedBook({editPal, folderOptions, releaseWatch, folderChoices, root, host, book, storage, engine, setReaderTheme, bookTagOptions, refreshIcons, home, startInReader, startInNote, returnToLibrary, sheetHome, onSave, onRemove, onError}) {
   speedBook = book;
   speedLast = null;
   const scope = new AbortController();
@@ -43,6 +43,8 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
   const access = q('[data-reader-access]');
   const read = q('[data-open-reader]');
   const edit = bar('[data-book-edit]');
+  const folderPicker = mountBookFolders({host, ...folderOptions, signal:scope.signal, triggerClass:edit.className});
+  edit.before(folderPicker.trigger);
   const carnet = document.createElement('button');
   carnet.type = 'button';
   carnet.className = edit.className;
@@ -138,6 +140,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     reader.hidden = mode !== 'reader';
     root.toggleAttribute('data-book-reading', !reader.hidden);
     edit.hidden = trash.hidden = stage.hidden;
+    folderPicker.trigger.hidden = !editing;
     edit.setAttribute('aria-expanded', String(editing));
     homeButton.hidden = false;
     create.hidden = !viewing || book.status !== 'Terminé' || hasSheet;
@@ -161,7 +164,7 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     image.hidden = !book.coverData;
     if (book.coverData) image.src = book.coverData;
     else image.removeAttribute('src');
-    const series = book.saga || book.series;
+    const series = book.saga ?? book.series;
     const volume = book.volume == null ? '' : String(book.volume);
     const volumeText = volume && !/^(?:tome|volume|hors[- ]série)/i.test(volume) ? 'Tome ' + volume : volume;
     setText('[data-series-name]', series);
@@ -334,12 +337,13 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
     if (mode === 'edit') {form.requestSubmit(); return;}
     setPopup(false); setDelete(false);
     mode = 'edit';
+    folderPicker.reset(folderOptions.findFolder(book.folderIds?.[0]));
     pendingCover = book.coverData;
     coverRevision++;
     previewCover();
     q('[data-edit-cover]').value = '';
     for (const field of ['title','author','series','volume']) {
-      const value = field === 'series' ? book.saga || book.series : book[field];
+      const value = field === 'series' ? book.saga ?? book.series : book[field];
       form.elements.namedItem(field).value = Array.isArray(value) ? value.join('; ') : value ?? '';
     }
     tags.set(book);
@@ -369,6 +373,9 @@ function mountSavedBook({editPal, releaseWatch, folderChoices, root, host, book,
       ...tags.values(), summary:q('#saved-summary-editor').value.trim(), coverData:pendingCover};
     if (changes.summary!==(book.summary || '')) changes.summarySource='manual';
     if ('series' in book) changes.series = changes.saga;
+    if (folderPicker.changed()) {
+      changes.folderIds = [...new Set([folderPicker.id(),...(book.folderIds || []).slice(1)].filter(Boolean))];
+    }
     if (await save(changes)) {mode = 'book'; render(); focus(edit);}
   });
 

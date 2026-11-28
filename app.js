@@ -1659,9 +1659,13 @@ async function activateLibrary(root) {
     return item;
   }
 
-  function bookFolderCards(parent, open) {
+  function bookFolderEntries(parent) {
     const folderIds = new Set(folders.map(folder => folder.id));
-    const entries = folders.filter(folder => parent ? folder.parent === parent : !folderIds.has(folder.parent));
+    return folders.filter(folder => parent ? folder.parent === parent : !folderIds.has(folder.parent));
+  }
+
+  function bookFolderCards(parent, open) {
+    const entries = bookFolderEntries(parent);
     const names = new Map();
     for (const folder of entries) names.set(key(folder.name), (names.get(key(folder.name)) ?? 0) + 1);
     return entries.map(folder => {
@@ -2766,6 +2770,7 @@ async function activateLibrary(root) {
       updatedAt: Date.now(),
       addedAt: existing?.addedAt ?? Date.now(),
     };
+    imported.series = imported.saga;
     if (imported.status === 'À lire' && !imported.readingPriority) imported.readingPriority = 'Bientôt';
     if (imported.status === 'Terminé' && !imported.finishedAt && !imported.finishDateUnknown) imported.finishedAt = Date.now();
     const position = reading.readingPosition;
@@ -2792,6 +2797,16 @@ async function activateLibrary(root) {
     }
   }
 
+  function bookFolderOptions() {
+    return {
+      findFolder: id => folders.find(folder => folder.id === id),
+      folderEntries: bookFolderEntries,
+      folderLabel: folderPath,
+      createFolder: createLibraryFolder,
+      folderHome: scope === 'favorites' ? 'list:all' : folderTrail[0]?.folder.parent ?? folderParent(),
+    };
+  }
+
   function showAddBook(existing, returnToBook) {
     const template = find('template[data-add-book-template]');
     addBookPage.append(template.content.cloneNode(true));
@@ -2802,14 +2817,9 @@ async function activateLibrary(root) {
     window.scrollTo({top: 0, behavior: 'auto'});
     closeImport = mountAddBook(stage, {
       engine: coverReader,
-      findFolder: id => folders.find(folder => folder.id === id),
-      folderCards: bookFolderCards,
-      createLibraryFolder,
-      folderLabel: folderPath,
-      folderHome: scope === 'favorites' ? 'list:all' : folderTrail[0]?.folder.parent ?? folderParent(),
+      folderOptions: bookFolderOptions(),
       initialFolder: existing ? folders.find(f => f.id === existing.folderIds?.[0]) : currentFolder(),
       initialBook: existing,
-      openFolderEditor,
       saveBook: existing ? async (draft, reading, folderId, current) => {
         const changes = {};
         for (const field of ['title','author','series','volume','spinOffOf','genres','subgenres','tropes','summary','summarySource','publicationDate','pageCount','readingPriority','coverData']) {
@@ -2818,8 +2828,9 @@ async function activateLibrary(root) {
         if(reading.readingJournal){for(const key of ["readingJournal","readingPosition","chapter","progress"])if(key in reading)changes[key]=reading[key]}
         changes.saga = draft.series ?? existing.saga;
         changes.promesse = {...existing.promesse,...reading.promesse};
-        const previous = existing.folderIds || [];
-        changes.folderIds = [...new Set([folderId,...previous.slice(1)].filter(Boolean))];
+        if (folderId !== undefined) {
+          changes.folderIds = [...new Set([folderId,...(existing.folderIds || []).slice(1)].filter(Boolean))];
+        }
         const updated = await storage.patchBook(existing.id,changes);
         Object.assign(existing,updated);
         if (current()) returnToBook();
@@ -3522,6 +3533,7 @@ async function activateLibrary(root) {
       }
       disposeBook = mountSavedBook({
         editPal: () => openSecondary('add', book, source, {fromLibrary}),
+        folderOptions: bookFolderOptions(),
         releaseWatch, folderChoices: () => folders.map(folder => ({id:folder.id,name:folderPath(folder)})),
         root, host: bookHost, book, storage, engine: coverReader, bookTagOptions, refreshIcons, home: fromLibrary ? returnFromSecondary : home,
         startInReader: read || (view === 'reading' && (book.format !== 'Papier' || Boolean(book.fileFingerprint))),
